@@ -1,0 +1,4 @@
+COMPONENT=SenseAppC
+SENSORBOARD=mts300
+
+include $(MAKERULES)

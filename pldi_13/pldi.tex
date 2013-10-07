@@ -1,0 +1,1263 @@
+\documentclass[preprint]{sigplanconf}
+% The following \documentclass options may be useful:
+%
+% 10pt          To set in 10-point type instead of 9-point.
+% 11pt          To set in 11-point type instead of 9-point.
+% authoryear    To obtain author/year citation style instead of numeric.
+
+\setlength{\textfloatsep}{5pt}
+
+\usepackage{flushend}
+\usepackage{graphicx}
+\usepackage{verbatim}
+\usepackage{url}
+\usepackage{alltt}
+\renewcommand{\ttdefault}{txtt}
+
+\usepackage{amsmath}
+\usepackage{mathtools}
+\everymath{\displaystyle}
+\usepackage{xspace}
+
+\newcommand{\CEU}{\textsc{C\'{e}u}\xspace}
+\newcommand{\code}[1] {{\small{\texttt{#1}}}}
+\newcommand{\DOFIN}{\code{do-finally}\xspace}
+\newcommand{\FIN}{\code{finally}\xspace}
+
+\newcommand{\ST}{\xrightarrow[~i~]{}}
+\newcommand{\BT}{\xRightarrow[(i,E)]{}}
+
+\newcommand{\1}{\;}
+\newcommand{\2}{\;\;}
+\newcommand{\3}{\;\;\;}
+\newcommand{\5}{\;\;\;\;\;}
+\newcommand{\ten}{\5\5}
+\newcommand{\twenty}{\ten\ten}
+
+\newenvironment{itemize*}%
+  {\begin{itemize}%
+    \setlength{\itemsep}{0pt}%
+    \setlength{\parskip}{0pt}}%
+  {\end{itemize}}
+
+\usepackage{enumitem}
+\setlist{nolistsep}
+
+\begin{document}
+
+\conferenceinfo{PLDI '13}{date, City.} \copyrightyear{2005} \copyrightdata{[to 
+be supplied]} 
+
+\titlebanner{banner above paper title}        % These are ignored unless
+\preprintfooter{short description of paper}   % 'preprint' option specified.
+
+\title{The Semantics of a Safe and Flexible Language for Embedded Systems}
+
+\authorinfo{}{}{}
+\begin{comment}
+    {Francisco Sant'Anna \and Noemi Rodriguez \and Roberto Ierusalimschy}
+    {Departamento de Inform\'atica --- PUC-Rio, Brasil}
+    {\{fsantanna,noemi,roberto\}@inf.puc-rio.br}
+\end{comment}
+
+\maketitle
+
+\begin{abstract}
+\CEU is a reactive language for embedded systems that prioritizes safety 
+aspects for the development of reliable applications targeting highly 
+constrained platforms.
+
+We present a formal description of \CEU and show how its synchronous and static 
+nature enables a compile-time analysis to ensure that reactions to the 
+environment are deterministic and execute with bounded memory and CPU time.
+
+Nevertheless, \CEU does not renounce to practical aspects, providing seamless 
+integration with $C$ for low-level manipulation and a novel stacked execution 
+policy for internal events that enables advanced mechanisms considering the 
+context of embedded systems, such as finalization blocks and exception 
+handling.
+\end{abstract}
+
+%\category{CR-number}{subcategory}{third-level}
+\category{D.3.1}{Programming Languages}{Formal Definitions and Theory}
+\category{D.3.3}{Programming Languages}{Language Constructs and Features}
+
+\terms{Design, Languages, Reliability}
+
+\keywords{Concurrency, Determinism, Embedded Systems, Safety, Static Analysis, 
+Synchronous}
+
+\section{Introduction}
+
+Embedded systems are usually designed with safety and real-time requirements 
+under constrained hardware platforms.
+At the same time, developers demand effective programming abstractions, ideally 
+with unrestricted access to low-level functionality.
+
+These particularities impose a challenge to embedded-language designers, who 
+must provide a comprehensive set of features requiring correct and predicable 
+behavior under platforms with limited memory and CPU.
+As a consequence, embedded languages either lack functionality or fail to offer 
+a small and reliable programming environment.
+
+This dilemma is notably evident in multithreading support for embedded systems, 
+which implies a considerable overhead for synchronization primitives and 
+per-thread stacks.
+Furthermore, preemptive multithreading is a potential source of safety 
+hazards~\cite{sync_async.threadsproblems}.
+Alternative designs enforce cooperative scheduling to eliminate race 
+conditions, but potentialize unbounded execution, breaking real-time 
+responsiveness in programs~\cite{wsn.comparison}.
+Therefore, language designers have basically three options:
+not providing threads at all~\cite{wsn.nesc}, affecting the productivity of 
+programmers;
+providing restricted alternatives, such as disallowing locals in 
+threads~\cite{wsn.protothreads};
+or preserving full support, but offering coarsed-grained concurrency 
+only~\cite{wsn.mantisos}.
+
+\CEU%
+\footnote{C\'eu is the Portuguese word for \emph{sky}.}
+is a reactive programming language that provides a reliable yet powerful 
+programming environment for embedded systems.
+\CEU is based on Esterel~\cite{esterel.ieee91} and follows a synchronous 
+execution model~\cite{rp.twelve}, which enforces a disciplined step-by-step 
+execution that enables race-free concurrency.
+Both languages preclude the dynamic creation of lines of execution, as they 
+employ static analysis in order to provide safety warranties for programs.
+
+In this work, we focus on a formal description of \CEU that allows us to 
+discuss safety warranties for programs, such as deterministic behavior.
+For an extensive and informal presentation, with examples of typical patterns 
+found in embedded systems, refer to the technical report of \CEU~\cite{ceu.tr}.
+
+\CEU distinguishes itself from Esterel in two basic aspects:
+
+\begin{itemize}
+\item Programs can only react to a \emph{single} external event at a time.  
+\item Internal events follow a \emph{stacked} execution policy (like function 
+calls in typical programming languages).
+\end{itemize}
+
+These design decisions are fundamental to introduce new functionalities into 
+\CEU:
+
+\begin{itemize}
+\item Based on the uniqueness of external events, \CEU provides a static 
+analysis that enables deterministic (in addition to race-free) shared-memory 
+concurrency.
+\item From the stacked execution of internal events, \CEU can derive many 
+advanced control mechanisms, such as finalization blocks (\emph{finally blocks} 
+in Java), exception handling, and dataflow programming.
+\end{itemize}
+
+In our discussion, shared memory concerns not only variables, but also 
+low-level accesses that ultimately use shared resources in the underlying 
+platform (e.g., memory-mapped ports for I/O).
+
+The stacked execution for internal events introduces support for a restricted 
+form of subroutines that cannot express recursive definitions (either directly 
+or indirectly), resulting in memory-bounded programs that preclude stack 
+overflows.
+
+The proposed new functionalities are compliant with the safety requirements and 
+resource limitations of embedded systems and, arguably, do not dramatically 
+reduce the expressiveness of the language.
+However, as a limitation of the synchronous model, computations that run in 
+unbounded time (e.g., cryptography, image processing) do not fit the zero-delay 
+hypothesis~\cite{rp.hypothesis}, and cannot be elegantly implemented in \CEU.
+
+The implementation of \CEU offers fine-grained concurrency for highly 
+constrained platforms.
+For instance, the current memory footprint under Arduino~\cite{arduino.cc} is 
+around 2 Kbytes of ROM and 50 bytes of RAM.
+A program with sixteen lines of execution (with minimum bodies) that 
+synchronize on termination incur extra 270 bytes of ROM and 60 bytes of RAM.
+
+The rest of the paper is organized as follows:
+Section~\ref{sec.ceu} briefly introduces \CEU and describes it formally through 
+an operational semantics.
+Section~\ref{sec.safety} demonstrates how the language can ensure deterministic 
+reactions to the environment using bounded memory and CPU time.
+Section~\ref{sec.adv} shows how to implement some advanced control-flow 
+mechanisms on top of the simpler semantics of internal events.
+Section~\ref{sec.related} compares \CEU to existing synchronous and 
+asynchronous languages for embedded systems.
+Section~\ref{sec.conclusion} concludes the paper and makes final remarks.
+
+%\newpage
+\section{The programming language \CEU}
+\label{sec.ceu}
+
+\CEU is a synchronous reactive language with support for multiple lines of 
+execution known as \emph{trails}.
+By reactive, we mean that programs are stimulated by the environment through 
+input events that are broadcast to all awaiting trails.
+By synchronous, we mean that any trail at any given time is either reacting to 
+the current event or is awaiting another event;
+in other words, trails are always synchronized at the current (and single) 
+event.
+
+As an introductory example, the program in Figure~\ref{lst:ceu:1} counts the 
+difference between clicks in buttons \code{BT1} and \code{BT2} (represented as 
+external input events), terminating when the number of occurrences of 
+\code{BT2} is higher.
+The program is intentionally structured with three trails in parallel to 
+illustrate the concurrent and reactive nature of \CEU.
+The first and second trails react, respectively, to buttons \code{BT1} and 
+\code{BT2} in a loop, while the third trail reacts to internal event 
+\code{clicked}.
+
+\begin{figure}[t]
+%\rule{8.5cm}{0.37pt}
+{\small
+\begin{verbatim}
+ 1:  input void BT1, BT2;   // external input events
+ 2:  event int clicked;     // an internal event
+ 3:  par/or do
+ 4:     loop do             // 1st trail
+ 5:        await BT1;
+ 6:        emit clicked(1);
+ 7:     end
+ 8:  with
+ 9:     loop do             // 2nd trail
+10:        await BT2;
+11:        emit clicked(-1);
+12:     end
+13:  with
+14:     int diff = 0;      // 3rd trail
+15:     loop do
+16:        int v = await clicked;
+17:        diff = diff + v;
+18:        _printf("BT1 - BT2 = %d\n", diff);
+19:        if diff < 0 then
+20:            break;
+21:        end
+22:     end
+23:  end
+\end{verbatim}
+}%
+\caption{ A concurrent program in \CEU.
+\label{lst:ceu:1}
+}
+\end{figure}
+
+Lines 1-2 declare the events used in the program.
+A declaration includes the type of value the event carries when it occurs.
+For instance, the two buttons are notify-only external input events (carrying 
+no values), while \code{clicked} is an internal event that holds an integer 
+value.
+
+The \code{par/or} construct at line 3 spawns three trails in parallel (lines 
+4-7, 9-12, and 14-22).
+The loops in the first and second trails continuously wait for the referred 
+buttons and notify their occurrences through the \code{clicked} event.
+The third trail holds the difference of clicks in local variable \code{diff} 
+(line 14) and awaits for new occurrences of clicks in a loop.
+Whenever event \code{clicked} is emitted, the third trail awakes (line 16), 
+updates the difference (line 17), prints it on screen%
+\footnote{
+\CEU can call $C$ functions (such as \code{printf}) by prefixing names with an 
+underscore.
+} (line 18), and breaks the loop when it is negative (lines 19-21).
+
+Given the uniqueness of external events in \CEU, the first and second trails 
+(which react to different events) never execute concurrently, and consequently, 
+emits (and reactions) to event \code{clicked} are race free.
+
+A \code{par/or} composition rejoins when any of its trails terminates;
+in the example, only the termination of the third trail causes the termination 
+of the program, as the other trails never terminate.
+(\CEU also supports \code{par/and} compositions, which rejoin when \emph{all} 
+spawned trails terminate.)
+
+The conjunction of parallelism with typical imperative primitives provides 
+structured reactive programming, leading to more concise implementations.
+In particular, the use of trails in parallel allows programs to wait for 
+multiple events while keeping context information, such as local variables and 
+the program counter~\cite{sync_async.cooperative}.
+
+One of the particularities of \CEU is how internal and external events behave 
+differently:
+
+\begin{itemize}
+\item External events can be emitted only by the environment, while internal 
+events only by the program.
+\item A single external event can be active at a time, while multiple internal 
+events can coexist.
+\item External events are handled in a queue, while internal events follow a 
+stacked execution policy.
+% (like subroutine calls in typical programming languages).
+\end{itemize}
+
+%The stacked execution policy for internal events is a fundamental design 
+%decision from which many advanced control mechanisms can be derived, as 
+%presented in Section~\ref{sec.adv}.
+
+As an example of the stacked behavior for internal events, whenever the 
+\code{emit} in line 11 of Figure~\ref{lst:ceu:1} executes, its continuation 
+(lines 12,9,10) is delayed until the awakened trail in line 16 completely 
+reacts, either breaking the loop (line 20) or awaiting again (line 16).
+
+Note that both internal and external events are unbuffered, i.e., at the moment 
+an event occurs, only previously awaiting trails can react to that instance.
+
+%In particular, compositions of sequences, conditionals, loops, and parallelism 
+%can be used to implement typical patterns found in embedded systems, as we 
+%discussed in previous work~\cite{ceu.sac}.
+
+
+\input{formal.tex}
+%\subsection{Abstract syntax}
+%\subsection{Operational semantics}
+
+%\newpage
+\section{Safety warranties}
+\label{sec.safety}
+
+A primeval goal of \CEU is to ensure a reliable execution for shared-memory 
+programs.
+In this section, we demonstrate how \CEU can ensure at compile time
+that reaction chains are deterministic and require bounded resources (memory 
+and CPU time).
+
+\subsection{Bounded execution}
+\label{sec.safety.bounded}
+
+Reactions to the environment should run in bounded time to guarantee that 
+programs are responsive and can handle upcoming input events.
+Similarly to Esterel~\cite{esterel.ieee91}, \CEU requires that each possible 
+path in a loop body contains at least one \code{await} or \code{break} 
+statement, thus ensuring that loops never run in unbounded time.
+
+Consider the examples that follow:
+
+{\small
+\begin{verbatim}
+    loop do                     loop do
+        if cond then                if cond then
+            break;                      break;
+        end                         else
+    end                                 await A;
+                                    end
+                                end
+\end{verbatim}
+}
+
+The first example is refused at compile time, because the \code{if} true branch 
+may never execute, resulting in a \emph{tight loop} (i.e., an infinite loop 
+that does not await).
+The second variation is accepted, because for every iteration, the loop either 
+breaks or awaits.
+
+%%%%%%%%%
+
+Given that programs with tight loops are refused at compile time, it is easy to 
+show that the small-step semantics always reaches a state in which all trails 
+are either blocked or terminated:
+all small-step rules advance to the blocked conditions of 
+Figure~\ref{fig:isBlocked}, except for rule \textbf{loop-expd} which expands 
+code.
+However, the compile-time restriction ensures that all trails inside a loop 
+either await (as desired) or break (reducing the whole expansion to a $nop$ via 
+rule \textbf{loop-brk}).
+
+Interleaving big steps and small-step sequences also cannot lead to unbounded 
+execution:
+all trails that $await$ are stacked at depth $0$ before they actually become 
+$awaiting$ (small-step rule \textbf{await}).
+This way, these trails can never awake, given that $emitting$ are always 
+matched in depth levels higher than $0$ (small-step rule \textbf{emit}).
+
+%%%%%%%%%
+
+Enforcing bounded execution makes \CEU inappropriate for algorithmic-intensive 
+applications that require unrestricted loops (e.g., cryptography, image processing).
+However, \CEU is designed for real-time control-intensive applications and we 
+believe this is a reasonable price to pay in order to achieve higher 
+reliability.
+
+Note that \CEU does not extend the bounded execution analysis to $C$ function 
+calls. % which are left as responsibility for the programmer.
+On the one hand, $C$ calls must be carefully studied in order to keep programs 
+responsive.
+On the other hand, they also give the programmer means to circumvent the rigor 
+of \CEU in a well-marked way.
+
+This approach is also adopted by Esterel, which supports the \code{call} 
+primitive to execute code assumed to be instantaneous in the host 
+language~\cite{esterel.primer}.
+In \CEU, we take a step further and statically detects when such calls may 
+execute concurrently, as discussed in the next section.
+
+Evidently, the programmer should only recur to $C$ for I/O operations that are 
+assumed to be instantaneous, but never for control activities (e.g. interrupt 
+handling).
+
+\subsection{Deterministic behavior}
+\label{sec.safety.det}
+
+Providing deterministic schedulers is a selling point of many concurrent 
+designs.
+For instance, event-driven systems usually employ a \emph{FIFO} policy for 
+event handlers, while in cooperative multithreading the programmer himself 
+determines an order of execution among tasks.
+Even systems with preemptive multithreading can offer guarantees of determistic 
+execution~\cite{async.kendo}.
+
+As discussed in Section~\ref{sec.sem.small}, the small-step semantic rules for 
+parallel compositions do not specify the exact order in which trails execute, 
+leading to nondeterministic execution in \CEU.
+Note that a slight modification to rules \textbf{and-adv1}/\textbf{or-adv1} or 
+to rules \textbf{and-adv2}/\textbf{or-adv2} could force one trail to execute 
+before any advance on the other, thus enforcing a deterministic policy for the 
+scheduler.
+However, we believe that any arbitrary order should be avoided, because an 
+apparently innocuous reordering of trails would modify the semantics of the 
+program.
+
+\CEU takes a different approach and only accepts programs with deterministic 
+\emph{behavior}, regardless of nondeterministic \emph{execution} (scheduling).
+At compile time, we run a symbolic interpretation of the program that creates a 
+directed acyclic graph of all $mem$ operations that execute in a reaction 
+chain.
+If any two $mem$ operations access the same memory area and one is not an 
+ancestor of the other, then the program is nondeterministic and is refused.
+The interpretation is repeated for every possible reaction chain the program 
+can reach.
+
+In a reaction graph, nodes represent $mem$ operations and are connected through 
+directed edges representing causality in the semantics of \CEU:
+
+\begin{itemize}
+\item Sequences connect two subgraphs with an edge.
+\item Conditionals depend on $mem$ operations which the symbolic interpreter 
+cannot evaluate deterministically.
+For this reason, the whole graph is duplicated and each copy proceeds to one of 
+the conditional branches.
+\item Loops behave as sequences during runtime.
+\item Parallel compositions connect two subgraphs that are interpreted 
+independently until they rejoin.
+The subgraphs are determinate, given that small-step rules for rejoins require 
+both sides to be terminated or blocked (having nowhere to proceed).
+\item Blocked trails (awaiting, stacked, or emitting) rejoin the graph and 
+represent the termination of a small-step sequence.
+The big step that follows re-forks the graph on each awaking trail.
+Then, the process repeats.
+\end{itemize}
+
+A graph is definitely acyclic (the rules above create no cycles) and finite 
+(programs execute in bounded time as discussed in previous section).
+Also, a graph is univocally represented by the set of external and internal 
+events the program is awaiting after the symbolic interpretation.
+Therefore, the algorithm always terminates, given that each graph construction 
+runs in bounded time and the maximum number of graphs is finite (the number of 
+combinations of $await$ statements).
+
+As an example, consider the program and corresponding reaction graphs in 
+Figure~\ref{fig:det}.
+Each dashed box represents a reaction graph; each set of circles identifies a 
+graph; and each square represents a $mem$ operation.
+Starting from the program awaiting the main event $\$$, the algorithm computes 
+reaction chains to all external events (the example only uses event $A$).
+After six occurrences of event $A$, the algorithm detects two assignments in 
+parallel paths to the variable \code{v} and refuses the program at compile 
+time.
+
+\begin{figure}[t]
+%\rule{8.5cm}{0.37pt}
+\begin{minipage}[c]{0.40\linewidth}
+{\small
+\begin{verbatim}
+ input void A;
+ int v;
+ par/and do
+   loop do
+     await A; // A11
+     await A; // A12
+     v = 1;
+   end
+ with
+   loop do
+     await A; // A21
+     await A; // A22
+     await A; // A23
+     v = 2;
+   end
+ end
+\end{verbatim}
+}
+\end{minipage}
+%
+\hspace{0.0cm}
+%
+\begin{minipage}[c]{0.60\linewidth}
+\centering
+\includegraphics[width=\textwidth]{dfa.png}
+\end{minipage}
+\caption{ A nondeterministic program in \CEU and its reaction graphs.
+\label{fig:det}
+}
+\end{figure}
+
+Unfortunately, the described algorithm is exponential on the number of 
+conditionals and awaits in a program.
+Even so, it is applicable for many reasons:
+
+\begin{itemize}
+\item Embedded programs are usually small, not being affected by the 
+exponential growth.
+\item Many programs are safety-critical and must provide as much warranties as 
+    possible.
+\item The algorithm is easily parallelizable, given that reaction chains do not 
+    depend on each other.
+\item The development phase \emph{per se} does not require safety warranties, 
+reducing considerably the number of times the algorithm has to be executed.
+\end{itemize}
+
+Our experience shows that the analysis is indeed practical.
+We have been using \CEU in the context of Wireless Sensor 
+Networks~\cite{wsn.survey} and applications with around 500 lines of code 
+(generating images around 20 Kbytes of ROM) are verified in less than 5 minutes 
+(in a \emph{core-duo 2.2~GHz} laptop).
+
+An orthogonal problem to building reaction graphs is to classify $mem$ 
+operations that can be safely executed in parallel paths, avoiding false 
+positives in the analysis.
+For instance, $mem$ operations that accesses different variables can obviously 
+execute concurrently.
+However, remember from Section~\ref{sec.sem.syntax} that the $mem$ primitive 
+represents not only read \& write access to variables, but also $C$ function 
+calls.
+Moreover, \CEU also supports pointers, which are required for low-level 
+manipulation (e.g., accessing buffers from device drivers).
+
+\CEU enforces a default policy for $mem$ operations as follows:
+If a variable is written in a path, then a parallel path in the reaction graph 
+cannot read or write to that variable, nor dereference a pointer of that 
+variable type.
+An analogous policy is applied for pointers vs variables and pointers vs 
+pointers.
+Regarding $C$ calls, they cannot appear in parallel paths, as \CEU has no 
+knowledge about their side effects.
+Also, passing variables as parameters counts as read accesses to them, while 
+passing pointers counts as write accesses to those types (because functions may 
+dereference and assign to them).
+
+This policy may still yield some false positives in the analysis.
+For instance, the rule for $C$ calls is particularly restrictive, as many 
+functions can be safely called concurrently.
+Therefore, \CEU supports syntactic annotations that the programmer can use to 
+relax the policy explicitly:
+
+\begin{itemize}
+\item The \code{pure} modifier declares a $C$ function that does not cause side 
+      effects, allowing it to be called concurrently with any other function in 
+the program.
+\item The \code{det} modifier (for \emph{deterministic}) declares a pair of 
+      variables (e.g., pointers) or functions that do not affect each other, 
+allowing them to be used concurrently.
+\end{itemize}
+
+The following code illustrates \CEU annotations:
+
+{\small
+\begin{verbatim}
+  pure  _abs;             // 'abs' is side-effect free
+  det   _led1 with _led2; // 'led1' vs 'led2' is ok
+  int*  buf1, buf2;       // point to different memory
+  det   buf1 with buf2;   // 'buf1' vs 'buf2' is ok
+\end{verbatim}
+}
+
+% TODO: causal, execute/executions
+
+To summarize this section, \CEU only accepts programs with \emph{deterministic 
+behavior}, i.e., programs in which any two $mem$ operations identified as 
+incompatible (by the prevailing policy) execute only as a causal relation 
+between each other in all possible executions.
+Therefore, deterministic behavior, as we define, does not require deterministic 
+scheduling and can be statically inferred with the presented algorithm.
+
+\subsection{Bounded memory}
+\label{sec.safety.mem}
+
+\CEU favors a fine-grained use of trails, being common to use trails that await 
+a single event and terminate.
+For this reason, \CEU does not allocate per-trail stacks; instead, all locals 
+reside in fixed memory slots held in a static one-dimension vector.
+Locals for trails in parallel must coexist in memory, while statements in 
+sequence can share space.
+
+The memory in \CEU can be precisely calculated, given that programs are defined 
+as hierarchies of control-flow statements with explicit forks and joins for 
+trails.
+This contrasts with threads, which are defined detached from the program 
+hierarchy (e.g., a function defined in separate) and requires manual 
+bookkeeping (e.g. creation, synchronization, etc.), hindering automatic memory 
+prediction and management.
+
+Another concern regarding memory consumption is the runtime stack for internal 
+events.
+However, note that during runtime, a trail can only occupy one position in the 
+stack, given that an emit pauses the trail until the stack unwinds.
+Hence, in the worst case, the runtime stack size is the maximum number of 
+trails in parallel containing an \code{emit} statement, which is also trivially 
+calculated from the program text.
+
+Besides $C$ calls, which are not under control of \CEU, the other possible 
+point of failure regarding memory consumption is the queue for external events.
+High-frequency external events may fill up the queue before the program can 
+react to them, even with the guaranteed bounded execution.
+In order to support projects that must deal with event bursts, \CEU delegates 
+the queue management to the underlying system, which can provide its own policy 
+for adjusting the queue size, prioritizing events, or signaling the program 
+about overflows (e.g., through a custom event).
+
+\newpage
+\section{Advanced control mechanisms}
+\label{sec.adv}
+
+In this section, we explore the stacked execution for internal events in \CEU, 
+demonstrating how it enables advanced control-flow mechanisms in the language 
+without requiring new primitives.
+We first describe a restricted form of subroutines that is used as the basis 
+for the more elaborate mechanisms.
+
+Although the described mechanisms involve thoughtful techniques, they can be 
+easily abstracted with compile-time macros taking advantage of the structured 
+style of \CEU%
+\footnote{Our programs in \CEU make extensive use of the \emph{m4} 
+preprocessor.}.
+As an exception, the \DOFIN construct to be presented in 
+Section~\ref{sec.adv.fin} makes slight global additions to the program tree and 
+requires a dedicated syntax.
+
+\subsection{Subroutines}
+\label{sec.adv.sub}
+
+Internal events bring support for a limited form of subroutines.
+In the example that follows, we define a function \code{inc} that increments 
+the value passed as reference.
+A trail in parallel calls this function in reaction to external event \code{A}:
+ 
+{\small
+\begin{verbatim}
+ 1:  event int* inc;    // function `inc' receives an int
+ 2:  par/or do
+ 3:      loop do        // function definitions are loops
+ 4:          int* p = await inc; // that await the event
+ 5:          *p = *p + 1;        // to execute the body
+ 6:      end                     // and await again
+ 7:  with
+ 8:      int v = 1;
+ 9:      await A;
+10:      emit inc(&v);           // call `inc'
+11:      _assert(v==2);          // assert after return
+12:  end
+\end{verbatim}
+}
+
+A subroutine is represented as a loop that awaits an identifying event 
+(\code{await inc}, in line 4).
+A subroutine is called in a parallel trail through an emit on the corresponding 
+event (\code{emit inc}, in line 10).
+The parameter of a subroutine is the type of its corresponding event 
+(\code{event int* inc}, in line 1).
+
+In the example, the trails start awaiting events \code{inc} and \code{A}.
+Once the input event \code{A} occurs, the second trail awakes and invokes 
+\code{emit~inc(\&v)} to ``call'' subroutine \code{f}.
+Given the stacked execution for internal events, the calling trail pauses and 
+the subroutine awakes.
+The subroutine increments the parameter, loops, and awaits to be called again.
+Finally, the calling trail resumes and passes the assertion test, terminating 
+the program.
+
+This form of subroutines has some significant limitations:
+
+\begin{description}
+\item[\emph{Single calling}:] Further calls to a subroutine in a reaction chain 
+have no effect.
+Suppose that after the assertion test in line 11, the trail tries to call the 
+function again.
+Given that awaking $await$ statements require them to be $awaiting$ before a 
+reaction chain starts, the second call is ignored.
+Remember that events are not buffered in \CEU.
+
+\item[\emph{No recursion}:] Recursive calls to a subroutine also have no 
+effect.
+Suppose that after the increment in line 5, the subroutine tries to call 
+itself.
+As the trail cannot be awaiting itself while running, the recursive call is 
+ignored.
+
+\item[\emph{Single instance}:] Calls to a running subroutine also have no 
+effect.
+Suppose that after the increment in line 5, the subroutine awaits an event 
+(e.g. an external event \code{B}).
+While this event does not occur, the subroutine is hanged and cannot serve 
+other requests (even in other reaction chains).
+
+\item[\emph{No concurrency}:] If two trails in parallel try to call the same 
+subroutine passing a parameter, the static analysis complains about 
+nondeterminism.
+Considering the formal semantics, an $emit$ needs to be translated to 
+$mem;emit(e)$ in order to describe parameter passing (where $mem$ accesses 
+$e$).
+This way, the concurrent $mem$ operations would be detected as 
+nondeterministic.
+\end{description}
+
+\vspace{5pt}
+\CEU provides no support for standard functions for a number of reasons:
+\begin{itemize}
+\item The interaction with other \CEU control primitives is not obvious (e.g., 
+executing an $await$ or a $par/or$ inside a function).
+\item They would still be restricted in some ways given the embedded context 
+(e.g.  no recursion or closures).
+\item Programs can always recur to $C$ when absolutely necessary.
+%\item A dedicated primitive would behave just as described, being a matter of 
+%syntactic sugar.
+\end{itemize}
+
+Regardless of the limitations, this form of subroutines is widely adopted in 
+\CEU programs, given that they were designed to work with the other control 
+mechanisms.
+Keep in mind that the typical reactive organization of programs (awaiting an 
+external stimulus, reacting to it, and going back to awaiting) does not demand 
+unrestricted subroutines.
+In Section~\ref{sec.adv.frp}, we show that we can even take advantage of 
+non-recursive subroutines to properly describe mutual dependency among trails 
+in parallel.
+
+\subsection{Finalization blocks}
+\label{sec.adv.fin}
+
+Finalization blocks (as found in $Java$ and $C\#$) are often useful to handle 
+dynamic resource allocation in a structured way.
+As an example, the naive program in \CEU that follows allocates a block of 
+memory and uses it across reactions to events before freeing it:
+
+{\small
+\begin{verbatim}
+    input void A,F;
+    par/or do
+        tp* ptr = _malloc(...);
+        ... // use `ptr'
+        await A;
+        ... // use `ptr'
+        _free(ptr);
+    with
+        await F;
+    end
+    ...     // program continues
+\end{verbatim}
+}
+
+In the program, if event \code{F} occurs before \code{A}, the \code{par/or} 
+composition terminates and does not free the allocated memory, leading to a 
+leak.
+
+\CEU provides a \DOFIN construct to ensure the execution of a block of code to 
+safely release resources.
+The previous example can be rewritten as the code in the left side of
+Figure~\ref{lst:finally}, which forces the execution of the finalization block 
+after the \FIN keyword, even when the outer \code{par/or} terminates.
+
+\DOFIN constructs do not add any complexity to the semantics of \CEU, relying 
+only on the set of primitives already presented in 
+Section~\ref{sec.sem.syntax}.
+% TODO: RW
+For instance, the example is translated at compile time into the code shown in 
+the right side of the figure, as follows:
+
+\begin{enumerate}
+\item A unique global internal event \code{fin} is declared.%
+\footnote{Each \DOFIN is associated to an unique event (e.g.,  \code{fin\_1}, 
+\code{fin\_2}, etc.).}
+\item The \DOFIN is converted into a \code{par/and}.
+\item The first \code{par/and} trail emits \code{fin} on termination to invoke 
+the finalization block.
+\item The second \code{par/and} trail (the finalization block) awaits 
+\code{fin} to start executing.
+\item All trails that terminate a \code{par/or} or escape a \code{loop} emit 
+\code{fin} to also invoke the finalization block.
+\end{enumerate}
+
+We opted for a dedicated syntax given that the transformation is not 
+self-contained, affecting the global structure of programs.
+
+The cases that follow illustrate the precise behavior of finalization blocks 
+when a third trail in parallel encloses a \DOFIN construct and kills it:
+
+\begin{itemize}
+\item \emph{3rd trail terminates before the \DOFIN starts to execute.}
+In this case, 3rd trail emits the corresponding \code{fin}, which is not yet 
+being awaited for, and the finalization block does not execute.
+\item \emph{3rd trail terminates while the \DOFIN is blocked.}
+In this case, the resource has been acquired but not released.
+The corresponding \code{fin} is emitted and holds 3rd trail to awake the 
+finalization block, which safely releases the resource before resuming the 
+terminating trail.
+\item \emph{3rd trail terminates concurrently with the \DOFIN.} (Suppose they 
+react to the same event.)
+In this case, both trails emit \code{fin}, executing the finalization block 
+only once, as expected.
+\end{itemize}
+
+\begin{figure}[t]
+%\rule{8.5cm}{0.37pt}
+{\small
+\begin{minipage}[t]{0.45\linewidth}
+\begin{alltt}
+  input void A,F;
+
+  par/or do
+    \textbf{do}
+      \_t* ptr = \_malloc();
+      ... // use `ptr'
+      await A;
+      ... // use `ptr'
+
+    \textbf{finally}
+
+      \_free(ptr);
+    \textbf{end}
+  with
+    await F;
+
+  end
+\end{alltt}
+\end{minipage}
+%
+\hspace{0.5cm}
+%
+\begin{minipage}[t]{0.45\linewidth}
+\begin{alltt}
+input void A,F;
+\textbf{event void fin;}      (1)
+par/or do
+  \textbf{par/and do}          (2)
+    \_t* ptr = \_malloc();
+    ... // use `ptr'
+    await A;
+    ... // use `ptr'
+    \textbf{emit fin;}        (3)
+  \textbf{with}
+    \textbf{await fin};       (4)
+    \_free(ptr);
+  \textbf{end}
+with
+  await F;
+  \textbf{emit fin;}          (5)
+end
+\end{alltt}
+\end{minipage}
+
+\caption{ \DOFIN code and corresponding translation.
+\label{lst:finally}
+}
+}
+\end{figure}
+
+\DOFIN constructs have the restriction that finalization code cannot await 
+events, otherwise they would be killed by the terminating trail before 
+releasing the acquired resources.
+However, releasing resources does not typically involve awaiting.
+
+\subsection{Exception handling}
+\label{sec.adv.excpt}
+
+Exception handling can be provided by specialized programming language 
+constructs (e.g., \code{try-catch} blocks in Java), but also with techniques 
+using standard control-flow primitives (e.g., \code{setjmp/longjmp} in $C$).
+\CEU can naturally express different forms of exception handling without a 
+specific construct.
+
+As an illustrative example, suppose an external entity periodically writes to a 
+log file and notifies the program through the event \code{ENTRY}, which carries 
+the number of available characters to read.
+We start with the simple and straightforward specification of 
+Figure~\ref{lst:excpt1}.
+The normal flow is to open the file and wait in a loop for \code{ENTRY} 
+occurrences.
+We use a finalization block to safely close the file in the case of abrupt 
+terminations, as discussed in previous section.
+The low-level file operations \code{open} and \code{read} are defined as 
+internal events working as subroutines.
+
+\begin{figure}[t]
+%\rule{8.5cm}{0.37pt}
+{\small
+\begin{verbatim}
+ // DECLARATIONS
+ input int START;  // start handling the log
+ input int ENTRY;  // new log entry
+ _FILE*    f;      // holds a reference to the log
+ char[10] buf;     // holds the current log entry
+ event char* open; // opens filename into `f'
+ event int read;   // reads a number of bytes into `buf'
+ event int excpt;  // callback event for exceptions
+
+ // NORMAL FLOW
+ await START;
+ do
+    emit open("log.txt");
+    loop do
+       int n = await ENTRY;
+       emit read(n);              // reads into `buf'
+       _printf("log: %s\n", buf); // handles log string
+    end
+ finally
+    if f != _NULL then
+       _fclose(f);
+    end
+ end
+\end{verbatim}
+}%
+\caption{ Program to handle log entries.
+\label{lst:excpt1}
+}
+\end{figure}
+
+The operations that perform the actual low-level system calls are placed in 
+parallel and may emit exceptions through event \code{excpt}, as 
+Figure~\ref{lst:excpt2} shows.
+
+\begin{figure}[t]
+{\small
+\begin{verbatim}
+ // DECLARATIONS (as in previous code)
+ par/or do
+     // NORMAL FLOW (as in previous code)
+ with
+     loop do     // OPEN subroutine
+         char* filename = await open;
+         f = _open(filename);
+         if f == _NULL then
+             emit excpt(1);  // 1 = open exception
+         end
+     end
+ with
+     loop do     // READ subroutine
+         int n = await read;
+         if (n > 10) || (_read(f,buf,n) != n) then
+             emit excpt(2);  // 2 = read exception
+         end
+     end
+ end
+\end{verbatim}
+}%
+\caption{ Low-level operations are placed in parallel.
+\label{lst:excpt2}
+}
+\end{figure}
+
+To handle exceptions, we enclose the normal flow with another \code{par/or} to 
+terminate it on any exception thrown by file operations:
+
+{\small
+\begin{verbatim}
+ // DECLARATIONS
+ par/or do
+     par/or do
+         // NORMAL FLOW
+     with
+         await excpt;    // catch exceptions
+     end
+ with
+     // OPERATIONS       // throw exceptions
+ end
+\end{verbatim}
+}
+
+To illustrate an exception, suppose the normal flow tries to read a string and 
+fails.
+The program behaves as follows (with the stack in emphasis):
+
+{\small
+\begin{enumerate}
+\setlength{\itemsep}{0pt}
+\item Normal flow invokes the read operation (\code{emit read}) and pauses;\\
+    \emph{stack: [norm]}
+\item Read operation awakes, throws an exception (\code{emit excpt}), and 
+    pauses;\\
+    \emph{stack: [norm, read]}
+\item Exception handler (\code{await excpt}) awakes, invokes the \FIN (through 
+    implicit \code{emit fin}), and pauses;\\
+    \emph{stack: [norm, read, hdlr]}
+\item The \FIN block executes, closes the file, and terminates;\\
+    \emph{stack: [norm, read, hdlr]}
+\item The exception continuation terminates the \code{par/or}, cancelling all 
+remaining stacked continuations.\\
+    \emph{stack: []}
+\end{enumerate}
+}
+
+This mechanism for exceptions can also support resumption if the handler does 
+not terminate its surrounding \code{par/or}.
+For instance, the new handler of Figure~\ref{lst:excpt3} waits for exceptions 
+in a loop and recovers from each type of exception.
+
+\begin{figure}[t]
+{\small
+\begin{verbatim}
+ ...
+     par/or do
+         // NORMAL FLOW
+     with
+         loop do
+             int err = await excpt;  // catch exceptions
+             if err == 1 then        // open exception
+                 f = <creates a new file>
+             else/if err == 2 then   // read exception
+                 buf = <assigns a default string>
+             end
+         end
+     end
+ ...
+\end{verbatim}
+}%
+\caption{ Exception handling with resumption.
+\label{lst:excpt3}
+}
+\end{figure}
+
+Now, step 3 in the previous execution trace would not fire the \FIN block, but 
+instead, assign a default string to \code{buf}, loop and await the next 
+exception.
+Then, the exception continuation would loop and await further file operations.
+In the end, the read operation would resume as if no exceptions had occurred.
+
+Note that throughout the example, the normal flow of Figure~\ref{lst:excpt1} 
+remained unchanged, with all machinery to handle exceptions placed around it.
+Also, although we use globals in the example (\code{f} and \code{buf}), 
+remember that they are guaranteed to be safely accessed.
+
+In terms of memory usage, switching from the original normal flow (without 
+exception throws) to the last example (with recovery) incurred extra 450 bytes 
+of ROM and 24 bytes of RAM.
+
+The presented approach for exceptions has the limitation that a file operation 
+cannot be called twice within a reaction chain and that exception handlers 
+cannot await other events, which are related to the single-call and 
+single-instance property of subroutines in \CEU.
+
+\subsection{Dataflow programming}
+\label{sec.adv.frp}
+
+Reactive dataflow programming \cite{frp.survey} provides a declarative style to 
+express dependency relationships among data.
+Mutual dependency is a known issue in dataflow languages, requiring the 
+explicit placement of a specific delay operator to avoid runtime
+cycles~\cite{frtime.embedding,luagravity.sblp}.
+This solution is somewhat \emph{ad hoc} and splits an internal dependency 
+problem across two reactions to the environment.
+
+\CEU can naturally express safe mutual dependencies, making it impossible to 
+implement recursive definitions (as shown in Section~\ref{sec.safety.bounded}).
+For instance, the program in Figure~\ref{lst:ceu:frp:2} applies the temperature 
+conversion formula between Celsius and Fahrenheit, so that whenever the value 
+in one unit is set, the other is automatically recalculated (a problem proposed 
+in~\cite{frp.survey}).
+
+\begin{figure}[t]
+%\rule{8.5cm}{0.37pt}
+{\small
+\begin{verbatim}
+ 1:   event int TC, TF;
+ 2:   int tc, tf;
+ 3:   event int tc_evt, tf_evt;
+ 4:   par/or do
+ 5:      loop do                // 1st trail
+ 6:         tc = await tc_evt;
+ 7:         emit tf_evt(9 * tc / 5 + 32);
+ 8:      end
+ 9:   with
+10:      loop do                // 2nd trail
+11:         tf = await tf_evt;
+12:         emit tc_evt(5 * (tf-32) / 9);
+13:      end
+14:   with
+15:      loop do
+16:         int v = await TC;   // 3rd trail
+17:         emit tc_evt(v);
+18:         ...   // use `tc' or `tf'
+19:      end
+20:   with
+21:      loop do
+22:         int v = await TF;   // 4th trail
+23:         emit tf_evt(v);
+24:         ...   // use `tc' or `tf'
+25:      end
+26:   end
+\end{verbatim}
+}%
+\caption{ A dataflow program with mutual dependency.
+\label{lst:ceu:frp:2}
+}
+\end{figure}
+
+We first define the external events that signal changes, the variables to hold 
+the temperatures, and corresponding internal events (lines 1-3).
+Any change to a variable in the program must be signalled by an emit on the 
+corresponding internal event so that dependent variables can react.
+Then, we create two trails to await for internal changes and update the 
+dependency relations among the temperatures (lines 5-8 and 10-13).
+For instance, the first trail is a \code{loop} that waits for changes on 
+\code{tc\_evt} (line 6) and signals the conversion formula to \code{tf\_evt} 
+(line 7).
+The behavior for the second trail that awaits \code{tf\_evt} (lines 10-13) is 
+analogous.
+The third and fourth trails (lines 15-19 and 21-25) await external updates in
+loop to notify the internal changes;
+The program behaves as follows (with the stack in emphasis):
+
+{\small
+\begin{enumerate}
+\setlength{\itemsep}{0pt}
+\item 1st and 2nd trail await \code{tc\_evt} and \code{tf\_evt};\\
+    \emph{stack: []}
+\item If \code{TC} occurs, 3rd trail signals a change to \code{tc\_evt} and 
+    pauses;\\
+    \emph{stack: [3rd]}
+\item 1st trail awakes, sets \code{tc=0}, emits \code{tf\_evt}, and pauses;\\
+    \emph{stack: [3rd,1st]}
+\item 2nd trail awakes, sets \code{tf=32}, emits \code{tc\_evt}, and pauses;\\
+    \emph{stack: [3rd,1st,2nd]}
+\item no trails are awaiting \code{tc\_evt} (1st trail is paused), so 2nd trail 
+    (on top of the stack) resumes, loops, and awaits \code{tf\_evt} again;\\
+    \emph{stack: [3rd,1st]}
+\item 1st trail resumes, loops, and awaits \code{tc\_evt} again;\\
+    \emph{stack: [3rd]}
+\item 3rd trail resumes \emph{with all dependencies resolved} and awaits the 
+    next external change;\\
+    \emph{stack: []}
+\item ... (analogous behavior for further external occurrences)
+\end{enumerate}
+}
+
+The complexity of the solution is disproportionate to the problem it solves, 
+but illustrates the circular dependency issue (similar examples appear in other 
+references~\cite{frp.survey,frtime.embedding}).
+The bottom line is that dataflow techniques permit that complex dependency 
+patterns are handled internally, providing well-defined entry points to 
+application programmers (i.e. they would be required to write only the 3rd and 
+4th trails in the example).
+
+%\newpage
+\section{Related work}
+\label{sec.related}
+
+\CEU is strongly influenced by Esterel~\cite{esterel.ieee91}, but they are 
+different in the fundamental aspect of dealing with events (signals in 
+Esterel).
+For instance, the stacked execution for internal events employed by \CEU 
+greatly improves the expressiveness of the language as shown in 
+Section~\ref{sec.adv}.
+
+Furthermore, Esterel is commonly used in hardware design, and its notion of 
+time is similar to that of digital circuits, where multiple signals can be 
+active at a clock tick.
+In \CEU, instead of clock ticks, the occurrences of external events that define 
+time units.
+We believe that for software design, this approach simplifies the reasoning 
+about concurrency.
+For instance, the uniqueness of external events in \CEU is a prerequisite for 
+its static analysis that enables safe shared-memory concurrency.
+However, in Esterel, \emph{if a variable is written by some thread, then it can 
+neither be read nor be written by concurrent threads}~\cite{esterel.primer} 
+(this statement regards to the program text, not to a reaction chain).
+
+More recently, Wireless Sensor Networks (WSNs) emerged as an active research 
+area for highly constrained embedded concurrency, resulting in the development 
+of many synchronous languages~\cite{wsn.protothreads,wsn.sol,wsn.osm}.
+
+Protothreads \cite{wsn.protothreads} offer lightweight cooperative 
+multithreading for embedded systems.
+Its stackless implementation reduces memory consumption but precludes support 
+for local variables.
+\CEU also avoids the use of stacks for trails, but preserves support for locals 
+by calculating the required memory at compile time.
+
+SOL~\cite{wsn.sol} and OSM~\cite{wsn.osm} provide parallel state machines for 
+WSNs, offering a formal and mature model for programming embedded systems.
+However, the main contributions of \CEU, stacked execution for internal 
+events and safe support for shared-memory concurrency, do not directly adapt to 
+the state-machine formalism.
+
+In common among the referred works is the agreement in providing low-level 
+access (e.g., systems calls and shared-memory) and lock-free concurrency that 
+precludes race conditions on programs.
+However, they do not specify an execution order for tasks reacting to the same 
+external stimulus~\cite{esterel.primer,wsn.protothreads,wsn.osm}.
+This way, if two tasks access the same resource concurrently, even if the 
+accesses are race free, the final outcome is nondeterministic.
+As discussed in Section~\ref{sec.safety.det}, \CEU refuses programs with such 
+behavior.
+
+On the opposite side of the spectrum of concurrency models, asynchronous 
+languages for embedded systems~\cite{wsn.mantisos,arduino.occam}
+assume time independence among processes and are more appropriate for 
+applications with a low synchronization rate or for those involving
+algorithmic-intensive problems.
+
+Asynchronous models are also employed in real-time operating systems to provide 
+response predictability, typically through prioritized 
+schedulers~\cite{wsn.mantisos,wsn.oses,freertos}.
+Even though \CEU ensures bounded execution for reactions, it cannot provide 
+hard real-time warranties.
+For instance, assigning different priorities for trails would break lock-free 
+concurrency (i.e., breaking correctness is worse than breaking timeliness).
+
+Fortunately, \CEU and RTOSes are not mutually exclusive, and we can foresee a 
+scenario in which multiple \CEU programs run in different RTOS threads and 
+communicate asynchronously via external events, an architecture known as GALS 
+(\emph{globally asynchronous--locally synchronous})~\cite{rp.gals}.
+
+Concerning the described control-flow mechanisms, they heavily rely on 
+\code{par/or} compositions, which cannot be precisely defined in asynchronous 
+languages without tweaking processes with synchronization 
+mechanisms~\cite{esterel.preemption}.
+
+Finally, although \CEU provides some dataflow functionality, it is not intended 
+for data-intensive applications.
+For instance, the \emph{Functional Reactive Programming (FRP)} is a more 
+expressive paradigm with this respect, supporting the dynamic creation of 
+signals at runtime~\cite{frp.principles}.
+We believe that dataflow and imperative reactivity are complementary, but the 
+latter is more suitable for control-intensive embedded systems that must deal 
+with low-level I/O and handle explicit state.
+
+\section{Conclusion}
+\label{sec.conclusion}
+
+In this work, we presented a formal description of the control aspects of the 
+reactive programming language \CEU and discussed how to detect unsafe 
+properties of programs at compile time.
+\CEU is based on Esterel, but introduces the stacked behavior for internal 
+events and the static analysis for shared-memory concurrency.
+
+\CEU achieves a high degree of reliability for embedded systems, while also 
+embraces practical aspects, such as support for lock-free concurrency, 
+low-level access to the platform, and advanced control-flow mechanisms.
+
+We consider that providing safe shared-memory concurrency is a fundamental 
+design choice of \CEU, given that low-level I/O is indispensable in the context 
+of embedded systems (e.g. interfacing with sensors and actuators).
+
+Embedded systems are still predominantly developed in the ``bare metal'', 
+regardless of existing alternatives, probably due to the flexibility and 
+popularity of $C$.
+We believe that \CEU is an attractive alternative, given its unrestricted 
+access to $C$ and rich set of concurrent control primitives (e.g., parallel 
+compositions and internal events).
+
+%\newpage
+\bibliographystyle{abbrvnat}
+%\small{
+\bibliography{other,my}
+%}
+
+\end{document}

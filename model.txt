@@ -1,0 +1,344 @@
+= Execution model =
+
+Ceu is a concurrent language in which multiple lines of execution, known as 
+''trails'', continuously react to input events from the environment.
+The occurrence of an event awakes all trails awaiting that event, which execute 
+uninterruptedly until they terminate or await again, a process known as 
+''reaction chain''.
+
+Conceptually, a reaction chain is instantaneous, and consequently, a program in 
+Céu is always idle, waiting for input from the environment.
+For the same reason, only a single reaction chain can be active at a time.
+If a new event occurs while a reaction chain is executing, it is delayed until 
+the current reaction chain terminates.
+
+A program is decomposed into ''tracks'', which constitute the execution units 
+of Céu.
+A track is indivisible from an external perspective and is a sequence of zero 
+or more side-effect statements that execute atomically and uninterruptedly 
+during a reaction chain.
+All tracks are identified at compile time, before the program executes.
+Also, some tracks may be assigned different priorities to enforce a proper 
+execution order.
+
+''Note: do not confuse '''trails''' and '''tracks'''.
+Trails represent lines of execution created through [[#Parallel statements]].
+A trail is composed of multiple tracks.
+A trail may outlive a reaction chain.
+Tracks always run entirely during a reaction chain: they are indivisible.''
+
+There are three classes of statements in Céu regarding how they affect the 
+static arrangement of tracks:
+
+* Innocuous statements:
+The following statements are irrelevant for the arrangement of tracks:
+    * nothing
+    * do-end block
+    * all declarations ([[input events]], [[variables]], [[C blocks]] and [[annotations]])
+
+* Side-effect statements:
+The following statements perform side-effects and are actually what constitute 
+tracks:
+    * assignment
+    * call
+
+* Control statements:
+The remaining statements decompose the program into multiple tracks and perform 
+transitions on their state machines.
+    * await
+    * emit
+    * if-then-else
+    * loop
+    * all pars: (par/and, par/or, par)
+    * TODO
+
+A track can be in one of the four states ''inactive'', ''awaiting'', 
+''scheduled'', or ''running'':
+
+TODO
+
+The labeled arrows represent the possible transitions among states.
+
+The ''await'' transition is parameterized with the event to await while the 
+track is in the ''awaiting'' state.
+
+Before running, a track must be scheduled, in order to respect the different 
+priorities assigned to tracks that may run during the same reaction chain (see 
+further).
+Hence, the ''awake'' and ''spawn'' transitions are also parameterized.
+Once in the ''running'' state, a track executes its side-effect statements 
+uninterruptedly, makes transitions on other tracks, and ''halts'', transiting 
+itself to the state ''inactive''.
+It is impossible to have a track in states ''scheduled'' or ''running'' by the 
+end of a reaction chain.
+
+Every program in Céu has an implicit ''Boot'' event, which the environment 
+triggers in order to start the program from its first line in a single trail.
+
+Initially, all tracks are in the state ''inactive'', the exception being the 
+''first track'', which begins in the ''awaiting(Boot)'' state and awakes on the 
+''Boot'' event.
+
+The following program contains a single track ''trk-1'', which is initially 
+awaiting the event ''Boot'':
+
+              int v;                      // declarations are ignored
+    trk-1:    v = 1;                      // an assignment
+    trk-1:    _printf("v = %d\n", v);     // a call
+
+In the example, ''trk-1'' begins in state ''awaiting(Boot)'', and the 
+occurrence of ''Boot'' schedules it to run during the current reaction chain.
+As only ''trk-1'' is scheduled, it executes the two statements and halts, 
+transiting to state ''inactive''.
+
+== Intra steps and Priorities ==
+
+Céu enforces an execution order among tracks in two dimensions.
+
+First, it divides tracks among ''intra steps''.
+
+BY default PR_MAX and STEP
+
+
+Every time an internal event is emitted, two new steps are dynamically created 
+(in addition to the current):
+
+* a step to run all tracks awaiting the emitted event
+* a step to continue the .
+
+The following execution order among steps applies:
+
+1. All tracks scheduled for the current step execute first.
+2. All tracks scheduled
+
+If different events are emitted during the same step, the new steps are shared 
+among them.
+
+Although a reaction chain represents external time where all tracks execute 
+atomically.
+Internally some order must be respected.
+
+When emits an internal event, two new ''intra steps'' are dynamically created:
+* current + 1 lowest
+* current + 2
+
+Tracks that run within the same intra step can also be assigned different 
+priorities:
+
+    int a=1, b=1;
+    par/or do
+        a = a + 1       // higher priority
+    with
+        b = b + 1       // higher priority
+    end
+    return a + b;       // lower priority
+
+Céu has the notion of ''external time'' as
+
+ and ''internal time''.
+External time.
+A single reaction chain is associated with a single external time.
+
+As a reaction chain is conceptually instantaneous, ''internal time'' cannot be 
+perceived
+
+== Control statements ==
+
+The control statements of Céu decompose a program into tracks and assign them 
+different priorities.
+
+Every statement, being it a control or side-effect statement, contains an 
+''entry track'', which we refer as ''trk-1''; and an ''exit track'', which we 
+refer as ''trk-n''.
+For a side-effect statement, ''trk-1'' and ''trk-n'' are the same (the 
+statement itself).
+
+A block is a sequence of statements where the exit track of each statement is 
+concatenated to the entry track of the next statement into a single track.
+Hence, a block also contains an entry track, pointing to the entry track of its 
+first statement, and an exit track, pointing to the exit track of its last 
+statement.
+
+The following subsections describe how each control statement is decomposed.
+
+=== await ===
+
+The <tt>await</tt> statement is split in two tracks, ''trk-1'' and ''trk-n''.
+In the end of ''trk-1'', before halting itself, it also applies the transition 
+''await(e)'' on ''trk-n'' (where ''e'' is the event referred in the statement):
+
+    trk-1:    ...
+              await e;  // [halt on trk-1] [await(e) on trk-n]
+    trk-n:    ...
+
+''trk-1'' is initially in state ''awaiting'', while ''trk-n'' is in state 
+''inactive''.
+After ''trk-1'' executes, it halts itself to state ''inactive'' and makes the 
+transition ''await(A)'' on ''trk-n''.
+
+=== emit ===
+
+An <tt>emit</tt> in a internal event ''e'' awakes all tracks in state 
+''await(e)''.
+The <tt>emit</tt> statement is split in two tracks, ''trk-1'' and ''trk-n''.
+In the end of ''trk-1'', the following transitions applies:
+
+* ''halt'' on ''trk-1''
+* ''awake(step+2)'' on all tracks in state ''await(e)''
+* ''spawn(step+1)'' on ''trk-n''
+
+Note that ''trk-n'' only executes after all awaking tracks execute, as 
+explained in [[#XXX]].
+
+    trk-1:    ...
+              emit v;   // [halt on trk-1] [awake all await(e)] [schedule trk-n]
+    trk-n:    ...
+
+''TODO: Note: emit on time and input are not XXX''
+
+=== if-then-else ===
+
+An <tt>if-then-else</tt> statement is split in four parts:
+
+* ''trk-1'' holds the condition expression and is the entry track for the statement
+* ''blk-t'' holds all tracks in the ''true'' block
+* ''blk-f'' holds all tracks in the ''false'' block
+* ''trk-n'' holds the join point and is the exit track for the statement
+
+    trk-1:    ...
+    trk-1:    if cond then
+    blk-t:        ...
+              else
+    blk-f:        ...
+              end
+    trk-n:    ...
+
+In the end of ''trk-1'', depending on the evaluation of the condition, the 
+transition ''spawn'' is applied to one of ''blk-t'' or ''blk-f'' entry tracks.
+In the end of ''blk-t'' and ''blk-f'' the transition ''spawn'' is applied to 
+''trk-n''.
+
+=== loop ===
+
+A <tt>loop</tt> statement is split in three parts:
+
+* ''trk-1'' the entry track
+* ''blk-b'' holds all tracks in the loop body
+* ''trk-n'' the exit track
+
+''trk-1'' applies the transition ''spawn'' on the body entry track to start the 
+loop.
+The body exit track applies the transition ''spawn'' on the body entry point, 
+connecting the loop.
+
+    trk-1:    ...
+              loop do
+    blk-b:        ...
+              end
+    trk-n:    ...
+
+The loop exit track is only reached by the <tt>break</tt> statements in the 
+loop body.
+
+=== break ===
+
+A <tt>break</tt> statement has a single track that applies the transition 
+''spawn(step,depth)'' on the innermost loop exit track.
+''depth'' is the level of the innermost nested [[#par/or]], [[#loop]], and 
+[[#Block|block assignment]] statements the <tt>break</tt> refers to.
+''step'' is the current intra step.
+
+As an example, the <tt>_printf</tt> always executes before the loop escapes due 
+to its higher priority.
+
+    loop do
+        par/and do
+            break
+        with
+            _printf("hi there!");
+        end
+    end
+
+It is possible that multiple breaks escape the same loop during the same 
+reaction chain.
+In this case, the second ''spawn'' is ignored, as the exit track of the loop is 
+already scheduled.
+
+=== Parallel statements ===
+
+The <tt>par/and</tt>, <tt>par/or</tt>, and <tt>par</tt> statements have a 
+similar behavior with respect to the allocation of tracks:
+
+* ''trk-1'' is the entry track
+* ''blk-1'' is the first block in parallel
+* ''blk-2'' is the second block in parallel
+* ''trk-n'' is exit track
+
+''Note: a composition with three or more blocks in parallel, can be easily 
+transformed in multiple compositions with two blocks each.''
+
+''trk-1'' applies the transition ''spawn'' on the entry points of ''blk-1'' and 
+''blk-2''.
+
+* par/and
+
+In a <tt>par/and</tt> a ''spawn'' transition on ''trk-n'' is applied after the 
+exit tracks of both ''blk-1'' and ''blk-2'' are reached.
+
+* par/or
+
+In a <tt>par/or</tt> a ''spawn(step,depth)'' transition on ''trk-n'' is applied 
+after any exit tracks of ''blk-1'' and ''blk-2'' is reached''.
+''depth'' is the level of the innermost nested [[#par/or]], [[#loop]], and 
+[[#Block assignment]] statements the <tt>break</tt> refers to.
+''step'' is the current intra step.
+
+It is possible that both exit tracks of the blocks in parallel execute during 
+the same reaction chain.
+In this case, the second ''spawn'' is ignored, as the <tt>par/or</tt> ''trk-n'' 
+is already scheduled.
+
+* par
+
+In a <tt>par</tt> statement, the ''trk-n'' exit track is never spawned (see 
+[[#Constraints]]).
+
+=== return ===
+
+== Constraints ==
+
+==========
+
+From the TODO transitions in the diagram, only the ''awake'' transition is 
+performed by the environment on the occurrence of an input event.
+All other transitions are performed by control statements, as the following 
+subsections depict.
+
+While in the .
+
+queue for execution
+
+When a track transits to the ''running'' state, it is immediately placed in the 
+priority queue for execution.
+The execution
+
+Control statements perform actions on tracks associated to transitions on their 
+state machines.
+The figure below shows the state diagram for a track:
+
+multiple tracks may run and the order is irrelevant
+
+Céu does not specify the order each trail executes, that is, the runtime may 
+serialize or parallelize their execution.
+
+* parallel:
+  coexist, not run
+
+* concurrent:
+  coexist and run
+
+==========
+
+<!------------------------------------------------------------>
+<!------------------------------------------------------------>
+

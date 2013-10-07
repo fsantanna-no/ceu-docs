@@ -1,0 +1,23 @@
+input int Radio_startDone;
+input int Radio_sendDone;
+
+_Radio_start();
+await Radio_startDone;
+
+_message_t msg;
+
+u32 dt;
+int i = 0;
+
+loop do
+    _Radio_send(_AM_BROADCAST_ADDR, &msg, sizeof<u8>);
+    await Radio_sendDone;
+    _Leds_led0Toggle();
+    if i == 3000 then
+        break;
+    end
+    i = i + 1;
+end
+
+_Leds_set(7);
+return 0;

@@ -1,0 +1,836 @@
+- BUG 0: int v = v+1; // (old v)
+- BUG 1: semantica nova p/ brk vs or
+- BUG 2: glitches across emits
+- BUG 3: o reaction graph nao deveria fazer rejoin no fim de STs
+
+-- TODO: Block -> Scope
+-- TODO: tirar BlockI
+
+--[=[
+Test { [[
+type tree = void Leaf
+         or <int and tree and tree> Node;
+
+tree t = Node(5,
+            Node(1,Leaf,Leaf),
+            Node(3,Leaf,
+                Node(4,Leaf,Leaf)));
+
+tree t = [ 5, [1,void,void],
+             [3,void, [4,void,void] ] ];
+
+case t of
+    Node [v,l,r] do
+    end
+    Leaf do
+    end
+end
+
+type node = f32 or int or char*;
+node n = "oioioi";
+
+case n of
+    <f32> f do
+    end
+    <int> i do
+    end
+    <char*> c do
+    end
+end
+
+type week = void Monday
+         or void Tuesday
+]=]
+
+- OPTS. tree
+        tree_chk
+        debug
+        nlst/ntrk (news)
+
+- SITE:
+    - WIKI:
+        - m4 (manual)
+            - lexical, @, /*{-{*/
+            - command line
+        - sub links #ex_*
+        - int* a, *b; deterministic a with b;
+            - e na implementacao isso funciona?
+        - loop i, 10 do
+        - deterministic annotations -> outside C integration
+    - TRY:
+        - ex_000
+            - auto_arrange
+
+- FACEIS:
+    - var keyword
+    - nothing
+    - tp_word -> tp_int
+
+- FIN
+    - verificar se break interno nao escapa geral
+
+- loops
+    loop i, 10      -> i=0;i<10;i++
+    loop i=1, 10, 2 -> i=1;i<=10;i+=2
+    loop evt        -> loop do await evt; ... end   (otim de lst noremove?)
+    continue?
+
+- DS c/ orgs
+
+- pause
+    - async support
+    - testes muitos testes
+    - syntaxe
+
+- ANA
+    - reaproveitamento de estados
+    - algoritmo distribuido
+    - ifs s/ await/brk/etc nao precisam ser replicados
+
+- run_tests.lua
+    - gravar mem/tempo total
+
+- assert p/ limites de tceu_off
+
+- return s/ exp
+
+- analise descobrir tceu_lbl/_off
+
+- seq deve obrigar anterior a ser to_reach=true
+    (pelo menos se for um loop)
+
+- t.run = false
+    - o q fazer? ja q ana nao roda
+
+- economia para $vars nao usadas
+    - $ret
+
+- detectar nd_esc/ nd_flw
+
+- remover RADIO_receive_empty
+- remover Radio/Serial start_on=1 (nesc/tinyos.c)
+
+- simul, time divisor (para simular +rapido/lento)
+
+- benchmark: memset vs varios =
+
+- ast quebrar awaitT grande em multiplos await
+
+- depths disperdicam muiotos niveis (ex. do-block)
+
+- ceu_go_async nunca termina, posso usar o retorno para saber se ainda ha 
+  trabalho
+
+- EmitExt c/ varios parametros
+
+- remover int
+
+- tceu_mem,tceu_lbl forcados p/ u16
+
+- aplicacao:
+    - PIC contando segundos
+    - Arduino contando segundos
+        - c/ programa complicado que envia segundos p/ broadcast
+    - Arduino s/ Ceu contando segundos
+
+- ANDS/FINS -> env.lua?
+    - FINS (no loop/set/or mais externo)
+    - ANDS (no proprio par/and)
+
+- nondet entre funcao e C symbol
+    par/or do
+        _f()
+    with
+        _a = 1;
+    end
+
+- emit em void VS emit em void?
+    - finally pode precisar:
+
+-- finally vs exceptions (acho q ok!)
+-- emit dentro de finally (acho q ok!)
+
+- finally:
+    - necessita que do espere
+    - incompatibilidade com excessoes?
+    - deveria alterar a arvore para gerar emits de escape
+    - emit int dentro do finally deveria poder?
+    - INEFS:
+        - crio eventos como globais, quando eles poderiam estar no bloco mais 
+          externo que escapa o finally
+        - todos os pred_prio emitem o evento, quando apenas os que tem a 
+          possibilidade de tê-lo ativo deveriam fazê-lo
+        - o código é repetido em sequencia com o bloco, isso só é necessário 
+          quando o bloco pode não esperar
+
+dnl SORTING NETWORK
+dnl DOCUMENT: tol. a falhas
+dnl send sempre pode falhar
+dnl     - ignorar retorno do send E sendDone
+dnl         nao servem p/ nada ja que colisoes sempre acontecem
+dnl link em apenas uma direcao
+dnl sem buffers
+dnl     - nos ligados a muitos nos
+dnl     - pouca memoria
+dnl     - mesmo assim pode haver overflow
+
+- testar a = do ret end que nao retorna (halt)
+
+- ERROR on (TODO: set)
+    for i=1, 10 do
+        i = 1
+    end
+
+- TIME_base, permitir avancar no tempo s/ esperar recuperacao
+
+- n_vars em seq
+    - usar MAX em C
+
+- Type em ast que verifica existencia de tipo
+    - so qdo tiver orgs
+
+- safety:
+    - unitialized vars em DFA
+    - check arrays bounds (array tipo especial)
+
+- array como tipo especial:
+    array int a [10];
+
+- return; // no exp
+- return from orgs
+
+===
+    - VM TinyOS + Arduiino
+    - Compilacao via web
+    - blog ship / mario
+        - forum ou reddit
+
+- LINKS / filters para org:
+    Ta a;
+    a.evt -> evt
+    evt -> a.evt
+
+- tp bool obrigar ?
+    bool isEvt? = false;
+
+- await(X)
+    - problemas na analise, procurar todo='...' em tests.lua
+
+- C API carry all ceu state!!
+    - igual a lua
+    - ceu_init retorna estado inicial
+    - ceu_go_boot(&C,...)
+    - ceu_go_event(&C,...)
+
+- ceu_go_event -> ceu_go_input
+
+- ceu_go_async deveria retornar o event que deu emit, em vez de dar tail call
+
+- input int A with priority X;
+
+- voltar p/ 1 msg por nd_acc, em vez de acumular por stmts
+    - os testes ficam confusos sem isso
+    - o proprio uso da linguagem fica prejudicado, acho
+
+- verificar acessos à C
+    - eu considero todos como ponteiros em chamadas de fcs
+
+- AwaitT: await (exp) -> await (exp)s(exp)ms
+    - microsegundos? (mms)
+
+- BLOG post
+    - difs para erlang
+    par do
+        await 10s;
+        _printf()
+    with
+        await 10s;
+        _printf()
+    end
+    - ceunao eh sincrono p/ ter shared mem: ele tem shared mem por ser sincrono 
+      que é a semantica correta!
+
+- nd_esc virar 2 coisas:
+    - nd_flw, quando quem dá o escape está em paralelo com o emit
+    - esc, quando quem dá o escape é originado do emit
+
+- Para um SetBlock cujo bloco é um async, verificar que todos os seus caminhos 
+  levam a um emit (implementar isso em props.lua)
+    - toReach também
+
+- `isAwk´ em `q_rem´
+- trig_wo (voltar)
+- linha 1988 de tests.lua, graphviz error
+- queue: tentar unificar timer prio em 32 bits e usar criterio unico (menos 
+  ROM)
+- nfa: q -> trk (unificar q em trk)
+
+- SDL / async I/O
+
+- Async: leitura de vars ser deterministic
+
+- ACC -> exps.lua
+
+- TinyOS
+    - tirar TimerAsync p/ ver ROM/RAM
+    - bug no envio (radio_echo)
+
+- int vs void* em 64 bits
+
+
+------------------------
+
+function check_depth (e1, e2)
+    return true
+    -- TODO: exagero testar isso nesse momento
+    --local ptr = _C.deref(e2.tp)
+    --return (not ptr) or _C.ext(e2.tp) or (not e2.fst) or
+            --e1.fst.var.blk.depth >= e2.fst.var.blk.depth
+end
+
+- REFS
+Test { [[
+int a, b;
+par/or do
+    _f4(&a);
+with
+    int v = b;
+end;
+return 0;
+]],
+    nd_acc = 1,     -- TODO: ref
+    --run = 0,
+}
+
+- avaliar se o par/or tb deveria dar erro p/ depths diffs:
+    - em que apps isso é necessario e correto?
+    - caso possa dar erro, nao preciso mais de prios diferentes?
+Test { [[
+par/or do
+    par/or do
+        nothing;
+    with
+        nothing;
+    end
+with
+    nothing;
+end
+return 0;
+]],
+    run = 0,
+}
+do return end
+
+
+
+- should_reach -> must_reach
+
+- gcc -fno-strict-aliasing
+
+- ASR/WRN
+    - nao passar `me' ?
+    - precisa ln[2] ?
+
+- impedir atribuicao de ponteiros de inner p/ outer
+    - documentar como mais uma "safety property"
+    - outer nao pode apontar para inner var
+        - procurar TODO: depth em tests.lua
+
+- constantes 0b*
+
+- structs: acesso a campos diferentes:
+    - procurar em tests.lua "TODO: struct"
+
+- tests.lua:
+    - run = false nao testa nada!
+
+-- Testar ASYNC termination c/ prints?
+    -- ou com side-effects em C
+
+- timers que matam outros c/ mesmo tempo
+    - procurar em tests.lua: TODO: timer kills timer
+
+- set block (must_reach=true)
+
+- loop qL ou qO must be reach (loop do par/ever end ou loop do loop do end end)
+
+- obrigar async terminar
+
+- garantir TIME_MAX em runtime
+
+- DFA: quando dois estados sao iguais?
+
+- timers que comecam em intls diferentes
+    - procurar TODO: intl em tests.lua
+
+- run_tests: guardar exemplo c/ maior num de estados
+    - tests parser='string com erro'
+    - eliminar run_errs
+
+- bug do "int a=return a", 'a' nao deveria estar definido
+
+- optim: removi otimizacao de async loop qd nao triga
+    - pode dar goto ini, em vez de inserir na fila
+
+- code.lua: return dar jump qd nao ha prios
+
+- non-null references
+- track de var nao init
+
+- arrays (tenho apenas vetores)
+- array init: a[2] = {1,2}
+- aceitar:
+    await arr       -- acorda qd qq um eh gerado
+    await arr[i]    -- concorre com arr[j]
+
+- dfa levar em conta que nada acontece antes de Start.
+- alloc de variaveis esta global! (precisa dos tamanhos dos tipos)
+
+- tipos: u8,s8, etc
+    - tudo a partir desses
+
+- ast.iter sao lentos, closures
+
+=== FLOW
+Concurrent nature + Control primitives:
+
+par/or: one side terminates
+loop:   break
+set:    return
+emit:   sub-time
+
+== PAR
+
+// Ex.1: OK!
+//  opt1: stmt1||stmt2 ; stmt3
+par/or do           -- par/and
+    stmt1;
+with
+    stmt2;
+end;
+stmt3;
+
+// RULE 1: if stmt1 and stmt2 have the same priority, altough the order is not 
+// sepecified, if one executes, the other must also execute.
+
+== LOOP(PAR)
+== SET(PAR)
+
+// Ex.2: OK!
+//  opt1: stmt1||stmt2 ; stmt4;
+loop do
+    par/or do       -- par/and
+        stmt1;
+        break1;
+    with
+        stmt2;
+        break2;
+    end;
+    stmt3;
+end;
+stmt4;
+
+// Because of rule 1, stmt[12] execute, and also break[12], both breaks go to 
+// the same place, so, no ambiguity.
+
+// Ex.3: NO!
+//  opt1: stmt1||stmt2 ; stmt3 ; stmt4;
+//  opt2: stmt1||stmt2 ; stmt4;
+int a =
+    par/or do
+        stmt1;
+        return 1;
+    with
+        stmt2;
+        -- implicity join
+    end;
+    stmt3;
+end;
+stmt4;
+
+// Because of rule 1, stmt[12] execute. However JOIN vs return1 go to different 
+// places.
+
+// Ex.4: OK!
+//  opt1: stmt1||stmt2 ; stmt4;
+loop do
+    par/and do
+        stmt1;
+        break1;
+    with
+        stmt2;
+    end;
+    stmt3;
+end;
+stmt4;
+
+== SET(LOOP(PAR))
+== LOOP(SET(PAR))
+
+// Ex.5: NO!
+//  opt1: stmt1||stmt2||stmt3 ; stmt4 ; stmt5 ; stmt6
+//  opt2: stmt1||stmt2||stmt3 ; stmt5 ; stmt6
+//  opt2: stmt1||stmt2||stmt3 ; stmt6
+int a =
+    loop do
+        par/or do
+            stmt1;
+            return 1;
+        with
+            stmt2;
+            break;
+        with
+            stmt3;
+        end;
+        stmt4;
+    end;
+    stmt5;
+end;
+stmt6;
+
+=== OPTIM
+- Pars para nao dar o qtrack nas subs so funciona com subs que nao tem loops. 
+  alguma hora vai valer a pena o (grande) trabalho
+- (~A)*, nao zerar/setar o gate, manter sempre=lbl
+
+- sdl
+- emulador tinyos
+
+- TEMPO
+- Duvida: intl em nd_access (procurar por "TODO: intl")
+- ajeitar NFA/DFA, radio_send apresenta comportamento errado: (~a;~1||~1)
+Eventos com phys iguais
+    - extl diferentes, postar timer de 0, eles sao de fato em tempos diffs
+    - intl diferentes, devem executar no mesmo ciclo, mas com _intl_ ja 
+      diferentes (postar em Q_INTRA)
+
+- ponteiros para objetos estaticos sao restritos ao mesmo escopo
+<T*>c
+{
+    <T> a
+    <T*> b
+    &a => b -- ok
+    &a => c -- nao
+    b  => c -- nao
+    c  => b -- ok
+}
+
+- &susp_evt{(~A;a->inc=>a)*}
+- diff de memorias para voltar no tempo de acordo c/ eventos externos
+    - filtrar por tipo de evento: ex. nao quero evt de tempo que so piscam o 
+      cursor
+    - filtrar por area da memoria: ex. nao quero evt que mudam o estado do 
+      cursor piscante
+    - tb funciona por tempo fisico, basta cada evento ter um timestamp
+    - abrir a aplicacao "externamente", podendo esta tb voltar no tempo, etc..
+    - Operating System support for undo
+
+INEF:
+    - IF DFA
+    - gates de escape
+    - teste se track já está em Q_TRACKS
+
+- database / redis
+- assert de limities de prios
+- integral precisa de float ou sistema de coordenadas com escala maior
+- alinhamento dos REGS
+
+---
+
+Simulacao visual p/ nesc, distancias entre motes, % entrega baseado na dist, 
+range dos motes, grupos, roteamento, etc
+- % para eventos de start/send/etc
+
+---
+
+    * Divide and Recycle: Types and Compilation for a Hybrid Synchronous Language
+          o Albert Benveniste, Timothy Bourke, Benoît Caillaud and Marc Pouzet
+    * Static Analysis of Synchronous Programs in Signal for Efficient Design of Multi-Clocked Embedded Systems
+          o Abdoulaye Gamatié and Laure Gonnord
+    * Synchronous Programming of Device Drivers for Global Resource Control in Embedded Operating Systems
+          o Nicolas Berthier, Florence Maraninchi and Laurent Mounier
+
+---
+
+    EVIDENCIAS p/ defender CEU:
+    * numero de loops c/ await
+    * numero de loops dentro de ParOrs
+    * numero de ESCAPES
+    * pegar um progr 3o e ver numero de nd_acc
+    * numero de ~> em sequencia
+
+---
+
+    SIMUL:
+    * testes de I/O sao faceis: compilers, algorithms, etc
+    * programas reativos nao sao:
+        - simulacao da entrada
+        - e principalmente timing dessas entradas
+        - qual o output?
+        - ainda precisa de um parser para isso
+
+---
+
+    EDITOR:
+    * com bolas representando Par/Seq e código dentro
+    * zoom out/in
+    * possibilidade de criar testes para "bolas" que compilaria em separado
+    * cores nas bolas, termina, non-det, etc
+    * qual das bolas em par ocupa mais espaco, é mais lenta, etc
+
+---
+
+    ORGANISMS:
+    * somente top-level e antes de qq def de var
+        - assim nao tera acesso a vars de fora
+        - nao precisa de NFA para eles, ja que acessam locais, apenas
+        - (workaround) Org(~a) || glb~>org.a
+    * dynamic:
+        - cria: <T> => ptr_a  (<T*> ptr_a)
+        - garbage collection:
+            - qdo refs=0 E o org esta esperando apenas ints
+            - OU qdo o bloco termina (orgs nao podem ter ptrs em escopos outer)
+            - errado:
+                - qd o org termina: ainda posso querer acessar o seu estado
+                - qd refs=0: o org ainda pode ragir a eventos externos e gerar 
+                  evts externos
+
+---        
+
+- sintaxe sugere que o custo dos Pars é baixo, o que é verdade.
+
+- ESTEREL:
+    - diferenca entre ints/exts (tempo intra-evento, assim como `;')
+    - tempo natural
+    - variaveis
+    - principal diferenca: variaveis/internal-events (eles sao quase sinonimos)
+    - A necessidade de um TICK impoe uma limitacao de economia de energia.
+
+--- TP system
+<T> { ... }  -- def global
+(... ; <T>a)
+- inicia um T
+- a nao é ponteiro
+- nao existe &a
+- a nao colide com ninguem
+- memoria estatica
+vs
+(... ; <T*> x)
+- incia um T
+- x é um ponteiro
+- x colide c/ todos os outros <T*>, mas nao com "a"
+- memória dinâmica
+
+- ambos morrem apenas qd o () termina
+- nao precisa de coleta
+- mesmo acesso a.k e x.k
+
+-- (1,2) => arr[]
+-- testes de conversao de arity
+
+-- testes de memoria utilizada total!
+-- ponto maximo de memoria (analise do progr.)
+
+-- Logo / site c/ ceus do rio
+
+-- Opcao atual eh qq acesso a array dar erro nd_acc, inclusive p/ const diferentes
+
+-- PRIOS erradas
+Test { [[(((((((1||2)))))))]],
+	run = 1,
+}
+
+-- NOMES:
+-- * céu, praia, gol, zico, olé, raça, forró, scy, ipa, copa, synk, chic
+-- * syn, sinonimo cachaca/pinga/cara, boa/boazinha
+
+-- * vars readonly (ex. string)
+-- * unused vars / unused space in arr (unifica pelos regs)
+-- * contar o # de instrs por estado (prever FPS)
+-- * nfa_hide
+-- * trigger de array?
+-- * async: colocar em tracks c/ >prio
+-- * PRIO em DFA/NFA esta bugado
+-- * PRIO em code com buracos
+-- * sempre copio os Params ao passar para ParXXX, mesmo quando eles
+--   nao utilizam.
+-- * reaprovietamento de codigo (ex.state machine de NCL)
+--   call/return p/ partes instantaneas
+-- * Arrays:
+--      - "..." => s[]
+--      - recusar "a" qd este for array?
+--      - Seguranca:
+--          - check bounds
+--          - memcpy limitado
+--          - a[(-1)]
+--          - a1[i:j] => a2[k:l]   ==> erro pois ambos sao abertos!
+--          - evt p/ out_of_bounds
+--      - DFA: por enquanto, mesmo acessos a indices diferentes da erro nd_acc
+
+-- Tempo
+-- Nao pode ser definido em termos de um loop com ~dt, pois o DFA detecta nao
+-- determinismos.
+-- Exemplo tb ~B;~1 || ~A;~(a), nao nd_value
+
+-- Paralelo vs Concorrente
+-- paralelismo é um problema de implementacao
+-- concorrencia de semantica
+-- O fato de dois pedacos *poderem* executar ao mesmo tempo
+-- (concorrencia) nao significa que eles *devem*/vao (paralelismo),
+-- mais do que isso tb significa que a ordem nao eh predeterminada (pode ser
+-- antes, depois, ou ao mesmo tempo, ou com interleave)
+-- Boa maneira de explicar que em (~A;x) || (~B;y), x e y *nao podem*
+-- executar ao mesmo tempo (semantica/concorrencia)
+
+-- Sobre duas coisas nao acontecerem ao mesmo tempo:
+-- * impossivel o hardware detectar isso
+-- * impossivel o homeme detectar isso (se 2 coisas aconteceram com
+--   10^-10s de diferenca, o ser humano nao seria capaz de reconhecer.
+-- A solucao deve ser feita por software.
+-- (0=>a ; 0=>b ; ( (~A=>a) && (~B=>b) || ~200 ) ; (a?$~>a && b?$~>b))
+-- Sempre que A e B acontecerem em 200ms, a e b sao gerados ao mesmo tempo
+-- TODO: colocar um teste abaixo
+
+-- Alocacao de memoria eh por tres motivos:
+-- virtualizacao de recursos
+-- numeros vars
+-- economia de memoria: dados devem viver por periodo curto:
+--   * em C precisa dar o free na hora certa
+--   * garbage collection resolve isso
+--   * gvt resolve de graca!
+
+-- documentar que @{} eh equiv a sleep(0):
+--   * muito rapido (o async entra na fila e a primeira instr ja eh o join)
+--   * mesma semantica, pois o evento eh unico, nao vai dar prob de nd_acc
+
+-- break multiplo
+-- ideia: blocos que nao tem como ser disparados enquanto executam ("funcao")
+--        em outras palavras, awaits que sempre tem que estar esperando certos 
+--        triggers. Macros inteligentes que copiam o codigo se necessario
+--        (quando dois awaits ocorrerem ao mesmo tempo)
+--[[
+exemplo com aggreg nesC
+syntaxe de loop
+]]
+
+-- OPR ainda nao pode retornar mais de 1 valor
+-- alocacao de regs em paralelo:
+--   { ...; ~a; ... } || { ...; ~a; ... } (nao eh otimo nesse caso)
+
+]==]
+
+ParAnd structure:
+
+10  spawn   1
+11  close   1
+12  spawn   2
+13  close   2
+14  spawn   3
+15  close   3
+16  halt
+17  ...
+..  SUB1
+27  ...
+28  open    1
+29  jmp     &45
+30  ...
+..  SUB2
+37  ...
+38  open    2
+39  jmp     &45
+40  ...
+..  SUB3
+44  open    3
+45  true    1   2
+46  halt
+47  true    2   2
+48  halt
+49  true    3   2
+50  halt
+51  movr    2   ret[2]
+52  movr    3   ret[3]
+
+Telemídia:
+
+"Céu: A low-level synchronous reactive language"
+- No semantic dependencies on other complex languages (scheme, java, scala)
+    - no additional complexities ambiguity of non-formal languages
+    - no loose of focus on synchronization issues
+- Supports both data and control centric models
+- Simple but not simpler
+- Useful / WSN
+- Semantic framework for other languages (Esterel, FRP, NCL)
+    - incremental parser
+    - VM
+    - Portable
+    - Simple implementation
+    - Untiered implementation / main.c
+- No data abstractions
+    - simple type system
+    - again, focus on synchronization issues
+- Semantic for time
+    - only language I know of
+- Preconceito contra representacoes em programas, e nao somente dados
+    (XML). Mas progr=dado+semantica
+    - Como a semantica é simples e focada, ha um ganho obvio.
+    - Muito dificil representar multimedia por dados (e.g. grafo).
+    - Uma apresentacao multimedia é um porgrama por natureza
+    - O programa é menor, inclusive
+    - comparar FSM vs bytecode
+- Simulacao
+    - entrar apos 40, ~>40 (= ~>1 ... ~>1)
+    - preciso simular pois a linguagem possui efeitos colaterais
+
+- Telemídia
+"Uma linguagem para sincronismo "baixo-nivel"
+
+1. Modelagem
+    - FSM temporal (ex.passo a passo que chegue a isso)
+    - espacial
+
+2. Analise Temporal
+    - semantica da linguage (precisa vs C)
+    - ciclos glitches
+    - determinismo
+    - visualizacao da FSM
+    - identificar midias que estao em running ao mesmo tempo
+    - midias unreach
+    - etc
+
+3. Seguranca
+    - execucao bounded
+    - memoria
+        - s/ mallocs
+        - s/ pilha
+
+4. Desempenho
+    - compilado p/ C puro
+    - somente 1 thread
+    - testar 1000 imgs / tracar grafico do consumo
+
+5. Simulação
+    - ~10 ; @{1~>A}
+    - c/ a propria linguagem / no proprio programa
+
+Céu: A low-level synchronous language
+- imple simples
+- no semantic deps on other complex langs (scheme/scala/java)
+    - complexity / ambiguity / loose of focus
+- support data and control models
+- simple but not simpler
+- useful / WSNs
+- semantic framework for other langus (esterel, frp, ncl)
+    - vm
+    - protable
+- no data abstraction
+    - simple type system (focus on execution semantics)
+    - but how to do OO
+- semantic for time
+    - only lang I know of
+- preconceito contra representacao em programas e nao somente dados (XML)
+    - mas prog=dado+semantica
+    - como a sem é simples e focada, ha um ganho obvio
+    - muito dificil representar MM por dados (ex.grafo)
+    - uma apres MM é um progr por natureza
+    - o programa é mais sucinto
+    - comparar FSM c/ bytecode

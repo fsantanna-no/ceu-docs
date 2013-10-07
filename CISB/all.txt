@@ -1,0 +1,143 @@
+
+=====================
+ ABSTRACT
+=====================
+
+This research plan is one of the requisites for the "Ciências sem Fronteiras" 
+sandwich doctorate program and presents the research to be developed during the 
+period of six months at Chalmers University in Gothenburg, Sweden.
+The proponent for the XXX, Francisco Figueiredo Goytacaz Sant'Anna, is a PhD 
+student in the Computer Science doctorate program at PUC-Rio (CAPES 7).
+
+This document specifies the objectives and detailed schedule of activities for 
+the project named ``A Reactive Programming Language for Wireless Sensor 
+Networks'', which aims to XXX.
+
+Our proposal is in the scope of Computer Sciences and Information Technologies, 
+a priority area of the ``Ciências sem Fronteiras'' interchange program.
+
+=====================
+ INTRODUCTION
+=====================
+
+Wireless sensor networks (WSNs) are composed of a large number of tiny devices 
+(known as "motes") capable of sensing the environment and communicating among 
+them.
+WSNs are usually employed to continuously monitor physical phenomena in large 
+or unreachable areas, such as wildfire in forests and air temperature in 
+buildings.
+Each mote features limited processing capabilities, a short-range radio link, 
+and one or more sensors (e.g. light and temperature). [1]
+
+Software for WSNs is usually developed in the C programming language, and the 
+addition of a real-time operating system may extend it with preemptive and/or 
+cooperative multithreading. [2,3]
+However, concurrency in C requires a low-level exercise related to scheduling, 
+synchronizing, and the life cycle of activities (i.e. creating and destroying 
+threads).
+
+Concurrency in C also lacks safety warranties, given that they are susceptible 
+to unbounded execution, race conditions and deadlocks.
+However, safety is an important aspect in WSNs, as motes have scarce resources, 
+are deployed in remote locations, and must run for long periods without human 
+intervention.
+
+Our research at PUC-Rio constitutes the development of Céu, a new programming 
+language targeted at highly constrained embedded systems, which incorporates 
+features found in dataflow and imperative reactive languages [4,5].
+Céu supports concurrent lines of execution that run in time steps and are 
+allowed to share variables.
+However, the synchronous and static nature of Céu enables a compile time 
+analysis that can enforce deterministic and memory-safe programs, offering a 
+high-level and safe alternative to the predominating C based multithreaded 
+systems.
+The Céu compiler generates code comparable to handcrafted C programs in terms 
+of size and portability.
+
+Our research is part of a broader project called "Cidades Inteligentes" (Smart 
+Cities), which involves 20 Brazilian Universities, an investment in the order 
+of 1 million dollars, and aims to build an infrastructure of instrumentation, 
+computation and communication for Wireless Sensor Networks.
+
+
+=====================
+ PROPOSAL
+=====================
+
+The Distributed Computing and Systems group in Chalmers has an open PhD 
+Sandwich position in the area of "Secure Wireless Sensor Networks".
+The research proposal includes programming languages technologies as one of its 
+focus: "The Security group has developed the link between two areas of computer 
+science: programming languages and computer security. The group explores 
+security models and enforcement mechanisms based on programming-language 
+technology".
+
+We believe that WSNs are an ideal scenario to employ our research on Céu, given 
+it is targeted at highly constrained embedded systems, offering fine-grained 
+concurrency, low memory overhead, and safety warranties.
+
+During the period of the sandwich doctorate, our goal is to evaluate the 
+applicability of Céu in the context of WSNs and secure communications.
+We intend to use the language in real-world applications under development in 
+the research group.
+It is part of the process to evolve the language together with the DCS group 
+when identifying new requirements not currently addressed.
+
+The DCS group in Chalmers also does research in many programming languages 
+topics aligned with the programming model of Céu, which can also be explored 
+during the PhD Sandwich.
+The following list was extracted from the DCS website:
+
+  * Investigate new techniques for achieving high parallelism and 
+    fault-tolerance in distributed or parallel software.
+  * Evaluate the performance of non-blocking synchronization in parallel 
+    application and system software.
+  * Non-blocking/fine-grain synchronization, aiming at increased parallelism, 
+    fault-tolerance, avoiding convoy effects and priority inversion.
+  * Enhancing performance by cooperative scheduling-and-synchronization.
+	
+We already have a working implementation of the language, which has been used 
+in three different hands-on courses in WSNs.
+Last year we presented a short paper in the doctoral colloquium of SenSys, a 
+conference dedicated to WSNs. [6]
+
+
+=====================
+ FURTHER INFORMATION
+=====================
+
+= PUC-Rio (applicant) =
+
+Francisco Sant'Anna (MSc and third year PhD student):
+http://www.lua.inf.puc-rio.br/~francisco
+
+Prof. Noemi Rodrigues (supervisor):
+http://www.inf.puc-rio.br/~noemi
+
+Prof. Roberto Ierusalimschy (supervisor):
+http://www.inf.puc-rio.br/~roberto
+
+Céu website:
+http://www.ceu-lang.org
+
+= Chalmers =
+
+Distributed Computing and Systems: 
+http://www.cse.chalmers.se/research/group/dcs/
+
+= References =
+
+[1] I. F. Akyildiz, et.al. Wireless Sensor Networks: A Survey. Computer 
+    Networks, 38(4):393-422, 2002.
+[2] A. Dunkels, B. Gronvall, and T. Voigt. Contiki - A Lightweight and Flexible 
+    Operating System for Tiny Networked Sensors. In Proceedings of the 29th
+    Annual IEEE International Conference on Local Computer Networks, pages 
+    455-462.
+[3] J. Hill, et.al. System Architecture Directions for Networked Sensors.  
+    SIGPLAN Notices, 35:93-104, November 2000.
+[4] N. Halbwachs, et.al. The Synchronous Data-flow Programming Language LUSTRE.  
+    Proceedings of the IEEE, 79:1305-1320, September 1991.
+[5] G. Berry and G. Gonthier. The ESTEREL Synchronous Programming Language: 
+    Design, Semantics, Implementation. Science of Computer Programming,
+    19(2):87-152, 1992.
+[6] SenSys'11 DC short paper. http://www.cse.ust.hk/~lingu/SenSys11DC/Santanna.pdf

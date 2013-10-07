@@ -1,0 +1,5 @@
+PROC main ()
+  PAR
+    blink (11 , 400)
+    blink (12 , 1000)
+:

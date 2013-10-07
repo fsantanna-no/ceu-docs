@@ -1,0 +1,10 @@
+Contents:
+
+Blink/      TinyOS blink app
+Sense/      TinyOS sense app
+simpleCS/   TinyOS client and server apps
+
+blink.ceu   Ceu blink app
+sense.ceu   Ceu sense app
+client.ceu  Ceu client app
+server.ceu  Ceu server app

@@ -1,0 +1,91 @@
+======
+Regarding the insertion of new timers (e.g. `await 10ms´).
+
+=== qins_timer
+
+Timers need to hold 3 values:
+1- the expiring "wall clock" time
+2- the "external time" (_extl_) they were fired
+3- the gate that holds if the timer is active or not
+
+The first value is obvious.
+
+The second value is required to cope with the following example:
+par do
+    await A;
+    await 10ms;
+    v = 1;
+with
+    await 10ms;
+    v = 2;
+end
+
+The value for `v´ must be 2, even if `A´ takes zero wall-clock time to happen.
+The example is deterministic.
+Everytime a new external event, such as `A´, occurs, we increment this _extl_ 
+global.
+
+Gates are used to track which await ports are active:
+
+par/or do
+    await 10ms;
+with
+    await A;
+end
+
+If `A´ happens, the expiring timer must be ignored.
+The gate holds a pointer to the continuation of the timer, if it is NULL, means 
+that it is inactive.
+
+======
+
+I do use a global TIME_now to hold the current wall-clock time.
+
+======
+
+Finally, I need to PERCORRER the heap to avoid problems with cancelled timers 
+inside loops.
+I have to find a better solution for this (it is marked with a `TODO´ :)
+
+loop do
+    par/or do
+        await 10ms;
+    with
+        await A;
+    end
+end
+
+If `A´ happens before the timer, the timer will be inserted again with an 
+active gate.
+However the previous timer will expire and run the continuation before the 
+correct timer.
+I need to remove the previous.
+
+======
+
+Regarding expiring timers:
+
+ceu_go_time
+(now re-implemented with a goto, I had problems with tail calls not being 
+optimized)
+
+I have to `spawn´ continuation and not `goto´ because multiple timers may 
+expired concurrently.
+
+`TIME_late´
+a = await 10ms
+
+Sometimes multiple timers that should not execute together expire together:
+TIME_expired
+The example before mentioned:
+par do
+    await A;
+    await 10ms;
+    v = 2;
+with
+    await 10ms;
+    v = 1;
+end
+They may expire together, but v=2 must execute in the next reaction.
+
+

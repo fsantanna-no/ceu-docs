@@ -1,0 +1,416 @@
+\documentclass[pdftex,12pt,a4paper]{article}
+
+\usepackage[portuguese]{babel}
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage[pdftex]{graphicx}
+\usepackage{url}
+\usepackage{verbatim}
+\newcommand{\CEU}{\textsc{C\'{e}u}}
+
+%\renewcommand{\chaptername}{}
+%\renewcommand{\thesection}{}
+%\setcounter{chapter}{-1}
+
+\begin{document}
+
+\begin{titlepage}
+\begin{center}
+
+\textsc{\LARGE PUC--Rio}\\[1.5cm]
+\textsc{\Large Plano de Trabalho}\\[0.8cm]
+
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+\HRule \\[0.4cm]
+{ \huge \bfseries Uma Linguagem de Programação Reativa para Redes de Sensores 
+sem Fio}\\[0.4cm]
+\HRule \\[1.5cm]
+
+\begin{minipage}{0.4\textwidth}
+\begin{flushleft} \large
+\emph{Autor:}\\
+Francisco Sant'Anna
+\end{flushleft}
+\end{minipage}
+\begin{minipage}{0.4\textwidth}
+\begin{flushright} \large
+\emph{Orientadores:} \\
+Roberto Ierusalimschy \\
+Noemi Rodriguez
+\end{flushright}
+\end{minipage}
+
+\vfill
+{\large \today}
+\end{center}
+\end{titlepage}
+
+\tableofcontents
+
+\newpage
+\section{Resumo}
+
+Este documento descreve o plano de trabalho para o doutorado sanduíche na 
+Chalmers University (Gotemburgo, Suécia) com duração de seis meses pelo 
+programa de intercâmbio ``Ciência sem Fronteiras''.
+O proponente, Francisco Figueiredo Goytacaz Sant'Anna, é aluno de doutorado de 
+ciência da computação da PUC--Rio (CAPES 7).
+
+O plano de trabalho proposto é entitulado ``Uma Linguagem de Programação 
+Reativa para Redes de Sensores sem Fio'' e descreve como a linguagem de 
+programação sendo desenvolvida pelo proponente pode ser usada no contexto de 
+Redes de Sensores sem Fio.
+
+A pesquisa proposta está no escopo de Ciência da Computação e Sistemas de 
+Informação, que são áreas prioritárias do programa de intercâmbio ``Ciência sem 
+Fronteiras''.
+
+\section{Introdução}
+
+As Redes de Sensores sem Fio (RSSF) são compostas por um grande número de 
+pequenos dispositivos (conhecidos como \emph{motes}) capazes de sentir o 
+ambiente e se
+comunicarem mutuamente.
+RSSF são usualmente aplicadas no monitoramento contínuo de fenômenos físicos em 
+grandes áreas (possivelmente inacessíveis), tais como incêndios em florestas e 
+deformações em grandes construções.
+Cada mote possui processamento limitado, comunicação via rádio de curto alcance 
+e um ou mais sensores físicos. \cite{wsn.survey}
+
+Software para RSSF é tipicamente desenvolvido na linguagem de programação C, e 
+a adição de um sistema operacional de tempo real pode estender a linguagem com 
+suporte a \emph{multithreading} cooperativo ou preemptivo 
+\cite{wsn.contiki,wsn.tos}.
+No entanto, o uso de concorrência em C requer um exercício de muito baixo nível 
+relacionado ao escalonamento, sincronização, e ciclo de vida das atividades 
+(i.e. criação e destruição de \emph{threads}).
+
+Concorrência em C também não dispõe de garantias de segurança, uma vez que os 
+programas são suscetíveis a condições de corrida, \emph{deadlocks}, e execução 
+por tempo indeterminado.
+No entanto, segurança é um aspecto importante em RSSF, já que os motes dispõem 
+de recursos escassos, são implantados em lugares inacessíveis e devem funcionar 
+por longos períodos sem a intervenção humana.
+
+A linguagem de programação ``\CEU{}''%
+\footnote{\url{http://www.ceu-lang.org/}}
+está sendo desenvolvida como parte do doutorado do proponente e incorpora 
+características encontradas em linguagens reativas imperativas e de 
+\emph{dataflow} \cite{lustre.ieee91, esterel.design}, tendo como principal alvo 
+os sistemas embarcados de recursos limitados, tais como os encontrados em RSSF.
+
+\CEU{} provê suporte para linhas de execução concorrentes que executam 
+sincronamente, passo a passo, e podem compartilhar variáveis.
+Mesmo assim, a natureza síncrona e estática de \CEU{} permite uma análise em 
+tempo de compilação que garante que os programas executem de maneira 
+determinística.
+Dessa maneira, \CEU{} oferece um alternativa segura e de mais alto nível que os 
+sistemas predominantes baseados em C.
+O compilador de \CEU{} gera código comparável a programas escritos manualmente 
+em C em termos de tamanho e portabilidade.
+No final do ano passado apresentamos um artigo resumido sobre \CEU{} em um 
+colóquio de doutorandos na conferência SenSys \cite{ceu.sensys11}.
+
+A nossa pesquisa na PUC--Rio com \CEU{} é parte de um projeto maior chamado 
+``Cidades Inteligentes'', que envolve 20 universidades brasileiras, um 
+investimento da ordem de 1 milhão de dólares, e que busca construir uma 
+infra-estrutura de instrumentação, computação e comunicação para Redes de 
+Sensores sem Fio.
+
+\section{Objetivos}
+\label{sec.objetivos}
+
+O principal objetivo da pesquisa durante o período do doutorado sanduíche na 
+universidade de Chalmers é avaliar a aplicabilidade de \CEU{} no contexto de 
+Redes de Sensores sem Fio.
+A avaliação envolve medidas quantitativas (e.g. uso de memória e bateria) e 
+também qualitativas (e.g. facilidade de programação).
+
+O grupo ``Distributed Computing and Systems (DCS)'' da universidade de Chalmers 
+está oferecendo uma oportunidade de doutorado sanduíche na área de ``Secure 
+Wireless Sensor Networks''.
+A vaga descreve tecnologias de linguagens de programação como um dos focos:
+
+\emph{``The Security group has developed the link between two areas of computer 
+science: programming languages and computer security.
+The group explores security models and enforcement mechanisms based on 
+programming-language technology''}.
+
+Acreditamos que RSSF sejam um cenário ideal para aplicar a linguagem \CEU{}, 
+uma vez que esta é direcionada a sistemas embarcados com poucos recursos, 
+oferecendo concorrência de baixa granularidade, baixo consumo de memória e 
+garantias de segurança.
+
+Um grande número de serviços de software é necessário para construir aplicações 
+de RSSF.
+A técnica de compor serviços em cima de outros serviços e, ao mesmo tempo, 
+separá-los em unidades tratáveis individualmente é uma abordagem poderosa que a 
+linguagem \CEU{} fomenta através de suas composições sequenciais e em paralelo.
+
+Como um exemplo ilustrativo, as aplicações de RSSF tipicamente executam versões 
+customizadas de algoritmos distribuídos clássicos, tais como descobrimento de 
+topologia, eleição de líder e \emph{broadcast} de mensagens \cite{ds.andrews}.
+Esses algoritmos provêem suporte para a construção de aplicações mais complexas 
+e devem executar continuamente em paralelo com a aplicação na qual estão 
+contidos, uma vez que RSSF são suscetíveis a falhas intermitentes.
+
+O grupo de RSSF da PUC--Rio está desenvolvendo uma biblioteca de algoritmos 
+distribuídos em \CEU{}.
+Dessa maneira, os algoritmos podem ser facilmente compostos em paralelo com as 
+aplicações finais.
+A linguagem detecta qualquer inconsistência nas composições, tais como acessos 
+concorrentes às variáveis compartilhadas e também códigos inalcançáveis.
+A mesma idéia pode ser estendida para os algoritmos usados e/ou desenvolvidos 
+pelo grupo DCS de Chalmers (e.g. \cite{dcs.clusters}).
+
+Também estamos investigando formas de descrever uma abordagem para sintetizar 
+representações de dados para programas concorrentes.
+É parte do processo evoluir \CEU{} com o grupo DCS conforme forem sendo
+identificados novos requisitos não endereçados pela linguagem.
+
+O grupo DCS também desenvolve pesquisa em diversos tópicos de linguagens de 
+programação que também podem ser explorados durante o doutorado sanduíche 
+\cite{dcs.lock_free,dcs.transactional,dcs.manycore}.
+O grupo possui uma biblioteca de construções concorrentes 
+(NOBLE\footnote{\url{http://www.cse.chalmers.se/research/group/noble/}}) e uma 
+plataforma de testes para aplicações paralelas e concorrentes 
+(GULLIVER\footnote{\url{http://www.chalmers.se/hosted/gulliver-en/}}).
+
+A lista a seguir enumera outros tópicos de pesquisa alinhados com o modelo de 
+programação de \CEU{} que foi retirado da homepage do DCS%
+\footnote{\url{http://www.cse.chalmers.se/research/group/dcs/}}:
+
+\begin{itemize}
+\item Investigar novas técnicas para atingir paralelismo e tolerância a falhas 
+      em sistemas paralelos e distribuídos.
+\item Avaliar a performance de técnicas não bloqueantes para sincronização de 
+      sistemas concorrentes.
+\item Aumentar a performance através de sistemas de escalonamento e 
+      sincronização cooperativo.
+\end{itemize}
+
+\section{Metodologia}
+\label{sec.metodologia}
+
+Durante o período do doutorado sanduíche, nossa intenção é desenvolver 
+aplicações de RSSF em \CEU{} com alto grau de complexidade para avaliar a 
+aplicabilidade da linguagem como uma alternativa às tecnologias atualmente 
+empregadas.
+Iremos utilizar métricas quantitativas e qualitativas para os aspectos 
+relevantes em RSSF, comparando implementações de aplicações em \CEU{} e em 
+outras linguagens (e.g. C).
+
+Um trabalho existente específico para RSSF \cite{wsn.comparison} mede a 
+performance de diferentes linguagens de programação com respeito ao consumo de 
+memória, energia e responsividade de aplicações.
+Esses aspectos são de extrema importância, uma vez que, nesse contexto, os 
+recursos de memória, bateria e processador são bastante limitados.
+
+Também consideramos segurança como um aspecto essencial, dado que os motes 
+devem executar por longos períodos sem a intervenção humana.
+Finalmente, um alto grau de expressividade também é desejado em qualquer 
+linguagem de programação.
+
+Segue a lista de aspectos que iremos avaliar durante a nossa pesquisa:
+
+\begin{itemize}
+\item Consumo de memória: quanto as aplicações consomem em termos de memória 
+      volátil (RAM) e não volátil (ROM).
+\item Consumo de bateria: quanto de energia as aplicações consomem.
+\item Responsividade: com que velocidade as aplicações respondem a requisições 
+      de alta prioridade (e.g. mensagens de rádio).
+\item Segurança: que garantias de segurança a linguagem oferece automaticamente 
+      (e.g. acesso seguro a varáveis compartilhadas).
+\item Expressividade: com que facilidade as aplicações podem ser desenvolvidas 
+      e mantidas.
+\end{itemize}
+
+Os primeiros três aspectos podem ser facilmente avaliados com medidas 
+quantitativas~\cite{wsn.comparison}, enquanto que os dois últimos requerem uma 
+análise qualitativa mais cuidadosa.
+
+Inicialmente, iremos portar para \CEU{} um conjunto de aplicações desenvolvidas 
+em outras linguagens a fim de comparar os aspectos quantitativos.
+Esses resultados irão servir como feedback imediato para otimizar o código 
+final gerado pela linguagem.
+
+Em seguida, iremos focar em aplicações novas de maior complexidade, de modo a 
+avaliar os aspectos qualitativos.
+Ainda assim, poderemos usar adicionalmente medidas quantitativas, tais como o 
+número total de linhas de código escritas como indicativo para expressividade.
+
+Na linha qualitativa, a análise estática de \CEU{} em programas de maior 
+complexidade poderá trazer um grande ganho de segurança para os programas 
+gerados, uma vez que ela irá detectar automaticamente acessos concorrentes em 
+partes que o programador não espera que haja conflitos.
+Além disso, o uso recorrente de códigos pré-existentes através das composições 
+de \CEU{} poderá se mostrar um facilitador para o desenvolvimento de aplicações 
+complexas.
+
+\section{Cronograma}
+
+O plano de trabalho define um cronograma de seis meses a ser seguido durante o 
+período do doutorado sanduíche:
+
+\begin{table}[h]
+\begin{center}
+\begin{tabular}{ | l | c | c | c | c | c | c | }
+\hline
+    & M1 & M2 & M3 & M4 & M5 & M6 \\ \hline
+
+Apresentações de \CEU{}                  & X &   & X &   & X &   \\ \hline
+Desenvolvimento de aplicações existentes & X & X &   &   &   &   \\ \hline
+Avanços e melhorias em \CEU{}            &   & x & X & x & X &   \\ \hline
+Desenvolvimento de novas aplicações      &   &   & X & X & X &   \\ \hline
+Elaboração de um Artigo                  &   &   &   &   & X & X \\ \hline
+Outras atividades                        & x & x & x & x & x & x \\ \hline
+\end{tabular}
+\linebreak
+{\small(células com \textbf{X} indicam muita atividade / células com \textbf{x} 
+indicam pouca atividade)}
+\end{center}
+\end{table}
+
+\begin{description}
+
+\item[Meses 1--2:]
+
+Durante o primeiro mês, iremos apresentar a linguagem \CEU{} ao grupo de 
+pesquisa, focando em sua aplicabilidade a RSSF e em como ela difere de sistemas 
+existentes.
+Em seguida, com o suporte do grupo, iremos escolher aplicações de RSSF 
+existentes para serem portadas para \CEU{}, a fim de avaliar os aspectos 
+quantitativos nas diferentes implementações.
+
+\item[Meses 3--4:]
+
+Após o trabalho em aplicações existentes, iremos coletar os resultados para 
+serem usados em melhorias na linguagem.
+Também iremos apresentar os resultados ao grupo e discutir o desenvolvimento de 
+novas aplicações com maior complexidade para os meses seguintes.
+
+\item[Meses 5--6:]
+
+Ao redor do quinto mês, esperamos ter desenvolvido aplicações mais complexas 
+que possibilitem uma análise mais qualitativa da linguagem \CEU{}, conforme 
+discutido na Seção~\ref{sec.metodologia}.
+
+Tanto a análise quantitativa, quanto a análise qualitativa serão usadas na 
+elaboração de um artigo a ser submetido a uma conferência de RSSF.
+
+\item[Meses 1--6:]
+
+Também existe o interesse em explorar outras áreas de pesquisa do grupo DCS 
+relacionadas a linguagens de programação e sistemas distribuídos, conforme 
+discutido na Seção~\ref{sec.objetivos}.
+Esse trabalho pode ser desempenhado ao longo de todo o período do sanduíche, 
+com menor intensidade.
+
+\end{description}
+
+\section{Resultados Esperados}
+
+Ao final do período do doutorado sanduíche, esperamos que \CEU{} tenha se 
+tornado uma alternativa real para o desenvolvimento de aplicações complexas 
+para Redes de Sensores sem Fio.
+
+Como a nossa metodologia envolve inicialmente uma análise quantitativa 
+facilmente mensurável, conseguiremos um feedback quase que imediato para 
+evoluir a linguagem em pouco tempo.
+Ao fim do processo e com o desenvolvimento de aplicações mais complexas, 
+teremos um maior embasamento para defender a aplicabilidade de \CEU{} (ou não 
+aplicabilidade) no contexto de RSSF.
+
+Os experimentos iniciais já mostram um resultado competitivo de \CEU{} em 
+termos de uso de memória e responsividade de aplicações~\cite{ceu.sensys11}.
+Com um uso mais difundido da linguagem durante o doutorado sanduíche, 
+disponibilizaremos de mais recursos para estendermos os experimentos.
+
+Também esperamos que o grupo de RSSF da PUC--Rio tire proveito do intercâmbio 
+com o grupo do Chalmers e vice-e-versa.
+Os grupos compartilham os mesmos interesses acadêmicos e uma relação contínua 
+pode ser iniciada com essa primeira experiência.
+Como exemplo de colaboração, a biblioteca de algoritmos distribuídos para RSSF 
+sendo desenvolvida pelo grupo da PUC--Rio pode ser mais facilmente adotada pelo 
+grupo de Chalmers através do intercâmbio a ser promovido.
+
+Por fim, pretendemos escrever um artigo completo para uma conferência de RSSF 
+em conjunto com o grupo de Chalmers descrevendo os resultados de \CEU{} durante 
+o período do sanduíche.
+Dentre as possíveis conferências, destacamos duas:
+
+\begin{itemize}
+\item ACM/IEEE Conference on Information Processing in Sensor Networks (IPSN).  
+      Submission deadline expected to October 2012.
+\item ACM Conference on Embedded Networked Sensor Systems (SenSys).
+      Submission deadline expected to April 2013.
+\end{itemize}
+
+\section{Pesquisadores Envolvidos}
+
+\begin{description}
+
+\item[PUC--Rio (proponentes):]
+\hspace{1mm}
+
+\textbf{Francisco Sant'Anna} possui graduação em Engenharia de Computação 
+(2003) e mestrado em Informática (2009) pela PUC--Rio.
+Atualmente é aluno bolsista CNPq do terceiro ano de doutorado do Departamento 
+de Informática da PUC--Rio.
+O título de sua tese é ``\CEU{}: Embedded, Safe, and Reactive Programming'', 
+que deve ser concluída em setembro de 2013.
+Seus orientadores são o Prof. Roberto Ierusalimschy e a Prof. Noemi Rodriguez, 
+que atuam, respectivamente, na área de linguagens de programação e sistemas 
+distribuídos.
+
+Homepage:
+\url{http://www.lua.inf.puc-rio.br/~francisco/}
+
+Lattes:
+\url{http://lattes.cnpq.br/0077491494754494}
+
+\textbf{Roberto Ierusalimschy} é professor associado do Departamento de 
+Informática da PUC-Rio e bolsista de produtividade do CNPq (nível 1C).
+Roberto é também o principal projetista da linguagem de programação Lua e autor 
+do livro Programming in Lua \cite{lua.pil}.
+Suas atividades de pesquisa têm como foco linguagens de programação, 
+principalmente linguagens de script e de domínio específico.
+
+Homepage:
+\url{http://www.inf.puc-rio.br/~roberto/}
+
+Lattes:
+\url{http://lattes.cnpq.br/0427692772445368}
+
+\textbf{Noemi Rodriguez} é professora associada do Departamento de Informática 
+da PUC--Rio e bolsista de produtividade do CNPq (nível 2).
+Seus interesses se concentram em programação distribuída e concorrente, com 
+ênfase no papel que linguagens de programação têm a desempenhar nessa área.
+Noemi também coordena o grupo de Redes de Sensores sem Fio da PUC--Rio.
+
+Homepage:
+\url{http://www.inf.puc-rio.br/~noemi/}
+
+Lattes:
+\url{http://lattes.cnpq.br/4933326132948063}
+
+\item[Chalmers University (destino):]
+\hspace{1mm}
+
+\textbf{Philippas Tsigas} é professor do ``Department of Computing Science and 
+Engineering'' na universidade de Chalmers, onde coordena o laboratório 
+``Distributed Computing and Systems Research Group''.
+Seus interesses de pesquisa se concentram na área de sistemas paralelos e 
+distribuídos.
+
+Homepage:
+\url{http://www.cse.chalmers.se/~tsigas/index.html}
+
+\end{description}
+
+\bibliographystyle{acm}
+\bibliography{other,my}
+
+\end{document}
+

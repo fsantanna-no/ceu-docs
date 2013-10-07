@@ -1,0 +1,363 @@
+\section{Evaluation}
+\label{sec.evaluation}
+
+to be done
+
+\begin{comment}
+
+ROM RAM loc tok bytes gzipped
+
+quantitative
+memory, expressiveness
+
+qualitative
+battery, safety, expressiveness, responsiveness
+
+Similar evaluation in a previous work \cite{wsn.sol}.
+
+We make extensive use of macros.
+\CEU{} has a good composibility XXX.
+
+\footnote{
+In order to adapt, as they are imported with a single \texttt{include} macro 
+call.
+Shared without any changes or specific copies into the source, just a call to 
+the \texttt{include} macro of the \emph{m4 processor}.
+}
+
+(~A || ~B || ~C || ~D)
+qual o tamanho disso??
+automatic bookkeeping (creation/start/destroy)/ stack / shceduling
+in one line, create/spawn 4 threads, once any of them terminate, kill the 
+others
+expressive and also efficient, theres no int representation of a "thread" with 
+an structure with state in CEU
+just set flags/gates
+
+coarse grained vs fine grained multithreading
+
+auto book allows fine-graining
+
+ceu is stackless
+
+also syntactic support
+
+SOL, heavy syntax, what about additional space(stack)
+
+falar de composibility
+
+comparacao como artigo HIGH
+incluir linhas de codigo
+
+bateria, uso de memoria igual, a nao ser que o programa perca tempo em coisas 
+que os outros nao fazem
+em relacao a threads, no context switch
+mesmo para os asyncs nao ha context switch
+no run-time overheads due to threads creation/destroy, just set flags
+
+bateria / memory ==> code size
+expressiveness   ==> parallel compositions, FRP - lines of code
+responsiveness   ==> no loops, asyncs
+safety           ==> temporal analysis, no memory alloc, no stack, determinism, 
+no loops
+
+memory / total / ram
+
+battery
+
+processing
+\end{comment}
+
+\section{Related Work}
+\label{sec.related}
+
+Our work is strongly influenced by the Esterel language \cite{esterel.design}.
+In Esterel, time is defined as discrete reaction steps in which multiple 
+external signals (events in \CEU) can be queried on their presence status.
+This semantics has more proximity with that of electronic circuits, but 
+simultaneous events inhibits the temporal analysis of \CEU.
+For instance, variable manipulation in Esterel is restricted to a single 
+process (trail in \CEU).
+
+%- no support for internal events
+%- no simulation, no async in Esterel
+%- no physical time, semantic tighted to the rest of the language (no first 
+%class)
+%esterel sample-driven vs event-driven
+
+The \emph{Functional Reactive Programming (FRP)} paradigm brings dataflow 
+behavior to functional languages \cite{frp.principles}.
+Our implementation borrowed some ideas from FrTime \cite{frp.embedding}, such 
+as the push-driven evaluation, glitch prevention, and an insight to avoid tight 
+cycles and preserve determinism (not covered in this paper).
+However, the dynamic nature of FRP does not match the efficiency and safety 
+requirements of WSNs.
+
+to be done
+
+\begin{comment}
+
+%Although essentially functional, FRP systems must be adapted to stateful 
+%libraries \cite{frtime.crossing}, e.g., GUI toolkits, embedded systems, in 
+%order to interact with the real world.
+%However, FRP lacks , probably due its dynamic nature.
+
+Regarding languages specific for WSNs, the event-driven nesC \cite{wsn.nesc} 
+provides a simple yet flexible concurrent model featuring detection of possible 
+race conditions at compile time.
+However, this detection is limited to asynchronous code.
+Two synchronous tasks that react to the same event and access the same data do 
+not characterize a race condition, as they are always serialized.
+This serialization is often arbitrary (e.g. respecting the order they are 
+scheduled) and might hide non-deterministic programs.
+
+TinyThread supports both, but mantaining the models, that is, additional 
+complexity, sum of both.
+not only both are less expressive, but also diff phil.
+
+if a system supports both
+differents in philosophy
+diff in impl.
+do not match a single syntax
+are not tought together
+
+Finally, SOL \cite{} is a Esterel-like language targeting WSNs.
+Also, Table~\ref{} and we show equivalent results for ROM and RAM.
+
+nondet for Pars/raises
+
+%Some works, external tools that infers the amount of memory.
+%In event-driven programming it is common to xxx state on the heap, and no 
+%warranty about enough space and correct management is supported.
+%Multithreading uses the stack, being better about leaks, however again, no 
+%warranty about stack overflows is given.
+%Also, if the creation of threads is dynamic, then not enough memory error.
+
+%related.
+%protothreads no stack space
+    %Protothreads \cite{wsn.protothreads} provides stackless cooperative 
+    %concurrency, but lacks local variables support.
+
+% related work do contiki
+
+more complex: proto vs threads.
+
+coarse grained multitasking.
+manual preemption.
+no syntax support (function calls);
+
+Finally, except for our previous work with LuaGravity \cite{luagravity.sblp} 
+(which is out of scope for WSNs), we have no knowledge of other attempts to 
+unify the control \& dataflow styles of synchronous languages.
+
+\end{comment}
+
+\section{Conclusion}
+\label{sec.conclsion}
+
+to be done
+
+\begin{comment}
+SAFENESS
+in ceu the programmer cannot write synchronous bad code as it cannot write a 
+loop w/o an await
+hence the code must be async and will run with low priority
+
+We presented \CEU{}, a language that aims to unify the apparently antagonistic 
+imperative and declarative reactive programming models.
+\CEU{} is based on a small synchronous kernel similar to Esterel that provides 
+reaction to events and imperative constructs such as sequences, parallel 
+blocks, and assignments.
+
+In order to support FRP in \CEU{}, we added \emph{internal events} as a 
+communication mechanism among \CEU's trails.
+Internal events follow a stack execution policy, forcing that a sequence of 
+triggers reacts backwards.
+This semantics is required to respect an arbitrary level of dependency among 
+behaviors, and also avoids cyclic dependencies for mutually dependent 
+behaviors.
+
+The coexistence of concurrency (through parallel blocks) and global assignments 
+requires a rigorous temporal analysis in programs to detect any possible kind 
+of non-determinism.
+\CEU{} transforms programs into deterministic finite automatons to detect the 
+three kinds of non-determinism that can arise in programs: concurrent access to 
+variables, par/or terminations and loop escapes.
+
+Besides supporting both imperative and declarative reactive programming models, 
+\CEU{} also brings novel features to the scene: native support for 
+\emph{physical time} and simulation from within the own programs.
+
+phys time also SAFE+express
+
+% TODO: claim recurrent use justifies
+We believe that the recurrent use of physical time in reactive applications 
+already justifies providing a convenient syntax for timing purposes.
+Furthermore, native support is also \emph{desired} to avoid dealing explicitly 
+with \emph{residual delta times} from expired timers; and is \emph{required} to 
+allow extending \CEU's temporal analysis to include physical time.
+
+% TODO: claim
+By allowing asynchronous blocks to enqueue inputs to the synchronous side, it
+is easy to simulate and test the execution of \CEU{} programs with total 
+control and accuracy with regard to the order of input events and passage of 
+time: all is done with the same language and inside the own programs.
+
+By providing ways to simulate programs in the own language, \CEU{} becomes 
+self-sustaining, not depending on any environment to run its programs.
+Simulation is an important aspect for cross-compiling development as in WSNs, 
+where software simulators are usually adopted and are never accurate, nor 
+platform independent.
+
+% TODO: application
+%We have been using \CEU{} to develop applications for wireless sensor 
+%networks.
+
+% TODO: future work
+
+We believe that, safety and predictability is more important than flexibility 
+in the context of WSNs applications.
+Robust operation.
+
+emerging multi-core, good field for ceu, as asyncs do not share data
+
+It is interesting to note that, although apparently antagonistic, both 
+imperative and dataflow styles are, at the lowest-level, grounded on a TODO 
+synchronous event-driven subsystem.
+In other words, event-driven programming can be used as an implementation 
+technique for both styles \cite{my.luagravity}.
+\end{comment}
+
+\begin{comment}
+\section{Runtime \& Implementation}
+\label{sec.runtime}
+
+- VM
+
+    * altura / glitches / prios
+    * break or, falar em exec model
+    * TODO: altura
+      the runtime must always respect sequentiality.
+      just as the runtime respects the order of subexpression in a seq block, 
+xxx.
+
+Runs to completion, any order, even with interleave.
+\CEU{} is by default fully deterministic (but see Section~\ref{det} and 
+\ref{nondet}).
+The only requirement is that no other event is handled in the meantime.
+
+Although most of \CEU's expressions have a clear semantics by themselves, XXX. 
+
+TODO:PAROR prop chain, nd.
+If two or more subexpressions terminate during the same time unit (see TODO), 
+the SplitOr block returns \texttt{nd}, a s (even if they return the same 
+value).
+If multiple events happen during the same propagation chain, the expression 
+returns $nd$.
+
+This way, the order in which the lines of execution run is irrelevant to the 
+XXX of the program.
+Possible to create safe deterministic programs when appropriate
+qualquer ordem, interleave.
+nao so eh equivalente a sequencial, como a implementacao pode usar isso (single 
+core).
+
+Given the same input configura-
+tion, the system will always yield the same output.
+
+
+non-det (see extensions)
+
+\begin{Verbatim}[commandchars=\\\{\}]
+{ {!a;$v=1} , {!a;!b;$v=1} }
+\end{Verbatim}
+
+glitches
+
+Another fundamental characteristic of asynchronous systems is their
+inherent non-deterministic behavior [Lee]. From the perspective of a CPU,
+the composition of concurrent processes may be seen as the interleaving of
+their statements in a single process. First, it is impossible to predict the
+order in which statements are interleaved, as process scheduling timing is non-
+deterministic. Second, for the same reason, each time a concurrent system
+restarts, a different scheduling probably takes place. The lack of enforced
+synchronization between processes makes impossible to ensure a deterministic
+behavior.
+This characteristic leads to difficulty in achieving global consensus
+over information, as data obtained by the receiving end can reflect a past
+state in the sending end. Delayed communication also introduces the need for
+buffers, yet another concern to deal with (e.g. overflow and underflow).
+
+-- DIFFERENCES TO MSG-BASED SYSTEMS
+Two fundamental characteristics about events differ \CEU{} from message-passing 
+systems such as XXX and YYY:
+First, \emph{events are not buffered}---if an event occurs and no expression is 
+waiting for it, the event is simply lost.
+Second, \emph{events are broadcast to the whole program}---if $N$ expressions 
+in parallel are waiting for the same event, they are all awaken when the event 
+happens.
+-- synchronous
+
+\xxx Documentar difs entre ext/int
+TODO: why?
+ multiple at the same time, externals need an order
+ extensible control-flow: exceptions
+ ({ !A=1; !A })*   -- tb explica porque I/O sao separados
+
+int - para controle, spawn/nao trigg, igual a var, apenas um valor, aguarda 
+prioridade/nondet/executa uma vez, sem idx
+
+ext - para interacao, nao spawn/trig, nao guarda vals, n valores, in/out com 
+arity diffs, nao aguarda prio/nondet/execut n vezes, nao tem spawn, um evt pode 
+ser somente in ou out, mas nao os dois, area reservada p/ await, o trig eh 
+pelos regs correntes mesmo.
+so preciso de uma area res para await pois dois nao podem acontecer ao mesmo 
+tempo
+
+se um ext fosse de in e out ao mesmo tempo, precisaria dos spawns, exatamente 
+como no internal.
+assim nao seria possivel dois prints no mesmo ciclo, ja que teria que esperar 
+na mesma prioridade e apenas dar um trigger.
+
+se o ext tivesse spawn ele entraria no modo sincrono, lembrar que ele eh o 
+tempo externo, preciso disso (pq?)
+
+- extending the langugage
+    - macros
+    - composibility
+    - local blocks
+
+\section{Programming Techniques}
+
+exemplo grande para ver quantas "threads" coexistiriam
+
+state machines
+
+buffers
+
+composibility -> macros
+different from macroing thread declarations
+suggests low cost
+
+\section{Implementation}
+
+high-concurrency furar fila c/ prios para eventos
+async sempre menor, timers, eventos
+
+static memory allocation
+
+low cost per trail
+
+Implementation:
+Ceu has no limit on the number of "threads", and at a given time it uses 
+exactly the size needed for that.
+Not stack, not heap, its just static memory "register" known at compile time.
+Mostrar um exemplo em que duas threads estao em sequencia e usam o mesmo 
+espaco.
+
+\end{comment}
+
+\bibliographystyle{acm}
+\bibliography{other}
+
+\end{document}

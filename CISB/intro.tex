@@ -1,0 +1,78 @@
+\documentclass[pdftex,12pt,a4paper]{article}
+
+\usepackage[pdftex]{graphicx}
+\usepackage{url}
+\usepackage{verbatim}
+\newcommand{\CEU}{\textsc{C\'{e}u}}
+
+%\renewcommand{\chaptername}{}
+%\renewcommand{\thesection}{}
+%\setcounter{chapter}{-1}
+
+\title{Safe Concurrent Abstractions for WSNs}
+\date{\vspace{-5ex}}
+
+\begin{document}
+
+\maketitle
+
+\section{Project Description}
+
+Wireless sensor networks (WSNs) are composed of a large number of tiny devices 
+(known as ``motes'') capable of sensing the environment and communicating among 
+them.
+WSNs are usually employed to continuously monitor physical phenomena in large 
+or unreachable areas, such as wildfire in forests and air temperature in 
+buildings.
+
+Software for WSNs is usually developed in the C programming language, and the 
+addition of a real-time operating system may extend it with preemptive and/or 
+cooperative multithreading.
+However, concurrency in C requires a low-level exercise related to scheduling, 
+synchronizing, and the life cycle of activities (i.e. creating and destroying 
+threads).
+
+Concurrency in C also lacks safety warranties, given that they are susceptible 
+to unbounded execution, race conditions and deadlocks.
+Nonetheless, safety is an important aspect in WSNs, as motes have scarce 
+resources, are deployed in remote locations, and must run for long periods 
+without human intervention.
+
+The programming language \CEU{} is being developed as part of the proponent's 
+PhD research in PUC--Rio and is targeted at highly constrained embedded systems 
+(such as WSNs), incorporating features found in dataflow and imperative 
+reactive languages.
+
+\CEU{} supports concurrent lines of execution that run in time steps and are 
+allowed to share variables.
+However, the synchronous and static nature of \CEU{} enables a compile time 
+analysis that can enforce deterministic and memory-safe programs, offering a 
+high-level and safe alternative to the predominating C based multithreaded 
+systems.
+The \CEU{} compiler generates code comparable to handcrafted C programs in 
+terms of size and portability.
+
+The main objective of our research during the sandwich period in Chalmers is to 
+evaluate the applicability of \CEU{} in the context of Wireless Sensor Networks 
+and secure communications.
+The evaluation involves quantitative measures (e.g. memory usage) and
+qualitative measures (e.g. ease of programming).
+
+We believe that Wireless Sensor Networks are an ideal scenario to employ the 
+\CEU{} programming language, given it is targeted at highly constrained 
+embedded systems, offering fine-grained concurrency, low memory overhead, and 
+safety warranties.
+
+\section{Researcher}
+
+\textbf{Francisco Sant'Anna} is a fourth year Ph.D. student in the Computer 
+Science department at PUC-Rio. He earned his BSc (2003) and MSc (2007) degrees 
+also in the Computer Science department at PUC-Rio.
+
+The current title of his PhD thesis is ``\CEU{}: Embedded, Safe, and Reactive 
+Programming'', which is expected to be concluded in September 2013.
+His advisors are Prof. Roberto Ierusalimschy and Prof. Noemi Rodriguez, which 
+actuate, respectively, in the field of programming languages and distributed 
+systems.
+
+\end{document}

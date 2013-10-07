@@ -1,0 +1,26 @@
+Project Title:
+Uma Linguagem de Programação Reativa para Redes de Sensores sem Fio
+
+Keywords:
+linguagens de programação, redes de sensores sem fio, sistemas distribuídos
+
+Abstract:
+Este documento descreve o plano de trabalho para o doutorado sanduíche na 
+Chalmers University (Gotemburgo, Suécia) com duração de seis meses pelo 
+programa de intercâmbio "Ciência sem Fronteiras".
+O proponente, Francisco Figueiredo Goytacaz Sant'Anna, é aluno de doutorado de 
+ciência da computação da PUC-Rio (CAPES 7).
+
+O plano de trabalho proposto é entitulado "Uma Linguagem de Programação Reativa 
+para Redes de Sensores sem Fio" e descreve como a linguagem de programação 
+sendo desenvolvida pelo proponente pode ser usada no contexto de Redes de 
+Sensores sem Fio.
+
+A pesquisa proposta está no escopo de Ciência da Computação e Sistemas de 
+Informação, que são áreas prioritárias do programa de intercâmbio "Ciência sem 
+Fronteiras".
+
+Scientific Knowledge field:
+Ciências Exatas e da Terra -> Ciência da Computação -> Metodologia -> Linguages
+
+Instituição: Chalmers

@@ -1,0 +1,51 @@
+Language support for Memory Pools
+
+Automatic Objects in Céu
+
+// STATIC CREATION: LOCAL VARIABLE
+
+var T* pp;
+do
+    var T t;
+    pp = &t;            // requires finalize
+end
+
+- allocation:   fixed known offset known at compile time
+- start:        upon declaration
+- access:       direct (e.g. t.x=1, await t.e)
+- stop:         end of block, in ascending order
+- de-alloc:     end of block, just after stop
+-- arrays
+
+// DYNAMIC CREATION
+
+var T* pp;
+do
+    var T* p;
+    do
+        p  = new T;
+        pp = p;         // require finalize
+    end
+end
+
+
+SYNTAX
+local
+new
+spawn
+
+ALLOC
+static          local
+dynamic         new / spawn
+
+DALLOC
+block           local / new / spawn
+termination     spawn
+
+MEMORY
+known offset    loca            // (never fails)
+- unknown       new / spawn
+pool            class T(n)      // (never fails up to n)
+heap            class T         // (may fail)
+
+FINALIZE

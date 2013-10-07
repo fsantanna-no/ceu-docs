@@ -1,0 +1,1187 @@
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<p>
+<center>
+<table border=1 cellpadding=20 cellspacing=0>
+
+<tr> <th colspan=2> <font size=+3>Blink</font> </tr>
+
+<tr>
+    <th width="50%"> <font size=+2>nesC</font>
+    <th width="50%"> <font size=+2>Céu</font>
+</tr>
+
+<tr> <th colspan=2> <font size=+1>Modified</font> </tr>
+
+<tr valign=top>
+<td>
+<pre>
+event void Boot.booted () {
+  call Timer0.startPeriodic( 250 );
+  call Timer1.startPeriodic( 500 );
+  call Timer2.startPeriodic( 1000 );
+}
+
+event void Timer0.fired () {
+  call Leds.led0Toggle();
+}
+  
+event void Timer1.fired () {
+  call Leds.led1Toggle();
+}
+  
+event void Timer2.fired () {
+  call Leds.led2Toggle();
+}
+</pre>
+
+<td>
+<pre>
+  ( ~250ms  ; ~&gt; Leds_led0Toggle)*
+||
+  ( ~500ms  ; ~&gt; Leds_led1Toggle)*
+||
+  ( ~1000ms ; ~&gt; Leds_led2Toggle)*
+</pre>
+</tr>
+
+<tr> <th colspan=2> <font size=+1>Original</font> </tr>
+
+<tr valign=top>
+<td>
+<pre>
+#include "Timer.h"
+
+module BlinkC @safe()
+{
+  uses interface Timer<TMilli> as Timer0;
+  uses interface Timer<TMilli> as Timer1;
+  uses interface Timer<TMilli> as Timer2;
+  uses interface Leds;
+  uses interface Boot;
+}
+implementation
+{
+  event void Boot.booted()
+  {
+    call Timer0.startPeriodic( 250 );
+    call Timer1.startPeriodic( 500 );
+    call Timer2.startPeriodic( 1000 );
+  }
+
+  event void Timer0.fired()
+  {
+    dbg("BlinkC", "Timer 0 fired @ %s.\n", sim_time_string());
+    call Leds.led0Toggle();
+  }
+  
+  event void Timer1.fired()
+  {
+    dbg("BlinkC", "Timer 1 fired @ %s \n", sim_time_string());
+    call Leds.led1Toggle();
+  }
+  
+  event void Timer2.fired()
+  {
+    dbg("BlinkC", "Timer 2 fired @ %s.\n", sim_time_string());
+    call Leds.led2Toggle();
+  }
+}
+</pre>
+
+<td>
+<pre>
+include(`leds.m4')
+
+(
+  ( ~250ms  ; ~&gt; Leds_led0Toggle)*
+||
+  ( ~500ms  ; ~&gt; Leds_led1Toggle)*
+||
+  ( ~1000ms ; ~&gt; Leds_led2Toggle)*
+)
+</pre>
+</table>
+</center>
+
+<p>
+<center>
+<table border=1 cellpadding=20 cellspacing=0>
+
+<tr> <th colspan=2> <font size=+3>Sense</font> </tr>
+
+<tr>
+    <th width="50%"> <font size=+2>nesC</font>
+    <th width="50%"> <font size=+2>Céu</font>
+</tr>
+
+<tr> <th colspan=2> <font size=+1>Modified</font> </tr>
+
+<tr valign=top>
+<td>
+<pre>
+event void Boot.booted () {
+    call Timer.startPeriodic(SAMPLING_FREQUENCY);
+}
+
+event void Timer.fired () {
+    call Read.read();
+}
+
+event void Read.readDone (error_t result, uint16_t data) {
+    if (result == SUCCESS) {
+        if (data &amp; 0x0004)
+            call Leds.led2On();
+        else
+            call Leds.led2Off();
+        if (data &amp; 0x0002)
+            call Leds.led1On();
+        else
+            call Leds.led1Off();
+        if (data &amp; 0x0001)
+            call Leds.led0On();
+        else
+            call Leds.led0Off();
+    }
+}
+</pre>
+<td>
+<pre>
+int data;
+(
+  ~(SAMPLING_FREQUENCY) ; ~&gt;Photo_read ; ~Photo_readDone=&gt;data ;
+  (
+    ((data,4)-&gt;band ? ~&gt;Leds_led2On : ~&gt;Leds_led2Off)
+  ||
+    ((data,2)-&gt;band ? ~&gt;Leds_led1On : ~&gt;Leds_led1Off)
+  ||
+    ((data,1)-&gt;band ? ~&gt;Leds_led0On : ~&gt;Leds_led0Off)
+  )
+)*
+</pre>
+</tr>
+
+<tr> <th colspan=2> <font size=+1>Original</font> </tr>
+
+<tr valign=top>
+<td>
+<pre>
+#include "Timer.h"
+
+module SenseC
+{
+  uses {
+    interface Boot;
+    interface Leds;
+    interface Timer<TMilli>;
+    interface Read<uint16_t>;
+  }
+}
+implementation
+{
+  // sampling frequency in binary milliseconds
+  #define SAMPLING_FREQUENCY 100
+  
+  event void Boot.booted() {
+    call Timer.startPeriodic(SAMPLING_FREQUENCY);
+  }
+
+  event void Timer.fired() 
+  {
+    call Read.read();
+  }
+
+  event void Read.readDone(error_t result, uint16_t data) 
+  {
+    if (result == SUCCESS){
+      if (data &amp; 0x0004)
+        call Leds.led2On();
+      else
+        call Leds.led2Off();
+      if (data &amp; 0x0002)
+        call Leds.led1On();
+      else
+        call Leds.led1Off();
+      if (data &amp; 0x0001)
+        call Leds.led0On();
+      else
+        call Leds.led0Off();
+    }
+  }
+}
+</pre>
+
+<td>
+<pre>
+include(`oprs.ceu')
+include(`leds.m4')
+include(`photo.m4')
+
+define(`SAMPLING_FREQUENCY', `100ms')
+
+int data;
+
+(
+  ~SAMPLING_FREQUENCY ; ~&gt;Photo_read ; ~Photo_readDone=&gt;data ;
+  (
+    ((data,4)-&gt;band ? ~&gt;Leds_led2On : ~&gt;Leds_led2Off)
+  ||
+    ((data,2)-&gt;band ? ~&gt;Leds_led1On : ~&gt;Leds_led1Off)
+  ||
+    ((data,1)-&gt;band ? ~&gt;Leds_led0On : ~&gt;Leds_led0Off)
+  )
+)*
+</pre>
+</table>
+</center>
+
+<p>
+<center>
+<table border=1 cellpadding=20 cellspacing=0>
+
+<tr> <th colspan=2>
+    <font size=+3>AntiTheft</font><br>
+    (we removed all code related to the accelerometer sensor)
+</tr>
+
+<tr>
+    <th width="50%"> <font size=+2>nesC</font>
+    <th width="50%"> <font size=+2>Céu</font>
+</tr>
+
+<tr> <th colspan=2> <font size=+1>Modified</font> </tr>
+
+<tr valign=top>
+<td>
+<pre>
+settings_t settings;
+message_t alertMsg, theftMsg;
+uint16_t ledTime;
+
+void errorLed() {
+  ledTime = WARNING_TIME;
+  call Leds.led2On();
+}
+
+void settingsLed() {
+  ledTime = WARNING_TIME;
+  call Leds.led1On();
+}
+
+void theftLed() {
+  ledTime = WARNING_TIME;
+  call Leds.led0On();
+}
+
+void updateLeds() {
+  if (ledTime &amp;&amp; !--ledTime) {
+	call Leds.led0Off();
+	call Leds.led1Off();
+	call Leds.led2Off();
+  }
+}
+
+void check(error_t ok) {
+  if (ok != SUCCESS)
+    errorLed();
+}
+
+void theft() {
+  if (settings.alert &amp; ALERT_LEDS)
+    theftLed();
+  if (settings.alert &amp; ALERT_SOUND)
+    call Mts300Sounder.beep(100);
+  if (settings.alert &amp; ALERT_RADIO)
+    check(call TheftSend.send(AM_BROADCAST_ADDR, &amp;theftMsg, 0));
+  if (settings.alert &amp; ALERT_ROOT) {
+    alert_t *newAlert = call AlertRoot.getPayload(&amp;alertMsg, sizeof(alert_t));
+	if (newAlert != NULL) {
+      newAlert-&gt;stolenId = TOS_NODE_ID;
+      check(call AlertRoot.send(&amp;alertMsg, sizeof *newAlert));
+	}
+  }
+}
+
+event message_t *TheftReceive.receive
+    (message_t* msg, void* payload, uint8_t len) {
+  theftLed();
+  return msg;
+}
+
+event void Boot.booted() {
+  settings.alert = DEFAULT_ALERT;
+  settings.detect = DEFAULT_DETECT;
+  call Check.startPeriodic(DEFAULT_CHECK_INTERVAL);
+  call RadioControl.start();
+}
+
+event void RadioControl.startDone(error_t ok) {
+  if (ok == SUCCESS) {
+	call DisseminationControl.start();
+	call CollectionControl.start();
+  } else
+    errorLed();
+}
+
+event void SettingsValue.changed() {
+  const settings_t *newSettings = call SettingsValue.get();
+  settingsLed();
+  settings = *newSettings;
+  call Check.startPeriodic(newSettings-&gt;checkInterval);
+}
+
+event void Check.fired() {
+  updateLeds();
+  if (settings.detect &amp; DETECT_DARK)
+    call Read.read();
+}
+
+event void Read.readDone(error_t ok, uint16_t val) {
+  if (ok == SUCCESS &amp;&amp; val &lt; DARK_THRESHOLD)
+    theft();
+}
+</pre>
+
+<td>
+<pre>
+settings_t settings;
+message_t msg;
+
+(&amp;settings, 0, 0, 1000)-&gt;settings_t_set;
+
+RADIO_START(1s);
+
+~&gt;Dissemination_start;
+~&gt;Collection_start;
+
+(
+  (
+    ~Dissemination_changed ;
+    ~&gt;Dissemination_get=&gt;settings ;
+    BLINK(1, 500ms) ;
+  )*
+||
+  (
+    ~Radio1_receive ;
+    BLINK(2, 500ms) ;
+  )*
+||
+  (
+    ~(&amp;settings-&gt;settings_t_checkInterval) ;
+    (&amp;settings-&gt;settings_t_detect, DETECT_DARK)-&gt;band ?
+      ~&gt;Photo_read ;
+      (~Photo_readDone, DARK_THRESHOLD)-&gt;le ?
+        (
+          (&amp;settings-&gt;settings_t_alert, ALERT_LED)-&gt;band ?
+            BLINK(0, 500ms) ;
+        &amp;&amp;
+          (&amp;settings-&gt;settings_t_alert, ALERT_BEEP)-&gt;band ?
+            100~&gt;Sounder_beep ;
+        &amp;&amp;
+          (&amp;settings-&gt;settings_t_alert, ALERT_RADIO)-&gt;band ?
+            RADIO1_SEND(1s,-&gt;am_broadcast_addr,&amp;msg,0);
+        &amp;&amp;
+          (&amp;settings-&gt;settings_t_alert, ALERT_ROOT)-&gt;band ?
+            alert_t* data;
+            (&amp;msg, sizeof(alert_t))~&gt;Collection_getPayload&lt;alert_t*&gt; =&gt; data;
+            (data,-&gt;tos_node_id)-&gt;alert_t_set;
+            (&amp;msg, sizeof(alert_t))~&gt;Collection_send;
+        )
+  )*
+)
+</pre>
+</tr>
+
+<tr> <th colspan=2> <font size=+1>Original</font> </tr>
+
+<tr valign=top>
+<td>
+<pre>
+#include "antitheft.h"
+
+module AntiTheftC
+{
+  uses {
+    interface Timer&lt;TMilli&gt; as Check;
+    interface Read&lt;uint16_t&gt;;
+    //interface ReadStream&lt;uint16_t&gt;;
+    interface Leds;
+    interface Boot;
+    interface Mts300Sounder;
+    interface DisseminationValue&lt;settings_t&gt; as SettingsValue;
+    interface Send as AlertRoot;
+    interface StdControl as CollectionControl;
+    interface StdControl as DisseminationControl;
+    interface SplitControl as RadioControl;
+    interface LowPowerListening;
+    interface AMSend as TheftSend;
+    interface Receive as TheftReceive;
+  }
+}
+implementation
+{
+  enum {
+    /* Threshold for considering mote in a dark place */
+    DARK_THRESHOLD = 600, 
+
+    /* Amount of time warning leds should stay on (in checkInterval counts) */
+    WARNING_TIME = 3,
+  };
+
+  settings_t settings;
+  message_t alertMsg, theftMsg;
+  uint16_t ledTime; /* Time left until leds switched off */
+
+  /********* LED handling **********/
+
+  /* Warn that some error occurred */
+  void errorLed() {
+    ledTime = WARNING_TIME;
+    call Leds.led2On();
+  }
+
+  /* Notify user that settings changed */
+  void settingsLed() {
+    ledTime = WARNING_TIME;
+    call Leds.led1On();
+  }
+
+  /* Turn on bright red light! (LED) */
+  void theftLed() {
+    ledTime = WARNING_TIME;
+    call Leds.led0On();
+  }
+
+  /* Time-out leds. Called every checkInterval */
+  void updateLeds() {
+    if (ledTime &amp;&amp; !--ledTime)
+      {
+	call Leds.led0Off();
+	call Leds.led1Off();
+	call Leds.led2Off();
+      }
+  }
+
+  /* Check result code and report error if a problem occurred */
+  void check(error_t ok) {
+    if (ok != SUCCESS)
+      errorLed();
+  }
+
+  /* Report theft, based on current settings */
+  void theft() {
+    if (settings.alert &amp; ALERT_LEDS)
+      theftLed();
+    if (settings.alert &amp; ALERT_SOUND)
+      call Mts300Sounder.beep(100);
+    if (settings.alert &amp; ALERT_RADIO)
+      /* A local broadcast with no payload */
+      check(call TheftSend.send(AM_BROADCAST_ADDR, &amp;theftMsg, 0));
+    if (settings.alert &amp; ALERT_ROOT)
+      {
+	/* Report the identity of this node, using the collection protocol */
+
+	/* Get the payload part of alertMsg and fill in our data */
+    alert_t *newAlert = call AlertRoot.getPayload(&amp;alertMsg, sizeof(alert_t));
+	if (newAlert != NULL) {
+      newAlert-&gt;stolenId = TOS_NODE_ID;
+	  /* and send it... */
+      check(call AlertRoot.send(&amp;alertMsg, sizeof *newAlert));
+	}
+      }
+  }
+
+  /* We have nothing to do after messages are sent */
+  event void AlertRoot.sendDone(message_t *msg, error_t ok) { }
+  event void TheftSend.sendDone(message_t *msg, error_t ok) { }
+
+  /* We've received a theft alert from a neighbour. Turn on the theft warning
+     light! */
+  event message_t *TheftReceive.receive
+    (message_t* msg, void* payload, uint8_t len) {
+    theftLed();
+    /* We don't need to hold on to the message buffer, so just return the
+       received buffer */
+    return msg;
+  }
+  
+  /* At boot time, start the periodic timer and the radio */
+  event void Boot.booted() {
+    settings.alert = DEFAULT_ALERT;
+    settings.detect = DEFAULT_DETECT;
+
+    call Check.startPeriodic(DEFAULT_CHECK_INTERVAL);
+    call RadioControl.start();
+  }
+
+  /* Radio started. Now start the collection protocol and set the
+     wakeup interval for low-power-listening wakeup to half a second. */
+  event void RadioControl.startDone(error_t ok) {
+    if (ok == SUCCESS)
+      {
+	call DisseminationControl.start();
+	call CollectionControl.start();
+      }
+    else
+      errorLed();
+  }
+
+  event void RadioControl.stopDone(error_t ok) { }
+
+  /* New settings received, update our local copy */
+  event void SettingsValue.changed() {
+    const settings_t *newSettings = call SettingsValue.get();
+
+    settingsLed();
+    settings = *newSettings;
+    /* Switch to the new check interval */
+    call Check.startPeriodic(newSettings-&gt;checkInterval);
+  }
+
+  /* Every check interval: update leds, check for theft based on current
+     settings */
+  event void Check.fired() {
+    updateLeds();
+
+    if (settings.detect &amp; DETECT_DARK)
+      call Read.read(); /* Initiate light sensor read */
+  }
+
+  /* Light sample completed. Check if it indicates theft */
+  event void Read.readDone(error_t ok, uint16_t val) {
+    if (ok == SUCCESS &amp;&amp; val &lt; DARK_THRESHOLD)
+      theft(); /* ALERT! ALERT! */
+  }
+}
+</pre>
+
+<td>
+<pre>
+include(`oprs.ceu')
+include(`nesc.m4')
+include(`leds.m4')
+include(`radio.m4')
+include(`radio1.m4')
+include(`photo.m4')
+include(`sounder.m4')
+include(`dissemination.m4')
+include(`collection.m4')
+
+define(`DARK_THRESHOLD', `600')
+define(`DETECT_DARK', `1')
+define(`DETECT_ACCEL',`2')
+define(`ALERT_LED',`1')
+define(`ALERT_BEEP',`2')
+define(`ALERT_RADIO',`4')
+define(`ALERT_ROOT',`8')
+
+C {
+include(`samples/antitheft.h')
+};
+
+settings_t settings;
+message_t msg;
+
+(&amp;settings, 0, 0, 1000)-&gt;settings_t_set;
+
+RADIO_START(1s);
+
+~&gt;Dissemination_start;
+~&gt;Collection_start;
+
+(
+  (
+    ~Dissemination_changed ;
+    ~&gt;Dissemination_get=&gt;settings ;
+    BLINK(1, 500ms) ;
+  )*
+||
+  (
+    ~Radio1_receive ;
+    BLINK(2, 500ms) ;
+  )*
+||
+  (
+    ~(&amp;settings-&gt;settings_t_checkInterval) ;
+    (&amp;settings-&gt;settings_t_detect, DETECT_DARK)-&gt;band ?
+      ~&gt;Photo_read ;
+      (~Photo_readDone, DARK_THRESHOLD)-&gt;le ?
+        (
+          (&amp;settings-&gt;settings_t_alert, ALERT_LED)-&gt;band ?
+            BLINK(0, 500ms) ;
+        &amp;&amp;
+          (&amp;settings-&gt;settings_t_alert, ALERT_BEEP)-&gt;band ?
+            100~&gt;Sounder_beep ;
+        &amp;&amp;
+          (&amp;settings-&gt;settings_t_alert, ALERT_RADIO)-&gt;band ?
+            RADIO1_SEND(1s,-&gt;am_broadcast_addr,&amp;msg,0);
+        &amp;&amp;
+          (&amp;settings-&gt;settings_t_alert, ALERT_ROOT)-&gt;band ?
+            alert_t* data;
+            (&amp;msg, 
+            sizeof(alert_t))~&gt;Collection_getPayload&lt;alert_t*&gt; =&gt; data;
+            (data,-&gt;tos_node_id)-&gt;alert_t_set;
+            (&amp;msg, sizeof(alert_t))~&gt;Collection_send;
+        )
+   )*
+)
+</pre>
+</table>
+</center>
+
+<p>
+<center>
+<table border=1 cellpadding=20 cellspacing=0>
+
+<tr> <th colspan=2> <font size=+3>BaseStation</font> </tr>
+
+<tr>
+    <th width="50%"> <font size=+2>nesC</font>
+    <th width="50%"> <font size=+2>Céu</font>
+</tr>
+
+<tr> <th colspan=2> <font size=+1>Modified</font> </tr>
+
+<tr valign=top>
+<td>
+<pre>
+message_t  uartQueueBufs[UART_QUEUE_LEN];
+uint8_t    uartIn, uartOut;
+bool       uartBusy, uartFull;
+
+message_t  radioQueueBufs[RADIO_QUEUE_LEN];
+uint8_t    radioIn, radioOut;
+bool       radioBusy, radioFull;
+
+task void uartSendTask();
+task void radioSendTask();
+
+event void Boot.booted () {
+    uartIn = uartOut = 0;
+    uartBusy = FALSE;
+    uartFull = TRUE;
+
+    radioIn = radioOut = 0;
+    radioBusy = FALSE;
+    radioFull = TRUE;
+
+    call RadioControl.start();
+    call SerialControl.start();
+}
+
+event void RadioControl.startDone(error_t error) {
+    if (error == SUCCESS)
+        radioFull = FALSE;
+}
+
+event void SerialControl.startDone(error_t error) {
+    if (error == SUCCESS)
+        uartFull = FALSE;
+}
+
+event void SerialControl.stopDone(error_t error) {}
+event void RadioControl.stopDone(error_t error) {}
+
+event message_t *RadioReceive.receive[am_id_t id]
+    (message_t *msg, void *payload, uint8_t len) {
+    message_t *ret = msg;
+    atomic {
+        if (!uartFull) {
+            ret = uartQueue[uartIn];
+            uartQueue[uartIn] = msg;
+            uartIn = (uartIn + 1) % UART_QUEUE_LEN;
+            if (uartIn == uartOut)
+                uartFull = TRUE;
+            if (!uartBusy) {
+                post uartSendTask();
+                uartBusy = TRUE;
+            }
+        }
+        else
+            call Leds.led2Toggle();
+    }
+    return ret;
+}
+
+task void uartSendTask() {
+    uint8_t len;
+    am_id_t id;
+    am_addr_t addr, src;
+    message_t* msg;
+    atomic
+        if (uartIn == uartOut &amp;&amp; !uartFull) {
+            uartBusy = FALSE;
+            return;
+        }
+
+    if (call UartSend.send[id](addr, uartQueue[uartOut], len) == SUCCESS)
+        call Leds.led1Toggle();
+    else {
+        call Leds.led2Toggle();
+        post uartSendTask();
+    }
+}
+
+event void UartSend.sendDone[am_id_t id](message_t* msg, error_t error) {
+    if (error != SUCCESS)
+        call Leds.led2Toggle();
+    else
+        atomic
+            if (msg == uartQueue[uartOut]) {
+                if (++uartOut &gt;= UART_QUEUE_LEN)
+                    uartOut = 0;
+                if (uartFull)
+                    uartFull = FALSE;
+            }
+            post uartSendTask();
+}
+
+event message_t *UartReceive.receive[am_id_t id]
+    (message_t *msg, void *payload, uint8_t len) {
+    message_t *ret = msg;
+    atomic
+        if (!radioFull) {
+            ret = radioQueue[radioIn];
+            radioQueue[radioIn] = msg;
+            if (++radioIn &gt;= RADIO_QUEUE_LEN)
+                radioIn = 0;
+            if (radioIn == radioOut)
+                radioFull = TRUE;
+            if (!radioBusy) {
+                post radioSendTask();
+                radioBusy = TRUE;
+            }
+        }
+        else
+            call Leds.led2Toggle();
+
+    return ret;
+}
+
+task void radioSendTask() {
+    uint8_t len;
+    am_id_t id;
+    am_addr_t addr,source;
+    message_t* msg;
+    
+    atomic
+        if (radioIn == radioOut &amp;&amp; !radioFull) {
+            radioBusy = FALSE;
+            return;
+        }
+   
+    if (call RadioSend.send[id](addr, msg, len) == SUCCESS)
+        call Leds.led0Toggle();
+    else {
+        call Leds.led2Toggle();
+        post radioSendTask();
+    }
+}
+
+event void RadioSend.sendDone[am_id_t id](message_t* msg, error_t error) {
+    if (error != SUCCESS)
+        call Leds.led2Toggle();
+    else
+        atomic
+            if (msg == radioQueue[radioOut]) {
+                if (++radioOut &gt;= RADIO_QUEUE_LEN)
+                    radioOut = 0;
+                if (radioFull)
+                    radioFull = FALSE;
+            }
+    post radioSendTask();
+}
+</pre>
+
+<td>
+<pre>
+define(`SERIAL_LEN', `12')
+message_t[SERIAL_LEN] serialBuf;
+u8 serialIn, serialOut, serialTot;
+0 =&gt; serialIn =&gt; serialOut =&gt; serialTot;
+
+define(`RADIO_LEN', `12')
+message_t[RADIO_LEN] radioBuf;
+u8 radioIn, radioOut, radioTot;
+0 =&gt; radioIn =&gt; radioOut =&gt; radioTot;
+
+(RADIO_START(1s) &amp;&amp; SERIAL_START(1s)) ;
+
+(
+    (
+        ~Radio_receive ; ~&gt;Leds_led1Toggle ;
+        ( (serialTot,SERIAL_LEN)-&gt;eq ?
+            ~&gt; Leds_led2Toggle;
+        :
+            Radio_receive =&gt; serialBuf[serialIn];
+            (serialIn-&gt;inc,SERIAL_LEN)-&gt;modu =&gt; serialIn ;
+            serialTot-&gt;inc ~&gt; serialTot ;
+        )
+    )*
+||
+    ( serialTot-&gt;not ?
+        ~serialTot ;
+    :
+        ( SERIAL_SEND(1s, &amp;serialBuf[serialOut],
+                      &amp;serialBuf[serialOut]-&gt;Radio_payloadLength);
+          || (~serial_err ; ~&gt;Leds_led2Toggle)*
+        );
+        (serialOut-&gt;inc,SERIAL_LEN)-&gt;modu =&gt; serialOut ;
+        serialTot-&gt;dec ~&gt; serialTot ;
+    )*
+||
+    (
+        ~Serial_receive ; ~&gt;Leds_led0Toggle ;
+        ( (radioTot,RADIO_LEN)-&gt;eq ?
+            ~&gt; Leds_led2Toggle;
+        :
+            Serial_receive =&gt; radioBuf[radioIn];
+            (radioIn-&gt;inc,RADIO_LEN)-&gt;modu =&gt; radioIn ;
+            radioTot-&gt;inc ~&gt; radioTot ;
+        )
+    )*
+||
+    ( radioTot-&gt;not ?
+        ~radioTot ;
+    :
+        ( RADIO_SEND(1s, -&gt;am_broadcast_addr, &amp;radioBuf[radioOut],
+                     &amp;radioBuf[radioOut]-&gt;Serial_payloadLength);
+          || (~radio_err ; ~&gt;Leds_led2Toggle)*
+        );
+        (radioOut-&gt;inc,RADIO_LEN)-&gt;modu =&gt; radioOut ;
+        radioTot-&gt;dec ~&gt; radioTot ;
+    )*
+)
+</pre>
+</tr>
+
+<tr> <th colspan=2> <font size=+1>Original</font> </tr>
+
+<tr valign=top>
+<td>
+<pre>
+#include "AM.h"
+#include "Serial.h"
+
+module BaseStationP @safe() {
+  uses {
+    interface Boot;
+    interface SplitControl as SerialControl;
+    interface SplitControl as RadioControl;
+
+    interface AMSend as UartSend[am_id_t id];
+    interface Receive as UartReceive[am_id_t id];
+    interface Packet as UartPacket;
+    interface AMPacket as UartAMPacket;
+    
+    interface AMSend as RadioSend[am_id_t id];
+    interface Receive as RadioReceive[am_id_t id];
+    interface Receive as RadioSnoop[am_id_t id];
+    interface Packet as RadioPacket;
+    interface AMPacket as RadioAMPacket;
+
+    interface Leds;
+  }
+}
+
+implementation
+{
+  enum {
+    UART_QUEUE_LEN = 12,
+    RADIO_QUEUE_LEN = 12,
+  };
+
+  message_t  uartQueueBufs[UART_QUEUE_LEN];
+  message_t  * ONE_NOK uartQueue[UART_QUEUE_LEN];
+  uint8_t    uartIn, uartOut;
+  bool       uartBusy, uartFull;
+
+  message_t  radioQueueBufs[RADIO_QUEUE_LEN];
+  message_t  * ONE_NOK radioQueue[RADIO_QUEUE_LEN];
+  uint8_t    radioIn, radioOut;
+  bool       radioBusy, radioFull;
+
+  task void uartSendTask();
+  task void radioSendTask();
+
+  void dropBlink() {
+    call Leds.led2Toggle();
+  }
+
+  void failBlink() {
+    call Leds.led2Toggle();
+  }
+
+  event void Boot.booted() {
+    uint8_t i;
+
+    for (i = 0; i &lt; UART_QUEUE_LEN; i++)
+      uartQueue[i] = &amp;uartQueueBufs[i];
+    uartIn = uartOut = 0;
+    uartBusy = FALSE;
+    uartFull = TRUE;
+
+    for (i = 0; i &lt; RADIO_QUEUE_LEN; i++)
+      radioQueue[i] = &amp;radioQueueBufs[i];
+    radioIn = radioOut = 0;
+    radioBusy = FALSE;
+    radioFull = TRUE;
+
+    call RadioControl.start();
+    call SerialControl.start();
+  }
+
+  event void RadioControl.startDone(error_t error) {
+    if (error == SUCCESS) {
+      radioFull = FALSE;
+    }
+  }
+
+  event void SerialControl.startDone(error_t error) {
+    if (error == SUCCESS) {
+      uartFull = FALSE;
+    }
+  }
+
+  event void SerialControl.stopDone(error_t error) {}
+  event void RadioControl.stopDone(error_t error) {}
+
+  uint8_t count = 0;
+
+  message_t* ONE receive(message_t* ONE msg, void* payload, uint8_t len);
+  
+  event message_t *RadioSnoop.receive[am_id_t id](message_t *msg,
+						    void *payload,
+						    uint8_t len) {
+    return receive(msg, payload, len);
+  }
+  
+  event message_t *RadioReceive.receive[am_id_t id](message_t *msg,
+						    void *payload,
+						    uint8_t len) {
+    return receive(msg, payload, len);
+  }
+
+  message_t* receive(message_t *msg, void *payload, uint8_t len) {
+    message_t *ret = msg;
+
+    atomic {
+      if (!uartFull)
+	{
+	  ret = uartQueue[uartIn];
+	  uartQueue[uartIn] = msg;
+
+	  uartIn = (uartIn + 1) % UART_QUEUE_LEN;
+	
+	  if (uartIn == uartOut)
+	    uartFull = TRUE;
+
+	  if (!uartBusy)
+	    {
+	      post uartSendTask();
+	      uartBusy = TRUE;
+	    }
+	}
+      else
+	dropBlink();
+    }
+    
+    return ret;
+  }
+
+  uint8_t tmpLen;
+  
+  task void uartSendTask() {
+    uint8_t len;
+    am_id_t id;
+    am_addr_t addr, src;
+    message_t* msg;
+    atomic
+      if (uartIn == uartOut &amp;&amp; !uartFull)
+	{
+	  uartBusy = FALSE;
+	  return;
+	}
+
+    msg = uartQueue[uartOut];
+    tmpLen = len = call RadioPacket.payloadLength(msg);
+    id = call RadioAMPacket.type(msg);
+    addr = call RadioAMPacket.destination(msg);
+    src = call RadioAMPacket.source(msg);
+    call UartPacket.clear(msg);
+    call UartAMPacket.setSource(msg, src);
+
+    if (call UartSend.send[id](addr, uartQueue[uartOut], len) == SUCCESS)
+      call Leds.led1Toggle();
+    else
+      {
+	failBlink();
+	post uartSendTask();
+      }
+  }
+
+  event void UartSend.sendDone[am_id_t id](message_t* msg, error_t error) {
+    if (error != SUCCESS)
+      failBlink();
+    else
+      atomic
+	if (msg == uartQueue[uartOut])
+	  {
+        if (++uartOut &gt;= UART_QUEUE_LEN)
+	      uartOut = 0;
+	    if (uartFull)
+	      uartFull = FALSE;
+	  }
+    post uartSendTask();
+  }
+
+  event message_t *UartReceive.receive[am_id_t id](message_t *msg,
+						   void *payload,
+						   uint8_t len) {
+    message_t *ret = msg;
+    bool reflectToken = FALSE;
+
+    atomic
+      if (!radioFull)
+	{
+	  reflectToken = TRUE;
+	  ret = radioQueue[radioIn];
+	  radioQueue[radioIn] = msg;
+      if (++radioIn &gt;= RADIO_QUEUE_LEN)
+	    radioIn = 0;
+	  if (radioIn == radioOut)
+	    radioFull = TRUE;
+
+	  if (!radioBusy)
+	    {
+	      post radioSendTask();
+	      radioBusy = TRUE;
+	    }
+	}
+      else
+	dropBlink();
+
+    if (reflectToken) {
+      //call UartTokenReceive.ReflectToken(Token);
+    }
+    
+    return ret;
+  }
+
+  task void radioSendTask() {
+    uint8_t len;
+    am_id_t id;
+    am_addr_t addr,source;
+    message_t* msg;
+    
+    atomic
+      if (radioIn == radioOut &amp;&amp; !radioFull)
+	{
+	  radioBusy = FALSE;
+	  return;
+	}
+
+    msg = radioQueue[radioOut];
+    len = call UartPacket.payloadLength(msg);
+    addr = AM_BROADCAST_ADDR; //call UartAMPacket.destination(msg);
+    source = call UartAMPacket.source(msg);
+    id = call UartAMPacket.type(msg);
+
+    call RadioPacket.clear(msg);
+    call RadioAMPacket.setSource(msg, source);
+    
+    if (call RadioSend.send[id](addr, msg, len) == SUCCESS)
+      call Leds.led0Toggle();
+    else
+      {
+	failBlink();
+	post radioSendTask();
+      }
+  }
+
+  event void RadioSend.sendDone[am_id_t id](message_t* msg, error_t error) {
+    if (error != SUCCESS)
+      failBlink();
+    else
+      atomic
+	if (msg == radioQueue[radioOut])
+	  {
+        if (++radioOut &gt;= RADIO_QUEUE_LEN)
+	      radioOut = 0;
+	    if (radioFull)
+	      radioFull = FALSE;
+	  }
+    
+    post radioSendTask();
+  }
+}  
+</pre>
+
+<td>
+<pre>
+include(`oprs.ceu')
+include(`nesc.m4')
+include(`leds.m4')
+include(`radio.m4')
+include(`serial.m4')
+
+define(`SERIAL_LEN', `12')
+message_t[SERIAL_LEN] serialBuf;
+u8 serialIn, serialOut, serialTot;
+0 =&gt; serialIn =&gt; serialOut =&gt; serialTot;
+
+define(`RADIO_LEN', `12')
+message_t[RADIO_LEN] radioBuf;
+u8 radioIn, radioOut, radioTot;
+0 =&gt; radioIn =&gt; radioOut =&gt; radioTot;
+
+(RADIO_START(1s) &amp;&amp; SERIAL_START(1s)) ;
+
+(
+    (
+        ~Radio_receive ; ~&gt;Leds_led1Toggle ;
+        ( (serialTot,SERIAL_LEN)-&gt;eq ?
+            ~&gt; Leds_led2Toggle;
+        :
+            Radio_receive =&gt; serialBuf[serialIn];
+            (serialIn-&gt;inc,SERIAL_LEN)-&gt;modu =&gt; serialIn ;
+            serialTot-&gt;inc ~&gt; serialTot ;
+        )
+    )*
+||
+    ( serialTot-&gt;not ?
+        ~serialTot ;
+    :
+        SERIAL_SEND(1s, &amp;serialBuf[serialOut],
+                      &amp;serialBuf[serialOut]-&gt;Radio_payloadLength);
+        (serialOut-&gt;inc,SERIAL_LEN)-&gt;modu =&gt; serialOut ;
+        serialTot-&gt;dec =&gt; serialTot ;
+    )*
+||
+    (~serial_err ; ~&gt;Leds_led2Toggle)*
+||
+    (
+        ~Serial_receive ; ~&gt;Leds_led0Toggle ;
+        ( (radioTot,RADIO_LEN)-&gt;eq ?
+            ~&gt; Leds_led2Toggle;
+        :
+            Serial_receive =&gt; radioBuf[radioIn];
+            (radioIn-&gt;inc,RADIO_LEN)-&gt;modu =&gt; radioIn ;
+            radioTot-&gt;inc ~&gt; radioTot ;
+        )
+    )*
+||
+    ( radioTot-&gt;not ?
+        ~radioTot ;
+    :
+        RADIO_SEND(1s, -&gt;am_broadcast_addr, &amp;radioBuf[radioOut],
+                     &amp;radioBuf[radioOut]-&gt;Serial_payloadLength);
+        (radioOut-&gt;inc,RADIO_LEN)-&gt;modu =&gt; radioOut ;
+        radioTot-&gt;dec =&gt; radioTot ;
+    )*
+||
+    (~radio_err ; ~&gt;Leds_led2Toggle)*
+)
+</pre>
+</table>
+</center>

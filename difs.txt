@@ -1,0 +1,4 @@
+FINALLY
+    - events vs primitivo
+    - finally vs finalize
+    - := vs finally

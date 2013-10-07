@@ -1,0 +1,375 @@
+\documentclass[pdftex,12pt,a4paper]{article}
+
+\usepackage[pdftex]{graphicx}
+\usepackage{url}
+\usepackage{verbatim}
+\newcommand{\CEU}{\textsc{C\'{e}u}}
+
+%\renewcommand{\chaptername}{}
+%\renewcommand{\thesection}{}
+%\setcounter{chapter}{-1}
+
+\begin{document}
+
+\begin{titlepage}
+\begin{center}
+
+\textsc{\LARGE PUC--Rio}\\[1.5cm]
+\textsc{\Large Research Plan}\\[0.8cm]
+
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+\HRule \\[0.4cm]
+{ \huge \bfseries A Reactive Programming Language for Wireless Sensor 
+Networks}\\[0.4cm]
+\HRule \\[1.5cm]
+
+\begin{minipage}{0.4\textwidth}
+\begin{flushleft} \large
+\emph{Autor:}\\
+Francisco Sant'Anna
+\end{flushleft}
+\end{minipage}
+\begin{minipage}{0.4\textwidth}
+\begin{flushright} \large
+\emph{Advisors:} \\
+Roberto Ierusalimschy \\
+Noemi Rodriguez
+\end{flushright}
+\end{minipage}
+
+\vfill
+{\large \today}
+\end{center}
+\end{titlepage}
+
+\tableofcontents
+
+\newpage
+\section{Abstract}
+This document describes the research plan for a six-month sandwich doctorate in 
+the Chalmers University in Gothenburg through the ``Ci\^encias sem Fronteiras'' 
+interchange program.
+The proponent, Francisco Figueiredo Goytacaz Sant'Anna, is a PhD student in 
+computer science at PUC--Rio (CAPES 7).
+
+The proposed research plan is entitled ``A Reactive Programming Language for 
+Wireless Sensor Networks'' and describes how the programming language 
+``\CEU{}'', being developed by the proponent during his PhD, can be used in the 
+context of Wireless Sensor Networks and secure communications.
+
+The research proposal is in the scope of Computer Sciences and Information 
+Technologies, a priority area of the ``Ci\^encias sem Fronteiras'' interchange 
+program.
+
+\section{Introduction}
+
+Wireless sensor networks (WSNs) are composed of a large number of tiny devices 
+(known as ``motes'') capable of sensing the environment and communicating among 
+them.
+WSNs are usually employed to continuously monitor physical phenomena in large 
+or unreachable areas, such as wildfire in forests and air temperature in 
+buildings.
+Each mote features limited processing capabilities, a short-range radio link, 
+and one or more sensors (e.g. light and temperature). \cite{wsn.survey}
+
+Software for WSNs is usually developed in the C programming language, and the 
+addition of a real-time operating system may extend it with preemptive and/or 
+cooperative multithreading \cite{wsn.contiki,wsn.tos}.
+However, concurrency in C requires a low-level exercise related to scheduling, 
+synchronizing, and the life cycle of activities (i.e. creating and destroying 
+threads).
+
+Concurrency in C also lacks safety warranties, given that they are susceptible 
+to unbounded execution, race conditions and deadlocks.
+Nonetheless, safety is an important aspect in WSNs, as motes have scarce 
+resources, are deployed in remote locations, and must run for long periods 
+without human intervention.
+
+The programming language \CEU{} is being developed as part of the proponent's 
+PhD research in PUC--Rio and is targeted at highly constrained embedded systems 
+(such as WSNs), incorporating features found in dataflow and imperative 
+reactive languages \cite{lustre.ieee91, esterel.design}.
+
+\CEU{} supports concurrent lines of execution that run in time steps and are 
+allowed to share variables.
+However, the synchronous and static nature of \CEU{} enables a compile time 
+analysis that can enforce deterministic and memory-safe programs, offering a 
+high-level and safe alternative to the predominating C based multithreaded 
+systems.
+The \CEU{} compiler generates code comparable to handcrafted C programs in 
+terms of size and portability.
+
+Our research at PUC--Rio with \CEU{} is part of a broader project called 
+``Cidades Inteligentes'' (Smart Cities), which involves 20 Brazilian 
+Universities, an investment in the order of 1 million dollars, and aims to 
+build an infrastructure of instrumentation, computation and communication for 
+Wireless Sensor Networks.
+
+\section{Objectives}
+
+The main objective of our research during the sandwich period in Chalmers is to 
+evaluate the applicability of \CEU{} in the context of Wireless Sensor Networks 
+and secure communications.
+The evaluation involves quantitative measures (e.g. memory usage) and
+qualitative measures (e.g. ease of programming).
+
+The Distributed Computing and Systems group in the Chalmers University has an 
+open PhD Sandwich position in the area of ``Secure Wireless Sensor Networks''.
+The research position describes programming languages technologies as one of 
+its focus:
+\emph{``The Security group has developed the link between two areas of computer 
+science: programming languages and computer security.
+The group explores security models and enforcement mechanisms based on 
+programming-language technology''}.
+
+We believe that Wireless Sensor Networks are an ideal scenario to employ the 
+\CEU{} programming language, given it is targeted at highly constrained 
+embedded systems, offering fine-grained concurrency, low memory overhead, and 
+safety warranties.
+
+Many number of software services are required when building a sensor network 
+application.
+The technique of layering services on top of each other, building functionality 
+on top of functionality and, at the same time, separating them into manageable 
+units are a powerful approach.
+
+As an illustrative example, WSN applications typically run tweaked versions of 
+classical distributed algorithms, such as \emph{topology discovery}, 
+\emph{leader election}, \emph{broadcast}, etc \cite{ds.andrews}.
+These algorithms give support for more general purpose applications and must 
+run continuously with them, given the dynamicity of WSNs.
+
+The WSN group at PUC--Rio is currently working on developing a library of a set 
+of such classical algorithms.
+With \CEU{}, these algorithms are easily composed with a parallel construct, 
+making the main application run concurrently with the distributed algorithm 
+seamlessly.
+The language detects any inconsistency with the composition, such as concurrent 
+access to shared variables and unreachable code.
+This idea can be extended to algorithms used and/or developed by the DCS group 
+in Chalmers (e.g. \cite{dcs.clusters}).
+
+We are also planning to investigate ways to describe an approach for 
+synthesizing data representations for concurrent programs.
+It is part of the process to evolve the language together with the DCS group 
+when identifying new requirements not currently addressed.
+
+The DCS group in Chalmers also does research in many programming languages 
+topics, which can also be explored during the PhD Sandwich 
+\cite{dcs.lock_free,dcs.transactional,dcs.manycore}.
+The group has a research library of concurrent constructs 
+(NOBLE\footnote{http://www.cse.chalmers.se/research/group/noble/}) and a 
+testbed of applications ranging from SmartGrid ones to connected car 
+applications (GULLIVER\footnote{http://www.chalmers.se/hosted/gulliver-en/}).
+
+The following list of research topics, aligned with the programming model of 
+\CEU{}, was extracted from the DCS website:
+
+\begin{itemize}
+\item Investigate new techniques for achieving high parallelism and 
+      fault-tolerance in distributed or parallel software.
+\item Evaluate the performance of non-blocking synchronization in parallel 
+      application and system software.
+\item Non-blocking/fine-grain synchronization, aiming at increased parallelism, 
+      fault-tolerance, avoiding convoy effects and priority inversion.
+\item Enhancing performance by cooperative scheduling-and-synchronization.
+\end{itemize}
+
+\section{Methodology}
+
+During the period of the PhD Sandwich, we intend to develop fully working WSN 
+applications in \CEU{} in order to evaluate its viability as an
+alternative to the current employed technologies.
+We will use quantitative and qualitative metrics for the relevant aspects in
+WSNs, and compare the implementations of applications in \CEU{} and other 
+languages (e.g. C).
+
+An existing work \cite{wsn.comparison} measures the performance of different 
+programming languages regarding memory usage, battery
+consumption, and responsiveness specifically for WSNs.
+These aspects are of extreme importance, given the severe hardware constraints 
+in this context.
+
+We also consider safety an important aspect, as motes must run for long periods 
+without human intervention. Finally, high expressiveness, is desired for any 
+programming language in any context.
+
+Follows the list of aspects we will evaluate during our research:
+
+\begin{itemize}
+\item Memory usage: how much applications use in terms of volatile (RAM) and 
+      non-volatile (ROM) memory.
+\item Battery consumption: how much energy applications consume.
+\item Responsiveness: how fast applications acknowledge high-priority requests 
+      (e.g. radio messages).
+\item Safety: which warranties the language offers, releasing the programmer 
+      from such concerns.
+\item Expressiveness: how easy applications can be developed and maintained.
+\end{itemize}
+
+The first three aspects can be easily evaluated with quantitative metrics, 
+while the last two require a more in-depth
+analysis.
+
+Initially, we will port to \CEU{} a set of existing applications developed in 
+other languages and compare the quantitative aspects of the implementations.  
+The results immediately provide feedback regarding the implementations in 
+\CEU{}, which can be used to improve the language.
+
+Then, we will focus on developing new applications with higher complexity in 
+order to evaluate the qualitative aspects.
+We can still use quantitative measures such as number of lines of code and 
+period of development to help on the evaluation.
+
+\section{Schedule}
+
+Our proposal includes a six-month schedule that we intend to follow during the 
+sandwich period:
+
+\begin{table}[h]
+\begin{center}
+\begin{tabular}{ | l | c | c | c | c | c | c | }
+\hline
+    & M1 & M2 & M3 & M4 & M5 & M6 \\ \hline
+
+Presentation of \CEU{}       & X &   & X &   & X &   \\ \hline
+Development of existing apps & X & X &   &   &   &   \\ \hline
+Improvements on \CEU{}       &   & x & X & x & X &   \\ \hline
+Development of new apps      &   &   & X & X & X &   \\ \hline
+Paper                        &   &   &   &   & X & X \\ \hline
+Other activities             & x & x & x & x & x & x \\ \hline
+\end{tabular}
+\linebreak
+{\small(\textbf{X} cells indicate high activity, while \textbf{x} cells 
+indicate low activity)}
+\end{center}
+\end{table}
+
+\begin{description}
+
+\item[Months 1--2:]
+
+During the first month, we will present the language \CEU{} to the research 
+group, focusing on its applicability to WSNs and
+on how it differs from existing systems.
+
+Then, with the support of the group, we will choose existing WSN applications 
+to be ported to \CEU{} in order to perform the
+quantitative analysis of the implementations until the end of the second month.
+
+\item[Months 3--4:]
+
+With the work on existing applications, we will collect a comprehensive 
+feedback to be used for improvements on the
+language.
+
+We will also present the achievements of the first two months, and discuss the 
+development of new applications with
+higher complexity for the next two months.
+
+\item[Months 5--6:]
+
+By the beginning of the fifth month, we expect to have developed some complex 
+applications that can be used in a in-depth
+qualitative analysis of the language.
+
+Both the quantitative and qualitative analysis will be used in a paper to be 
+written to a conference on WSNs.
+
+\item[Months 1--6:]
+
+We also have interest in exploring other research areas of the group related to 
+programming languages and distributed
+systems.
+
+\end{description}
+
+\section{Expected Results}
+
+By the end of the PhD Sandwich, we expect that \CEU{} becomes a real 
+alternative for the development of fully working WSN applications.
+Our methodology involves a quantitative analysis that provides immediate 
+feedback regarding key aspects in WSNs, such as memory usage and battery 
+consumption.
+Hence, we can evolve the language in a small development cycle.
+
+We have already presented a short paper about \CEU{} in the doctoral colloquium 
+of SenSys last year \cite{ceu.sensys11}, with some initial experiments that 
+show competitive results in terms of memory usage and responsiveness.
+With a broader usage, we will have more confidence on the measurements and 
+achieve even better results.
+
+We also expect that the ongoing research in our WSN group at PUC--Rio will take 
+advantage of the interchange with the group in Chalmers and vice-versa.
+Both groups share common research interests and a continuous relationship may 
+arise from this first experience.
+For instance, the library of distributed algorithms for WSNs being developed by 
+the group at PUC--Rio is open-source and can be more easily adopted by the 
+group at Chalmers through this interchange program.
+
+We intend to write a full paper to a top conference together with the group in 
+Chalmers to describe the advances of \CEU{} in the context of WSNs:
+
+\begin{itemize}
+\item ACM/IEEE Conference on Information Processing in Sensor Networks (IPSN).  
+      Submission deadline expected to October 2012.
+\item ACM Conference on Embedded Networked Sensor Systems (SenSys).
+      Submission deadline expected to April 2013.
+\end{itemize}
+
+Another outcome of our research could be the adoption of \CEU{} in new projects 
+in the DCS group in Chalmers, which need not be directly related to research in 
+programming languages.
+
+\section{Researchers}
+
+\begin{description}
+
+\item[PUC--Rio (proponent):]
+\hspace{1mm}
+
+\textbf{Francisco Sant'Anna} is a third year Ph.D. student in the Computer 
+Science department at PUC-Rio. He earned his BSc (2003) and MSc (2007) degrees 
+also in the Computer Science department at PUC-Rio.
+
+The current title of his PhD thesis is ``\CEU{}: Embedded, Safe, and Reactive 
+Programming'', which is expected to be concluded in September 2013.
+His advisors are Prof. Roberto Ierusalimschy and Prof. Noemi Rodriguez, which 
+actuate, respectively, in the field of programming languages and distributed 
+systems.
+
+\textbf{Prof. Roberto Ierusalimschy} is an associate professor of informatics 
+at PUC-Rio (Pontifical University in Rio de Janeiro).
+He is the leading architect of the Lua programming language and the author of 
+Programming in Lua.\cite{lua.pil}
+
+His research activities currently focus on programming languages, mainly 
+alternative languages such as scripting languages and domain-specific 
+languages.
+
+\textbf{Prof. Noemi Rodriguez} is an associate professor of informatics at 
+PUC--Rio.
+Her research interests include the area of concurrent and distributed 
+programming, with an emphasis on the role of programming languages in this 
+context.
+She also leads the Wireless Sensor Networks research group at PUC--Rio.
+
+\item[Chalmers University (host):]
+\hspace{1mm}
+
+\textbf{Prof. Philippas Tsigas} is a professor in the Department of Computing 
+Science and Engineering at Chalmers University.
+He is the co-leader of the Distributed Computing and Systems Research Group.
+His research interests center on distributed/parallel computing and systems and 
+information visualization in general.
+
+Homepage:
+\url{http://www.cse.chalmers.se/~tsigas/index.html}
+
+\end{description}
+
+\bibliographystyle{acm}
+\bibliography{other,my}
+
+\end{document}
+

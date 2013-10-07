@@ -1,0 +1,58 @@
+input _error_t    Radio_startDone;
+input _error_t    Radio_sendDone;
+input _message_t* Radio_receive;
+
+C do
+    #include "simpleCS.h"
+end
+
+_Radio_start();
+await Radio_startDone;
+
+u16 reqCount = 0;
+
+loop do
+    par/or do
+        await 2s;
+    with
+
+        _message_t sendBuff;
+        _requestMsg_t reqData;
+
+        reqCount = reqCount + 1;
+
+        reqData.MsgType    = _REQUEST_ID;
+        reqData.ClientID   = _TOS_NODE_ID;
+        reqData.ServerID   = _SERVER_ID;
+        reqData.Seq        = reqCount;
+        reqData.SensorType = _PHOTO;
+
+        _memcpy(_Radio_getPayload(&sendBuff, _Radio_maxPayloadLength()),
+                &reqData, sizeof<_requestMsg_t>);
+        _Radio_setType(&sendBuff, _REQUEST_ID);
+        _Radio_send(_SERVER_ID, &sendBuff, sizeof<_requestMsg_t>);
+
+        await Radio_sendDone;
+
+	par/or do
+            await 500ms;
+            loop do
+                await 100ms;
+                _Leds_led0Toggle();
+            end
+        with
+            loop do
+                _message_t* recvBuff = await Radio_receive;
+                _returnMsg_t retData;
+                _memcpy(&retData, _Radio_getPayload(recvBuff,sizeof<_returnMsg_t>), 
+                    sizeof<_returnMsg_t>);
+                if (retData.Seq == reqCount) && (retData.Status==_SUCCESS) then
+                    _Leds_set( retData.Value/100 );
+                    break;
+                end
+            end
+        end
+
+        await forever;
+    end
+end

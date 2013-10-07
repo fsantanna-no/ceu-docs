@@ -1,0 +1,18 @@
+- Things to note
+
+    - everything has lexical scope
+        - variables
+        - objects
+            - dynamic instances
+        - lines of execution
+        * for programmers:
+            - easy to ready/write code
+                - compositions
+        * for the compiler:
+            - easy to analyze
+
+        - implementation
+            - all memory is statically allocated
+                - no heap/GC
+            - even dynamic instances
+                - (optionally but recommended)

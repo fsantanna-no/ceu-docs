@@ -1,0 +1,70 @@
+input int Radio_startDone;
+input message_t* Radio_receive;
+
+int count = 0;
+u32 t;
+
+_Radio_start();
+await Radio_startDone;
+
+par/or do
+    loop do
+        await Radio_receive;
+        if count == 0 then
+            t = _Timer_getNow();
+        end
+        _Leds_led0Toggle();
+        count = count + 1;
+        if count == 3000 then
+            break;
+        end
+    end
+with
+    async do
+        loop do
+            nothing;
+        end
+    end
+with
+    async do
+        loop do
+            nothing;
+        end
+    end
+with
+    async do
+        loop do
+            nothing;
+        end
+    end
+with
+    async do
+        loop do
+            nothing;
+        end
+    end
+with
+    async do
+        loop do
+            nothing;
+        end
+    end
+end
+
+t = _Timer_getNow() - t;
+
+loop do
+    _Leds_set(0);
+    await 200ms;
+    _Leds_set(7);
+    await 200ms;
+    _Leds_set(0);
+    await 200ms;
+
+    _Leds_set(t >> 15);
+    await 500ms;
+    _Leds_set(t >> 12);
+    await 500ms;
+    _Leds_set(t >> 9);
+    await 500ms;
+end
