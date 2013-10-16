@@ -3,7 +3,55 @@
 \usepackage[pdftex]{graphicx}
 \usepackage{url}
 \usepackage{verbatim}
-\newcommand{\CEU}{\textsc{C\'{e}u}}
+
+\usepackage{xspace}
+\newcommand{\CEU}{\textsc{C\'{e}u}\xspace}
+\newcommand{\GVT}{\textsc{LuaGravity}\xspace}
+\newcommand{\code}[1] {{\small{\texttt{#1}}}}
+
+\usepackage{color}
+    \definecolor{light}{gray}{0.92}
+    \definecolor{dark}{gray}{0.30}
+    %\definecolor{light}{rgb}{.90,.90,.90}
+    \definecolor{darkgreen}{rgb}{0,.50,0}
+    \definecolor{darkblue}{rgb}{0,0,.50}
+    \definecolor{darkred}{rgb}{.50,0,0}
+    \definecolor{darkpur}{rgb}{.50,0,.50}
+
+\usepackage{listings}
+%\usepackage{textcomp}
+\lstset{
+%columns=fullflexible,
+%basicstyle=\ttfamily,
+escapeinside={||},
+mathescape=true,
+    language=C, % choose the language of the code
+    basicstyle=\fontfamily{pcr}\selectfont\scriptsize\color{black},
+    keywordstyle=\color{black}\bfseries, % style for keywords
+    numbers=none, % where to put the line-numbers
+    numberstyle=\tiny, % the size of the fonts that are used for the line-numbers
+    backgroundcolor=\color{light},
+    showspaces=false, % show spaces adding particular underscores
+    showstringspaces=false, % underline spaces within strings
+    showtabs=false, % show tabs within strings adding particular underscores
+    %frame=single, % adds a frame around the code
+    tabsize=2, % sets default tabsize to 2 spaces
+    %rulesepcolor=\color{gray}
+    captionpos=t, % sets the caption-position to bottom
+    breaklines=false, % sets automatic line breaking
+    %breakatwhitespace=false,
+    numbersep=2em,
+    emph={par,or,hor,do,end,loop,await,emit,input,every,event,call,with,command,%
+          var,and,then,else,C,return,pure,deterministic,nohold,finalize,%
+          each, abort, when, signal, FOREVER, class, spawn, native, safe},
+    emphstyle={\bfseries},
+    commentstyle=\color{dark}\scriptsize,
+    %xleftmargin=20pt,
+    %xrightmargin=20pt,
+    framesep=20pt,
+    %upquote=true,
+    %aboveskip={1.5\baselineskip},
+}
 
 %\renewcommand{\chaptername}{}
 %\renewcommand{\thesection}{}
@@ -20,7 +68,7 @@
 \newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
 \HRule \\[0.4cm]
 { \huge \bfseries Synchronous Languages for
-                  General Purpose Reactive Programming }\\[0.4cm]
+                  General Purpose Reactive Systems }\\[0.4cm]
 \HRule \\[1.5cm]
 
 \begin{minipage}{0.4\textwidth}
@@ -47,32 +95,301 @@ Noemi Rodriguez
 \newpage
 \section{Abstract}
 
-This document describes the research plan for a two-year postdoctoral program 
-in PUC--Rio.
-The proponent, Francisco Figueiredo Goytacaz Sant'Anna, is a PhD in computer 
-science at PUC--Rio.
-
 The proposed research plan, entitled ``Synchronous Languages for General 
 Purpose Reactive Systems'', aims to expand the use of static and 
-safety-oriented synchronous languages, which typically target critical embedded 
-systems, to embrace general purpose reactive systems, such as GUIs, games, 
-networked applications TODO ....
+safety-oriented synchronous languages to embrace general purpose reactive 
+systems, such as GUIs, games, multimedia, and networked applications.
 
-Synchronous languages rely on a restricted semantics to enable static analysis 
-in programs that provide a number of compile-time safety guarantees.
+Synchronous languages typically target critical embedded systems, relying on a 
+restricted semantics to enable static analysis in programs and provide a number 
+of compile-time safety guarantees.
 %
-On the one hand, synchronous programs are predictable in terms of memory usage 
-and execution time in reactions to the environment.
+On the one hand, synchronous programs are predictable in terms of memory usage, 
+execution time, and behavior.
 %
-On the other hand, they are limited in expressiveness, lacking dynamic support 
-and XXX algorithmic-intensive XXX.
+On the other hand, they are limited in expressiveness, restricting support for 
+dynamic memory allocation and for describing algorithmic-intensive 
+computations.
 %
-Although these limitations are not impeditive for the context of embedded 
-systems, they are unacceptable in more general XXX.
+Although these limitations are not impeditive in the context of embedded 
+systems, they are unacceptable for general purpose reactive programming.
 
-We believe that
-relax some strong safety
-for .
+Our goal is to study how to tune the safety and expressiveness boundaries of
+synchronous languages in a way that reactive applications can benefit of 
+powerful mechanisms, while retaining as much safety guarantees as possible.
+
+\section{Introduction}
+
+Concurrent languages can be generically classified in two major execution 
+models.
+%
+In the \emph{asynchronous model}, the program activities (e.g. threads and 
+processes) run independently of one another as result of non-deterministic 
+preemptive scheduling.
+In order to coordinate at specific points, these activities require explicit 
+use of synchronization primitives (e.g. mutual exclusion and message passing).
+%
+In the \emph{synchronous model}, the program activities (e.g. callbacks and 
+coroutines) require explicit control/scheduling primitives (e.g. returning or 
+yielding).
+For this reason, they are inherently synchronized, as the programmer himself 
+specifies how they execute and transfer control.
+
+Due to the simpler and disciplined execution model, synchronous languages are 
+susceptible to static analysis and verification, being an established 
+alternative to $C$ in the field of safety-critical embedded 
+systems~\cite{rp.twelve}.
+%
+However, in order to enable static analysis, synchronous programs typically 
+suffer from two main limitations in expressiveness:
+\emph{lack of dynamic memory allocation support} and
+\emph{impossibility of doing algorithmic-intensive computations}.
+
+Memory allocation makes the static prediction about memory usage more 
+difficult, transferring the burden of memory management to runtime and to 
+programmers, which makes programs less safe.
+It also requires programmers to handle pointers explicitly, raising a number of 
+safety threats, such as \emph{dangling pointers} and \emph{memory leaks}.
+Furthermore, it affects the performance of programs, given that memory 
+allocation algorithms have some (possibly unpredictable) runtime overhead.
+%Finally, heap usage may affect the stack and vice-versa, leading to hard-
+%specially considering MMU-less embedded platforms
+%
+%* mem pools
+%
+Algorithm-intensive computations (e.g., compression, image processing) break 
+the synchronous execution hypothesis, as control transfer among activities now 
+happens in an unbounded amount of processing time~\cite{rp.hypothesis}.
+%
+For reactive applications, instantaneous feedback is fundamental, and minimal 
+delays in responsiveness may affect the system correctness.
+
+\CEU~\cite{ceu.tr,ceu.phd,ceu.sensys13,ceu.rem13}
+and
+\GVT~\cite{luagravity.sblp,luagravity.msc}
+are two synchronous languages with distinct goals that we have been developing 
+during the past 6 years.
+
+\CEU is a Esterel-based~\cite{esterel.ieee91} reactive language that targets 
+constrained embedded platforms.
+It is designed from scratch and pursues safety and efficiency, targeting highly 
+constrained embedded systems.
+Most of the complexity of the language resides on the static analysis that 
+happens at compile time.
+The compiler forbids unbounded loops and verifies that no two accesses to the 
+same variable occur at the same time.
+It also calculates exact upper limits for memory usage, concurrent lines of 
+execution, and nested invocations of internal events.
+Therefore, there are no runtime errors regarding memory allocations, race 
+conditions, and unbounded execution.
+
+\GVT provides runtime extensions to the programming language Lua~\cite{lua.pil} 
+for a better support for building reactive applications.
+\GVT supports the emerging functional reactive programming style (FRP) for 
+building declarative GUIs~\cite{frp.flapjax,frp.elm,frp.survey}.
+Being an extension module, instead of a new language on its own, \GVT inherits 
+all functionality of Lua, with unrestricted support for loops, recursive calls, 
+and heap-allocated tables, closures, and coroutines.
+Therefore, \GVT pursues power and flexibility, relying on a dynamic language 
+that already pushes most safety checks to runtime.
+
+Overall, \CEU produces more tractable and reliable programs, but that also 
+rapidly hits a limit in expressiveness when used outside its restricted 
+embedded domain.
+%
+Our goal with this research plan is to push the expressiveness limits of \CEU 
+towards general purpose reactive systems.
+%
+We believe that starting from \CEU's restricted and tractable semantics we can 
+keep the precise memory and execution model that allows the compiler to predict 
+resource usage.
+%
+In contrast, most FRP systems expose turing-complete functional languages to 
+programmers, and hence, cannot provide static safety guarantees.
+
+\section{Research plan}
+
+\subsection{The programming language C\'eu}
+
+\begin{figure}[t]
+\begin{lstlisting}[numbers=left,xleftmargin=3em]
+par do
+    loop do
+        await 250ms;
+        _toggle(0);
+    end
+with
+    loop do
+        await 500ms;
+        _toggle(1);
+    end
+with
+    loop do
+        await 1000ms;
+        _toggle(2);
+    end
+end
+\end{lstlisting}
+\rule{8.6cm}{0.37pt}
+\caption{
+    An introductory example in \CEU that blinks three LEDs in parallel trails.
+    The LEDs blink every $250ms$, $500ms$, and $1000ms$, respectively.
+    \label{lst.blink}
+}
+\end{figure}
+
+\CEU~\cite{ceu.sensys13,ceu.phd,ceu.rem13,ceu.tr} is a synchronous reactive 
+language that supports multiple lines of execution---known as 
+\emph{trails}---that continuously react to external input events broadcast by 
+the environment.
+%
+The example in Figure~\ref{lst.blink} blinks three LEDs in parallel with 
+different frequencies.
+%
+Symbols defined externally in $C$%
+\footnote{Symbols for functions, types, globals, and constants available in the 
+$C$ compiler for the target embedded platform.
+}, such as \code{\_toggle} in the example, can be used seamlessly in \CEU by 
+prefixing their names with an underscore.
+
+By following the synchronous model, each trail in \CEU reacts to an occurring 
+event with a \emph{run-to-completion} policy and in the order they appear in 
+the code: the scheduler of \CEU is non-preemptive and deterministic.
+%
+Reactions to subsequent events never overlap, and the compiler ensures that 
+programs do not contain unbounded loops, which could lead to unresponsiveness 
+for incoming events.
+%
+The language runtime relies on a queue to hold incoming events while reactions 
+execute to completion.
+%
+The disciplined execution model of \CEU simplifies the automatic analysis about 
+concurrency aspects, enabling a number of static safety guarantees, such as 
+race-free shared-memory and $C$ calls~\cite{ceu.sensys13}.
+%
+%Note in the example of Figure~\ref{lst.blink} that every second the three 
+%trails awake at the same time, but the deterministic scheduler follows the 
+%order they appear in the code (i.e., first \emph{LED 0} toggles, then 
+%\emph{LED 1}, and then \emph{LED 2}).
+
+Programs in \CEU are structured with standard imperative primitives, such as 
+sequences, loops, and assignments.
+The extra support for parallelism allows programs to wait for multiple events 
+at the same time.
+Trails await events without loosing context information, such as locals and the 
+program counter, which eases reasoning in concurrent 
+applications~\cite{sync_async.cooperative}.
+%
+The conjunction of parallelism with standard control-flow enable hierarchical 
+compositions, in which self-contained blocks of code can be deployed 
+independently.
+%
+To illustrate the power of compositions in \CEU, consider the two variations of 
+the structure that follows:
+
+\begin{minipage}[t]{0.35\linewidth}
+\begin{lstlisting}
+loop do
+    par/and do
+        <...>
+    with
+        await 1s;
+    end
+end
+\end{lstlisting}
+\end{minipage}
+%
+\hspace{1cm}
+%
+\begin{minipage}[t]{0.35\linewidth}
+\begin{lstlisting}
+loop do
+    par/or do
+        <...>
+    with
+        await 1s;
+    end
+end
+\end{lstlisting}
+\end{minipage}
+
+In the \code{par/and} loop variation, the code in the first trail (represented 
+as \code{...}) is repeated every second at minimum, as the second trail must 
+also terminate to rejoin the \code{par/and} primitive and restart the loop.
+%
+In the \code{par/or} loop variation, if the code does not terminate within a 
+second, the second trail rejoins the composition (cancelling the first trail) 
+and restarts the loop.
+%
+The two structures represent, respectively, the \emph{sampling} and 
+\emph{timeout} patterns, which are common in embedded applications.
+%
+Note that the body of \textbf{\code{<...>}} may contain arbitrary code with 
+nested compositions and awaits, but the described patterns will work as 
+expected.
+
+The conjunction of parallel compositions with the synchronous execution model 
+provides precise information about the control flow of applications, such as 
+which lines of executions can be active, which variables are accessed in 
+reaction to a specific event, and so on.
+%
+As a summary, the following safety properties hold for all programs that 
+successfully compile in \CEU~\cite{ceu.sensys13}:
+%
+\begin{itemize}
+\item Time-bounded reactions to the environment.
+\item No concurrency in accesses to shared variables.
+\item No concurrency in system calls sharing a resource.
+\item Synchronization for timers in parallel.
+\end{itemize}
+
+\subsection{Dynamic memory allocation}
+
+\begin{itemize}
+    \item memory pools
+    \item compositions / scoped
+\end{itemize}
+
+\subsection{Algorithmic-intensive computations}
+
+asynchoronous primitive
+
+\begin{itemize}
+    \item share nothing policy
+    \item lower priority
+    \item automatic start/stop/schedule
+\end{itemize}
+
+\subsection{General-purpose applications}
+
+\begin{itemize}
+    \item games
+    \item multimedia (NCL, Telemidia)
+    \item network (DS, Noemi)
+\end{itemize}
+
+\begin{comment}
+
+%
+However, for soft real-time reactive systems, deadlines are not strict
+Most general purpose reactive systems have soft real-time requirements,
+(in contrast with hard real-time systems)
+For hard real-time reactive systems, missing a critical scheduling deadline is 
+unacceptable (e.g. a thread that controls the XXX for an aircraft).
+
+although missing a deadline is undesired, xxx
+control of an airplane
+
+For soft real-time systems XXX
+
+Our proposal aims to embrace the two limitation in the synchronous model
+general-purpose, not hard
+- combination of synchronous/asynchronous
+- memory pools
+
+
+FRP, depends on memory allocation
+- our work
 
 two sides of the spectrum
 Ceu -> LuaGravity
@@ -80,8 +397,6 @@ Ceu -> LuaGravity
 static, compiler
 
 dynamic, runtime
-
-\section{Introduction}
 
 - reactive systems
     - emerging broad use \cite
@@ -140,7 +455,7 @@ systems.
 \section{Objectives}
 
 The main objective of our research during the sandwich period in Chalmers is to 
-evaluate the applicability of \CEU{} in the context of Wireless Sensor Networks 
+evaluate the applicability of  in the context of Wireless Sensor Networks 
 and secure communications.
 The evaluation involves quantitative measures (e.g. memory usage) and
 qualitative measures (e.g. ease of programming).
@@ -155,7 +470,7 @@ The group explores security models and enforcement mechanisms based on
 programming-language technology''}.
 
 We believe that Wireless Sensor Networks are an ideal scenario to employ the 
-\CEU{} programming language, given it is targeted at highly constrained 
+ programming language, given it is targeted at highly constrained 
 embedded systems, offering fine-grained concurrency, low memory overhead, and 
 safety warranties.
 
@@ -173,7 +488,7 @@ run continuously with them, given the dynamicity of WSNs.
 
 The WSN group at PUC--Rio is currently working on developing a library of a set 
 of such classical algorithms.
-With \CEU{}, these algorithms are easily composed with a parallel construct, 
+With , these algorithms are easily composed with a parallel construct, 
 making the main application run concurrently with the distributed algorithm 
 seamlessly.
 The language detects any inconsistency with the composition, such as concurrent 
@@ -195,7 +510,7 @@ testbed of applications ranging from SmartGrid ones to connected car
 applications (GULLIVER\footnote{http://www.chalmers.se/hosted/gulliver-en/}).
 
 The following list of research topics, aligned with the programming model of 
-\CEU{}, was extracted from the DCS website:
+, was extracted from the DCS website:
 
 \begin{itemize}
 \item Investigate new techniques for achieving high parallelism and 
@@ -210,10 +525,10 @@ The following list of research topics, aligned with the programming model of
 \section{Methodology}
 
 During the period of the PhD Sandwich, we intend to develop fully working WSN 
-applications in \CEU{} in order to evaluate its viability as an
+applications in  in order to evaluate its viability as an
 alternative to the current employed technologies.
 We will use quantitative and qualitative metrics for the relevant aspects in
-WSNs, and compare the implementations of applications in \CEU{} and other 
+WSNs, and compare the implementations of applications in  and other 
 languages (e.g. C).
 
 An existing work \cite{wsn.comparison} measures the performance of different 
@@ -243,10 +558,10 @@ The first three aspects can be easily evaluated with quantitative metrics,
 while the last two require a more in-depth
 analysis.
 
-Initially, we will port to \CEU{} a set of existing applications developed in 
+Initially, we will port to  a set of existing applications developed in 
 other languages and compare the quantitative aspects of the implementations.  
 The results immediately provide feedback regarding the implementations in 
-\CEU{}, which can be used to improve the language.
+, which can be used to improve the language.
 
 Then, we will focus on developing new applications with higher complexity in 
 order to evaluate the qualitative aspects.
@@ -264,9 +579,9 @@ sandwich period:
 \hline
     & M1 & M2 & M3 & M4 & M5 & M6 \\ \hline
 
-Presentation of \CEU{}       & X &   & X &   & X &   \\ \hline
+Presentation of        & X &   & X &   & X &   \\ \hline
 Development of existing apps & X & X &   &   &   &   \\ \hline
-Improvements on \CEU{}       &   & x & X & x & X &   \\ \hline
+Improvements on        &   & x & X & x & X &   \\ \hline
 Development of new apps      &   &   & X & X & X &   \\ \hline
 Paper                        &   &   &   &   & X & X \\ \hline
 Other activities             & x & x & x & x & x & x \\ \hline
@@ -281,12 +596,12 @@ indicate low activity)}
 
 \item[Months 1--2:]
 
-During the first month, we will present the language \CEU{} to the research 
+During the first month, we will present the language  to the research 
 group, focusing on its applicability to WSNs and
 on how it differs from existing systems.
 
 Then, with the support of the group, we will choose existing WSN applications 
-to be ported to \CEU{} in order to perform the
+to be ported to  in order to perform the
 quantitative analysis of the implementations until the end of the second month.
 
 \item[Months 3--4:]
@@ -318,14 +633,14 @@ systems.
 
 \section{Expected Results}
 
-By the end of the PhD Sandwich, we expect that \CEU{} becomes a real 
+By the end of the PhD Sandwich, we expect that  becomes a real 
 alternative for the development of fully working WSN applications.
 Our methodology involves a quantitative analysis that provides immediate 
 feedback regarding key aspects in WSNs, such as memory usage and battery 
 consumption.
 Hence, we can evolve the language in a small development cycle.
 
-We have already presented a short paper about \CEU{} in the doctoral colloquium 
+We have already presented a short paper about  in the doctoral colloquium 
 of SenSys last year \cite{ceu.sensys11}, with some initial experiments that 
 show competitive results in terms of memory usage and responsiveness.
 With a broader usage, we will have more confidence on the measurements and 
@@ -340,7 +655,7 @@ the group at PUC--Rio is open-source and can be more easily adopted by the
 group at Chalmers through this interchange program.
 
 We intend to write a full paper to a top conference together with the group in 
-Chalmers to describe the advances of \CEU{} in the context of WSNs:
+Chalmers to describe the advances of  in the context of WSNs:
 
 \begin{itemize}
 \item ACM/IEEE Conference on Information Processing in Sensor Networks (IPSN).  
@@ -349,7 +664,7 @@ Chalmers to describe the advances of \CEU{} in the context of WSNs:
       Submission deadline expected to April 2013.
 \end{itemize}
 
-Another outcome of our research could be the adoption of \CEU{} in new projects 
+Another outcome of our research could be the adoption of  in new projects 
 in the DCS group in Chalmers, which need not be directly related to research in 
 programming languages.
 
@@ -364,7 +679,7 @@ programming languages.
 Science department at PUC-Rio. He earned his BSc (2003) and MSc (2007) degrees 
 also in the Computer Science department at PUC-Rio.
 
-The current title of his PhD thesis is ``\CEU{}: Embedded, Safe, and Reactive 
+The current title of his PhD thesis is ``: Embedded, Safe, and Reactive 
 Programming'', which is expected to be concluded in September 2013.
 His advisors are Prof. Roberto Ierusalimschy and Prof. Noemi Rodriguez, which 
 actuate, respectively, in the field of programming languages and distributed 
@@ -399,6 +714,8 @@ Homepage:
 \url{http://www.cse.chalmers.se/~tsigas/index.html}
 
 \end{description}
+
+\end{comment}
 
 \bibliographystyle{acm}
 \bibliography{other,my}
