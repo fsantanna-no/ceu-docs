@@ -116,7 +116,8 @@ systems, they are unacceptable for general purpose reactive programming.
 
 Our goal is to study how to tune the safety and expressiveness boundaries of
 synchronous languages in a way that reactive applications can benefit of 
-powerful mechanisms, while retaining as much safety guarantees as possible.
+powerful mechanisms, while retaining as much efficiency and safety guarantees 
+as possible.
 
 \section{Introduction}
 
@@ -144,14 +145,14 @@ However, in order to enable static analysis, synchronous programs typically
 suffer from two main limitations in expressiveness:
 \emph{lack of dynamic memory allocation support} and
 \emph{impossibility of doing algorithmic-intensive computations}.
-
+%
 Memory allocation makes the static prediction about memory usage more 
 difficult, transferring the burden of memory management to runtime and to 
 programmers, which makes programs less safe.
 It also requires programmers to handle pointers explicitly, raising a number of 
 safety threats, such as \emph{dangling pointers} and \emph{memory leaks}.
-Furthermore, it affects the performance of programs, given that memory 
-allocation algorithms have some (possibly unpredictable) runtime overhead.
+%Furthermore, it affects the performance of programs, given that memory 
+%allocation algorithms have some (possibly unpredictable) runtime overhead.
 %Finally, heap usage may affect the stack and vice-versa, leading to hard-
 %specially considering MMU-less embedded platforms
 %
@@ -193,21 +194,59 @@ and heap-allocated tables, closures, and coroutines.
 Therefore, \GVT pursues power and flexibility, relying on a dynamic language 
 that already pushes most safety checks to runtime.
 
-Overall, \CEU produces more tractable and reliable programs, but that also 
-rapidly hits a limit in expressiveness when used outside its restricted 
-embedded domain.
+Overall, \CEU produces more tractable and reliable programs, but also rapidly 
+hits a limit in expressiveness when used outside its restricted embedded 
+domain.
 %
 Our goal with this research plan is to push the expressiveness limits of \CEU 
 towards general purpose reactive systems.
 %
-We believe that starting from \CEU's restricted and tractable semantics we can 
-keep the precise memory and execution model that allows the compiler to predict 
-resource usage.
+Starting from \CEU's restricted and tractable semantics, we can keep the 
+precise memory and execution model that allows the compiler to predict resource 
+usage.
 %
 In contrast, most FRP systems expose turing-complete functional languages to 
 programmers, and hence, cannot provide static safety guarantees.
 
 \section{Research plan}
+
+Our goal is to extend the expressiveness of the programming language \CEU, 
+while accommodating two conflicting requirements:
+
+\begin{itemize}
+    \item Keep the safety and resource efficiency of synchronous languages.
+    \item Overcome the two main limitations of synchronous languages:
+            \emph{dynamic memory allocation}
+            and
+            \emph{performing algorithmic-intensive computations}.
+\end{itemize}
+
+On the one hand, \CEU was designed for constrained embedded systems, and we do 
+not want to abdicate of its small footprint and compile-time safety guarantees.
+%
+On the other hand, to overcome the limitations in expressiveness, we
+
+We want to keep
+
+We believe that it is important to retain
+The first item
+
+To attack the limitations
+
+We start with a
+
+keep safety and resource efficiency
+    - from constrained embedded systems to general-purpose reactive systems
+
+memory management
+    - memory pools
+    - scope
+
+xxx
+    - asynchronous execution
+        - share nothing
+        - event-driven model
+        - no tweking in the synch formal semantics
 
 \subsection{The programming language C\'eu}
 
@@ -216,23 +255,24 @@ programmers, and hence, cannot provide static safety guarantees.
 par do
     loop do
         await 250ms;
-        _toggle(0);
+        _led_toggle(0);
     end
 with
     loop do
         await 500ms;
-        _toggle(1);
+        _led_toggle(1);
     end
 with
     loop do
         await 1000ms;
-        _toggle(2);
+        _led_toggle(2);
     end
 end
 \end{lstlisting}
 \rule{8.6cm}{0.37pt}
 \caption{
-    An introductory example in \CEU that blinks three LEDs in parallel trails.
+    An introductory example in \CEU that blinks three LEDs (identified as 0, 1, 
+    and 2) in parallel trails.
     The LEDs blink every $250ms$, $500ms$, and $1000ms$, respectively.
     \label{lst.blink}
 }
@@ -245,27 +285,15 @@ the environment.
 %
 The example in Figure~\ref{lst.blink} blinks three LEDs in parallel with 
 different frequencies.
-%
-Symbols defined externally in $C$%
-\footnote{Symbols for functions, types, globals, and constants available in the 
-$C$ compiler for the target embedded platform.
-}, such as \code{\_toggle} in the example, can be used seamlessly in \CEU by 
-prefixing their names with an underscore.
 
 By following the synchronous model, each trail in \CEU reacts to an occurring 
-event with a \emph{run-to-completion} policy and in the order they appear in 
-the code: the scheduler of \CEU is non-preemptive and deterministic.
+event with a \emph{run-to-completion} policy: the scheduler of \CEU is 
+non-preemptive and deterministic.
 %
 Reactions to subsequent events never overlap, and the compiler ensures that 
-programs do not contain unbounded loops, which could lead to unresponsiveness 
-for incoming events.
-%
-The language runtime relies on a queue to hold incoming events while reactions 
-execute to completion.
-%
-The disciplined execution model of \CEU simplifies the automatic analysis about 
-concurrency aspects, enabling a number of static safety guarantees, such as 
-race-free shared-memory and $C$ calls~\cite{ceu.sensys13}.
+programs do not contain \emph{unbounded loops} (i.e., loops without 
+\code{await} statements) which could lead to unresponsiveness for incoming 
+events.
 %
 %Note in the example of Figure~\ref{lst.blink} that every second the three 
 %trails awake at the same time, but the deterministic scheduler follows the 
@@ -328,10 +356,10 @@ Note that the body of \textbf{\code{<...>}} may contain arbitrary code with
 nested compositions and awaits, but the described patterns will work as 
 expected.
 
-The conjunction of parallel compositions with the synchronous execution model 
-provides precise information about the control flow of applications, such as 
-which lines of executions can be active, which variables are accessed in 
-reaction to a specific event, and so on.
+The conjunction of parallel compositions with the disciplined synchronous 
+execution model provides precise information about the control flow of 
+applications, such as which lines of executions can be active, and which 
+variables are accessed in reaction to a specific event.
 %
 As a summary, the following safety properties hold for all programs that 
 successfully compile in \CEU~\cite{ceu.sensys13}:
@@ -345,6 +373,60 @@ successfully compile in \CEU~\cite{ceu.sensys13}:
 
 \subsection{Dynamic memory allocation}
 
+Dynamic memory is a fundamental mechanism in general-purpose programming, 
+allowing programs to accommodate short-lived objects without keeping them in 
+memory for the whole execution.
+
+\CEU has no special support for memory allocation, relying on standard 
+\emph{malloc} \& \emph{free} from $C$.
+%
+However, standard memory management raises a number of challenges to the design 
+of safe applications:
+
+\begin{enumerate}
+\item \textbf{Run-time overhead:}
+    Memory management requires extra run-time bookkeeping for the 
+    allocation/reclamation algorithms.
+    In real-time reactive applications, such as video games, even a small delay 
+    may be noticed by the user.
+\item \textbf{Unreproducible execution:}
+    Successive executions of the same program may allocate memory in different 
+    ways, possibly leading to different outcomes (e.g. an allocation fail).
+\item \textbf{Reclamation hazards:}
+    Properly reclaiming memory is far from trivial.
+    A missed reclamation leads to a memory leak that wastes memory, while 
+    reclaiming a memory block still in use leads to a dangling pointer that 
+will eventually crash the application.
+\end{enumerate}
+
+A common alternative in the context of embedded systems is to use \emph{memory 
+pools} as the underlying scheme to manage dynamic allocation.
+A memory pool is a static buffer of \emph{N} predefined fixed-sized blocks of 
+memory that can be used by an application.
+%
+With memory pools some of the threats raised above can be alleviated:
+
+\begin{enumerate}
+\item
+The run-time overhead is minimal because implementations typically use simple 
+arrays to hold the memory blocks.
+For instance, both allocation and reclamation are \emph{O(1)} in TinyOS.
+\item
+Given that memory operations are simple and only handle fixed-size blocks, the 
+execution is always deterministic and predictable.
+\item
+Memory pools are still manipulated through explicit allocation/reclamation 
+operations.
+Hence, all challenges to properly reclaim memory still hold.
+\end{enumerate}
+
+The biggest drawback of memory pools is the lack of flexibility
+
+
+Regarding automatic reclamation of memory,
+
+syntax to accommodate both
+
 \begin{itemize}
     \item memory pools
     \item compositions / scoped
@@ -353,6 +435,8 @@ successfully compile in \CEU~\cite{ceu.sensys13}:
 \subsection{Algorithmic-intensive computations}
 
 asynchoronous primitive
+
+parallelizable
 
 \begin{itemize}
     \item share nothing policy
