@@ -43,7 +43,8 @@ mathescape=true,
     numbersep=2em,
     emph={par,or,hor,do,end,loop,await,emit,input,every,event,call,with,command,%
           var,and,then,else,C,return,pure,deterministic,nohold,finalize,%
-          each, abort, when, signal, FOREVER, class, spawn, native, safe},
+          each, abort, when, signal, FOREVER, class, spawn, native, 
+    safe,container,async},
     emphstyle={\bfseries},
     commentstyle=\color{dark}\scriptsize,
     %xleftmargin=20pt,
@@ -143,7 +144,7 @@ systems~\cite{rp.twelve}.
 %
 However, in order to enable static analysis, synchronous programs typically 
 suffer from two main limitations in expressiveness:
-\emph{lack of dynamic memory allocation support} and
+\emph{lack of safe dynamic memory allocation support} and
 \emph{impossibility of doing algorithmic-intensive computations}.
 %
 Memory allocation makes the static prediction about memory usage more 
@@ -172,7 +173,10 @@ are two synchronous languages with distinct goals that we have been developing
 during the past 6 years.
 
 \CEU is a Esterel-based~\cite{esterel.ieee91} reactive language that targets 
-constrained embedded platforms.
+constrained embedded platforms, such as Arduino%
+\footnote{\url{http://www.arduino.cc}}
+and wireless sensor nodes (e.g. \emph{micaz}%
+\footnote{\url{http://www.xbow.com}}).
 It is designed from scratch and pursues safety and efficiency, targeting highly 
 constrained embedded systems.
 Most of the complexity of the language resides on the static analysis that 
@@ -221,32 +225,29 @@ while accommodating two conflicting requirements:
             \emph{performing algorithmic-intensive computations}.
 \end{itemize}
 
-On the one hand, \CEU was designed for constrained embedded systems, and we do 
-not want to abdicate of its small footprint and compile-time safety guarantees.
+\CEU was designed for constrained embedded systems, and we do not want to 
+abdicate of its small footprint and compile-time safety guarantees.
 %
-On the other hand, to overcome the limitations in expressiveness, we
+In order to overcome the limitations in expressiveness and embrace 
+general-purpose reactive systems, we plan to add new functionality keeping the 
+safety mindset of the language:
 
-We want to keep
+\begin{itemize}
+    \item For dynamic allocation, we want to employ the use of memory pools 
+    under the hoods for predicting memory usage at compile time and enforcing
+    deterministic behavior for memory management.
+    We also want to take advantage of \CEU's high level compositions to limit 
+    the visibility of allocated objects and reclaim memory efficiently through 
+(static) lexical analysis.
+    \item For algorithmic-intensive computations we plan to add an asynchronous 
+primitive that cannot share memory with the reactive/synchronous code.
+    With this approach, the reactive part of the program remains with the 
+static guarantees, while the asynchronous execution has no restrictions, but 
+cannot interfere with the synchronous execution.
+\end{itemize}
 
-We believe that it is important to retain
-The first item
-
-To attack the limitations
-
-We start with a
-
-keep safety and resource efficiency
-    - from constrained embedded systems to general-purpose reactive systems
-
-memory management
-    - memory pools
-    - scope
-
-xxx
-    - asynchronous execution
-        - share nothing
-        - event-driven model
-        - no tweking in the synch formal semantics
+After introducing \CEU, we provide more details regarding the two proposals 
+above and present possible application scenarios to evaluate the results.
 
 \subsection{The programming language C\'eu}
 
@@ -269,7 +270,7 @@ with
     end
 end
 \end{lstlisting}
-\rule{8.6cm}{0.37pt}
+\rule{13.8cm}{0.37pt}
 \caption{
     An introductory example in \CEU that blinks three LEDs (identified as 0, 1, 
     and 2) in parallel trails.
@@ -404,13 +405,12 @@ pools} as the underlying scheme to manage dynamic allocation.
 A memory pool is a static buffer of \emph{N} predefined fixed-sized blocks of 
 memory that can be used by an application.
 %
-With memory pools some of the threats raised above can be alleviated:
+With memory pools two of the threats raised above can be eliminated:
 
 \begin{enumerate}
 \item
 The run-time overhead is minimal because implementations typically use simple 
-arrays to hold the memory blocks.
-For instance, both allocation and reclamation are \emph{O(1)} in TinyOS.
+arrays to hold the memory blocks: allocation and reclamation are \emph{O(1)}.
 \item
 Given that memory operations are simple and only handle fixed-size blocks, the 
 execution is always deterministic and predictable.
@@ -420,337 +420,178 @@ operations.
 Hence, all challenges to properly reclaim memory still hold.
 \end{enumerate}
 
-The biggest drawback of memory pools is the lack of flexibility
+Regarding reclamation hazards, a typical alternative is to employ automatic 
+memory management relying on a garbage collector.
+%
+However, garbage collection increases the complexity of the language and also 
+incurs a considerable runtime overhead.
 
+\begin{figure}[t]
+\begin{lstlisting}[numbers=left,xleftmargin=3em]
+par/or do
+    container do
+        // Self-contained block of code that uses
+        // dynamic allocation.
+        <...>
+            ref = alloc(<...>);
+        <...>
+    end
+with
+    <...>
+end
+\end{lstlisting}
+\rule{13.8cm}{0.37pt}
+\caption{
+    All memory allocated inside the \code{container} block is automatically 
+    reclaimed after it goes out of scope.
+    \label{lst.container}
+}
+\end{figure}
 
-Regarding automatic reclamation of memory,
-
-syntax to accommodate both
-
-\begin{itemize}
-    \item memory pools
-    \item compositions / scoped
-\end{itemize}
+The support for compositions and self-contained blocks of code in \CEU opens an 
+opportunity for an alternative approach that is efficient and avoids explicit 
+memory reclamation by the programmer.
+%
+In the example of Figure~\ref{lst.container}, the hypothetical \code{container} 
+keyword (line 2) encloses a block of code that allocates dynamic memory (lines 
+3-7).
+When the container goes out of scope (suppose the block in line 10 terminates), 
+all memory allocated inside it can be automatically reclaimed.
+It is important that references to allocated blocks do not escape the 
+container, what requires a trivial lexical analysis at compile time.
 
 \subsection{Algorithmic-intensive computations}
 
-asynchoronous primitive
-
-parallelizable
-
-\begin{itemize}
-    \item share nothing policy
-    \item lower priority
-    \item automatic start/stop/schedule
-\end{itemize}
-
-\subsection{General-purpose applications}
-
-\begin{itemize}
-    \item games
-    \item multimedia (NCL, Telemidia)
-    \item network (DS, Noemi)
-\end{itemize}
-
-\begin{comment}
-
+Applications often need to perform some kind of heavy computation, such as 
+compressing a file, or converting an image format.
+It is important that while the computation executes, the application does not 
+``freeze'' and remains reactive to external events.
 %
-However, for soft real-time reactive systems, deadlines are not strict
-Most general purpose reactive systems have soft real-time requirements,
-(in contrast with hard real-time systems)
-For hard real-time reactive systems, missing a critical scheduling deadline is 
-unacceptable (e.g. a thread that controls the XXX for an aircraft).
+However, the synchronous execution model relies on the hypothesis that 
+computations run infinitely faster than the rate of external events, which is 
+not valid when facing heavy computations.
 
-although missing a deadline is undesired, xxx
-control of an airplane
+\begin{figure}[t]
+\begin{lstlisting}[numbers=left,xleftmargin=3em]
+par/or do
+    <...> // defines ret, p1, p2
+    ret = async (p1, p2) do
+              <...>     // heavy computation
+              return v;
+          end
+with
+    <...>
+end
+\end{lstlisting}
+\rule{13.8cm}{0.37pt}
+\caption{
+    An \code{async} block executes independently (``detached'') from the 
+    synchronous part of the program.
+    \label{lst.async}
+}
+\end{figure}
 
-For soft real-time systems XXX
-
-Our proposal aims to embrace the two limitation in the synchronous model
-general-purpose, not hard
-- combination of synchronous/asynchronous
-- memory pools
-
-
-FRP, depends on memory allocation
-- our work
-
-two sides of the spectrum
-Ceu -> LuaGravity
-
-static, compiler
-
-dynamic, runtime
-
-- reactive systems
-    - emerging broad use \cite
-    - embedded systems
-    - guis, servers
-
-- synchronous languages
-    - ES: esterel
-    - GP: FRP, elm
-    - me: ceu, gvt
-
-Software for embedded systems is usually developed in the C programming 
-language, and the addition of a real-time operating system may extend it with 
-preemptive and/or cooperative multithreading \cite{wsn.contiki,wsn.tos}.
-However, concurrency in C requires a low-level exercise related to scheduling, 
-synchronizing, and the life cycle of activities (i.e. creating and destroying 
-threads).
+We agree on the fact that heavy computations are fundamentally incompatible 
+with the synchronous model and propose the addition of an \emph{asynchronous} 
+primitive to \CEU.
+Such primitive has already being adopted by other synchronous 
+systems~\cite{esterel.primer,frp.elm}.
 %
-Concurrency in C also lacks safety warranties, given that they are susceptible 
-to unbounded execution, race conditions and deadlocks.
-Nonetheless, safety is a fundamental  aspect in embedded systems, which have 
-scarce resources and must run for long periods without human intervention.
-
-The programming language \CEU~\cite{ceu.sensys13} developed as part of the 
-proponent's PhD research in PUC--Rio is targeted at highly constrained embedded 
-systems (such as Wireless Sensor Networks~\cite{wsn.survey}) and incorporates
-features found in dataflow and imperative reactive languages 
-\cite{lustre.ieee91, esterel.design}.
+Figure~\ref{lst.async} illustrates how an asynchronous execution can be started 
+from the program.
+The \code{async} block (lines 3-6) may contain arbitrary code with heavy 
+computations (line 4).
+On startup, the program may pass parameters by copy to the \code{async} (e.g.  
+\code{p1} and \code{p2} in line 3).
+On termination, the \code{async} may return a value to the program 
+(\code{return} in line 5 to the assignment in line 3).
 %
-\CEU supports concurrent lines of execution that run in time steps and are 
-allowed to share variables.
-However, the synchronous and static nature of \CEU enables a compile time 
-analysis that can enforce deterministic and memory-safe programs, offering a 
-high-level and safe alternative to the predominating C based multithreaded 
-systems.
-The \CEU compiler generates code comparable to handcrafted C programs in terms 
-of size and portability.
+While the trail that spawned the \code{async} waits for its termination, other 
+parts of the program in parallel (line 8) remain reactive.
 
-Currently, both data and control memory are managed manually, an approach that 
-is known to be hard and error prone.
-%
-In this work we show how to extend a synchronous concurrent language to provide 
-safe and automatic management of dynamic memory.
-Our strategy reconciles data and control state into the single concept of 
-\emph{organisms}, which provide multiple lines of execution with an object-like 
-interface.
-%
-Unlike objects in Java, organisms are lexically scoped, and their life cycle is 
-controlled following the structure of the program, rather than by runtime 
-reachability algorithms.
-%
-As a result, memory reclamation is efficient, providing rich dynamic 
-functionality as in Java, with little overhead in comparison to C-based 
-systems.
-
-\section{Objectives}
-
-The main objective of our research during the sandwich period in Chalmers is to 
-evaluate the applicability of  in the context of Wireless Sensor Networks 
-and secure communications.
-The evaluation involves quantitative measures (e.g. memory usage) and
-qualitative measures (e.g. ease of programming).
-
-The Distributed Computing and Systems group in the Chalmers University has an 
-open PhD Sandwich position in the area of ``Secure Wireless Sensor Networks''.
-The research position describes programming languages technologies as one of 
-its focus:
-\emph{``The Security group has developed the link between two areas of computer 
-science: programming languages and computer security.
-The group explores security models and enforcement mechanisms based on 
-programming-language technology''}.
-
-We believe that Wireless Sensor Networks are an ideal scenario to employ the 
- programming language, given it is targeted at highly constrained 
-embedded systems, offering fine-grained concurrency, low memory overhead, and 
-safety warranties.
-
-Many number of software services are required when building a sensor network 
-application.
-The technique of layering services on top of each other, building functionality 
-on top of functionality and, at the same time, separating them into manageable 
-units are a powerful approach.
-
-As an illustrative example, WSN applications typically run tweaked versions of 
-classical distributed algorithms, such as \emph{topology discovery}, 
-\emph{leader election}, \emph{broadcast}, etc \cite{ds.andrews}.
-These algorithms give support for more general purpose applications and must 
-run continuously with them, given the dynamicity of WSNs.
-
-The WSN group at PUC--Rio is currently working on developing a library of a set 
-of such classical algorithms.
-With , these algorithms are easily composed with a parallel construct, 
-making the main application run concurrently with the distributed algorithm 
-seamlessly.
-The language detects any inconsistency with the composition, such as concurrent 
-access to shared variables and unreachable code.
-This idea can be extended to algorithms used and/or developed by the DCS group 
-in Chalmers (e.g. \cite{dcs.clusters}).
-
-We are also planning to investigate ways to describe an approach for 
-synthesizing data representations for concurrent programs.
-It is part of the process to evolve the language together with the DCS group 
-when identifying new requirements not currently addressed.
-
-The DCS group in Chalmers also does research in many programming languages 
-topics, which can also be explored during the PhD Sandwich 
-\cite{dcs.lock_free,dcs.transactional,dcs.manycore}.
-The group has a research library of concurrent constructs 
-(NOBLE\footnote{http://www.cse.chalmers.se/research/group/noble/}) and a 
-testbed of applications ranging from SmartGrid ones to connected car 
-applications (GULLIVER\footnote{http://www.chalmers.se/hosted/gulliver-en/}).
-
-The following list of research topics, aligned with the programming model of 
-, was extracted from the DCS website:
-
-\begin{itemize}
-\item Investigate new techniques for achieving high parallelism and 
-      fault-tolerance in distributed or parallel software.
-\item Evaluate the performance of non-blocking synchronization in parallel 
-      application and system software.
-\item Non-blocking/fine-grain synchronization, aiming at increased parallelism, 
-      fault-tolerance, avoiding convoy effects and priority inversion.
-\item Enhancing performance by cooperative scheduling-and-synchronization.
-\end{itemize}
-
-\section{Methodology}
-
-During the period of the PhD Sandwich, we intend to develop fully working WSN 
-applications in  in order to evaluate its viability as an
-alternative to the current employed technologies.
-We will use quantitative and qualitative metrics for the relevant aspects in
-WSNs, and compare the implementations of applications in  and other 
-languages (e.g. C).
-
-An existing work \cite{wsn.comparison} measures the performance of different 
-programming languages regarding memory usage, battery
-consumption, and responsiveness specifically for WSNs.
-These aspects are of extreme importance, given the severe hardware constraints 
-in this context.
-
-We also consider safety an important aspect, as motes must run for long periods 
-without human intervention. Finally, high expressiveness, is desired for any 
-programming language in any context.
-
-Follows the list of aspects we will evaluate during our research:
-
-\begin{itemize}
-\item Memory usage: how much applications use in terms of volatile (RAM) and 
-      non-volatile (ROM) memory.
-\item Battery consumption: how much energy applications consume.
-\item Responsiveness: how fast applications acknowledge high-priority requests 
-      (e.g. radio messages).
-\item Safety: which warranties the language offers, releasing the programmer 
-      from such concerns.
-\item Expressiveness: how easy applications can be developed and maintained.
-\end{itemize}
-
-The first three aspects can be easily evaluated with quantitative metrics, 
-while the last two require a more in-depth
-analysis.
-
-Initially, we will port to  a set of existing applications developed in 
-other languages and compare the quantitative aspects of the implementations.  
-The results immediately provide feedback regarding the implementations in 
-, which can be used to improve the language.
-
-Then, we will focus on developing new applications with higher complexity in 
-order to evaluate the qualitative aspects.
-We can still use quantitative measures such as number of lines of code and 
-period of development to help on the evaluation.
-
-\section{Schedule}
-
-Our proposal includes a six-month schedule that we intend to follow during the 
-sandwich period:
-
-\begin{table}[h]
-\begin{center}
-\begin{tabular}{ | l | c | c | c | c | c | c | }
-\hline
-    & M1 & M2 & M3 & M4 & M5 & M6 \\ \hline
-
-Presentation of        & X &   & X &   & X &   \\ \hline
-Development of existing apps & X & X &   &   &   &   \\ \hline
-Improvements on        &   & x & X & x & X &   \\ \hline
-Development of new apps      &   &   & X & X & X &   \\ \hline
-Paper                        &   &   &   &   & X & X \\ \hline
-Other activities             & x & x & x & x & x & x \\ \hline
-\end{tabular}
-\linebreak
-{\small(\textbf{X} cells indicate high activity, while \textbf{x} cells 
-indicate low activity)}
-\end{center}
-\end{table}
+An explicit boundary between synchronous and asynchronous execution make their 
+uses clear and brings the benefits of both worlds:
 
 \begin{description}
+\item[Synchronous]
+    Safe and deterministic execution;
+    Support for shared-memory concurrency;
+    No need for extra synchronization primitives (e.g. \emph{mutexes});
+    Reactive behavior with highest priority.
 
-\item[Months 1--2:]
-
-During the first month, we will present the language  to the research 
-group, focusing on its applicability to WSNs and
-on how it differs from existing systems.
-
-Then, with the support of the group, we will choose existing WSN applications 
-to be ported to  in order to perform the
-quantitative analysis of the implementations until the end of the second month.
-
-\item[Months 3--4:]
-
-With the work on existing applications, we will collect a comprehensive 
-feedback to be used for improvements on the
-language.
-
-We will also present the achievements of the first two months, and discuss the 
-development of new applications with
-higher complexity for the next two months.
-
-\item[Months 5--6:]
-
-By the beginning of the fifth month, we expect to have developed some complex 
-applications that can be used in a in-depth
-qualitative analysis of the language.
-
-Both the quantitative and qualitative analysis will be used in a paper to be 
-written to a conference on WSNs.
-
-\item[Months 1--6:]
-
-We also have interest in exploring other research areas of the group related to 
-programming languages and distributed
-systems.
-
+\item[Asynchronous]
+    Non-deterministic execution;
+    Share nothing concurrency;
+    Parallelizable in multi cores;
+    Background computations with lower priority.
 \end{description}
 
-\section{Expected Results}
+\subsection{Application scenarios}
 
-By the end of the PhD Sandwich, we expect that  becomes a real 
-alternative for the development of fully working WSN applications.
-Our methodology involves a quantitative analysis that provides immediate 
-feedback regarding key aspects in WSNs, such as memory usage and battery 
-consumption.
-Hence, we can evolve the language in a small development cycle.
+In order to evaluate the applicability of synchronous languages to 
+general-purpose reactive systems, we intend to develop real applications in the
+scenarios that follow:
 
-We have already presented a short paper about  in the doctoral colloquium 
-of SenSys last year \cite{ceu.sensys11}, with some initial experiments that 
-show competitive results in terms of memory usage and responsiveness.
-With a broader usage, we will have more confidence on the measurements and 
-achieve even better results.
+\begin{description}
+    \item [Games.]
+    Video games push the limits of reactive systems, requiring real time 
+    responsivenes for user input.
+    Games also have plenty of heavy computations that allow us to explore 
+    asynchronous execution, such as collision detection and path finding 
+algorithms.
 
-We also expect that the ongoing research in our WSN group at PUC--Rio will take 
-advantage of the interchange with the group in Chalmers and vice-versa.
-Both groups share common research interests and a continuous relationship may 
-arise from this first experience.
-For instance, the library of distributed algorithms for WSNs being developed by 
-the group at PUC--Rio is open-source and can be more easily adopted by the 
-group at Chalmers through this interchange program.
+    \item [Multimedia.]
+    Multimedia applications have a high degree of spatio and temporal 
+    synchronization among objects.
+    There are plans to port Ginga~\cite{ncl} (the Brazilian middleware for 
+    Digital TV) to a pure synchronous implementation~\cite{ncl.sync}.
 
-We intend to write a full paper to a top conference together with the group in 
-Chalmers to describe the advances of  in the context of WSNs:
+    \item [Network.]
+    Networked applications introduce an unreliable component in applications, 
+    which have to deal with communication delays and failures.
+    We have already done a few experiments in \CEU with undergraduate students 
+    in classes of distributed systems.
+\end{description}
+
+By developing applications in the described scenarios, we can also evaluate our 
+design through quantitative metrics, as follows:
+
+\begin{description}
+    \item [CPU usage.]
+    Both proposals of extensions to \CEU can be evaluated through CPU usage:
+    performance of automatic memory management and
+    parallelization of asynchronous blocks of code.
+    \item [Source code size.]
+    Even though source code size is not the ultimate metrics for code 
+    complexity, it provides straightforward means to compare different 
+implementations for the same application.
+\end{description}
+
+\section{Conclusion}
+
+General-purpose reactive systems can benefit from the efficiency and safety 
+guarantees of synchronous languages.
+%
+However, synchronous languages suffer from two main limitations:
 
 \begin{itemize}
-\item ACM/IEEE Conference on Information Processing in Sensor Networks (IPSN).  
-      Submission deadline expected to October 2012.
-\item ACM Conference on Embedded Networked Sensor Systems (SenSys).
-      Submission deadline expected to April 2013.
+    \item Lack of safe dynamic memory allocation support.
+    \item Impossibility of doing algorithmic-intensive computations.
 \end{itemize}
 
-Another outcome of our research could be the adoption of  in new projects 
-in the DCS group in Chalmers, which need not be directly related to research in 
-programming languages.
+In this research plan, we proposed concrete directions to address these 
+limitations:
+
+\begin{itemize}
+    \item Employ the use of memory pools to predict memory usage and enforce 
+    deterministic behavior.
+    Limit the scope of objects for automatic and efficient reclaiming of 
+    memory.
+    \item Introduce a ``share nothing'' asynchronous primitive with no 
+    restrictions regarding heavy computations.
+\end{itemize}
+ 
+\begin{comment}
 
 \section{Researchers}
 
