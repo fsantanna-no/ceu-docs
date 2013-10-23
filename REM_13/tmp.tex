@@ -1,0 +1,23 @@
+%
+\[
+hor~\LL S, s, p \RR~ =
+\begin{cases}
+    \LL S,  s, p    \RR, &        s>0     \\
+    \LL S, -1, p    \RR, &        s>0     \\
+    \LL S,  s, x(p) \RR, & \neg ( isBlocked(p) \1\wedge\1 s>0 )
+\end{cases}
+\]
+%
+{\small
+\begin{align*}
+  isKillable(n,s, awaiting(e,m)) &= (e \notin I \1\vee\1 m = n \1\vee\1 s=0)\\
+  isKillable(n,s, (p~;~q))       &= isKillable(n,p)             \\
+  isKillable(n,s, (p~@~loop~q))  &= isKillable(n,p)             \\
+  isKillable(n,s, (p~par~q))     &= isKillable(n,p)~\wedge \\
+                                     &~~~~isKillable(n,q)~\wedge \\
+                                     &~~~~p \neq hor~\wedge~q \neq hor \\
+  isKillable(n, *)             &= false~(all~others)
+\end{align*}
+}
+%
+

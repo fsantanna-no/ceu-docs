@@ -1,0 +1,912 @@
+\begin{comment}
+
+\documentclass[11pt,a4paper]{article}
+\usepackage[body={6.0in, 8.2in},left=1.25in,right=1.25in]{geometry}
+
+\usepackage{fancyvrb}
+\usepackage{verbatim}
+
+\usepackage[pdftex]{graphicx}
+\usepackage{subfigure}
+
+\usepackage{listings}
+\lstset{frame=tb}
+\lstset{basicstyle=\scriptsize}
+\lstset{tabsize=4}
+
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amsthm}
+
+\newcommand{\1}{\;}
+\newcommand{\2}{\;\;}
+\newcommand{\3}{\;\;\;}
+\newcommand{\5}{\;\;\;\;\;}
+\newcommand{\ten}{\5\5}
+\newcommand{\twenty}{\ten\ten}
+
+\newcommand{\CEU}{\textsc{C\'{e}u}}
+\newcommand{\code}[1] {{\small{\texttt{#1}}}}
+
+\newcommand{\ST}{\xrightarrow[i]{}}
+\newcommand{\BT}{\xRightarrow[(i,E)]{}}
+
+\begin{document}
+
+\section{Formalization of \CEU}
+
+\end{comment}
+
+\subsection{Abstract syntax}
+\label{sec.sem.syntax}
+
+Figure~\ref{lst:ceu:syn} shows the syntax for a subset of \CEU that is 
+sufficient to describe all semantic peculiarities of the language.
+
+\begin{figure}[t]
+%\rule{8.5cm}{0.37pt}
+{\small
+\begin{verbatim}
+  // primary primitives         // description
+  nop(v)                        (constant value)
+  mem                           (any memory access)
+  await(e)                      (await event `e')
+  emit(e)                       (emit event `e')
+  break                         (loop escape)
+
+  // compound statements
+  if mem then p else q          (conditional)
+  p ; q                         (sequence)
+  loop p                        (repetition)
+  p and q                       (par/and)
+  p or q                        (par/or)
+
+  // derived by semantic rules
+  awaiting(e)                   (previously awaiting `e')
+  stacked(i)                    (stack depth mark)
+  emitting(i,e)                 (emitting `e')
+  p @ loop p                    (unwinded loop)
+\end{verbatim}
+}%
+\caption{ Simplified syntax of \CEU.
+\label{lst:ceu:syn}
+}
+\end{figure}
+
+A $nop$ represents a terminated computation associated with a constant value.
+The $mem$ primitive represents any memory accesses, assignments, and $C$ 
+function calls.
+As the challenging parts of \CEU reside on its control structures, we are not 
+concerned here with a precise semantics for side effects, but only with their 
+occurrences in programs.
+We refer back to side effects when discussing determinism in 
+Section~\ref{sec.safety.det}.
+
+The $await$ and $emit$ primitives are responsible for the reactive nature of 
+\CEU.
+An $await$ can refer either to an external or internal event, while an $emit$ 
+can only refer to an internal event.
+
+The semantic rules to be presented generate three statements that the 
+programmer cannot write:
+the primitives $awaiting$, $stacked$, and $emitting$ avoid the immediate 
+matching of emits and awaits and are used as an artifice to provide the desired 
+stacked behavior for internal events.
+A $loop$ is expanded with the special \code{`@'} separator (instead of 
+\code{`;'}) to properly bind $break$ statements inside $p$ to the enclosing 
+loop.
+\subsection{Operational semantics}
+\label{sec.sem}
+
+In the remaining of this section, we present an operational semantics to 
+formally describe a \emph{reaction chain} in \CEU, i.e., how a program behaves 
+in reaction to a single external event.%
+\footnote{We could extend the semantics to describe the full execution of a 
+program by holding new incoming external events in a queue and processing them 
+in consecutive reaction chains that never overlap.}
+
+The semantics is split in two sets of rules: \emph{big-step} and 
+\emph{small-step} rules.
+First, we apply a single big step to awake all trails awaiting the broadcast 
+external event.
+Then, we continuously apply small steps until all trails await and/or emit.
+The next big step awakes all previously awaiting trails matching the emits at 
+once.
+The two set of rules are interleaved to achieve a complete reaction chain, 
+terminating when the program either terminates or awaits in all trails.
+
+In order to provide the desired stacked execution for internal events, the 
+semantic rules are associated with an index $i$ that represents the current 
+runtime stack depth level.
+An emit creates a deeper level $i+1$ and is deferred to be matched in the next 
+big step.
+The emit continuation (i.e., the statement that follows the emit) remains at 
+stack level $i$, as it can only execute after the program completely reacts to 
+the event.
+Awakened trails may emit new events that will increase the stack depth ($i+2$ 
+and so on);
+hence, only after the stack unrolls to depth $i$ that the original emitting 
+trail continues.
+
+A complete reaction chain to an external event is formalized as follows:
+%
+$$
+%p \xrightarrow[big]{(i,E) = (0,\{ext\})}  \3
+(\3
+p                                        \1
+    \xRightarrow[~(i,E)=pop(p)~]{}     \1
+p'
+    \xrightarrow[~~i~~]{~~*~~}           \1
+p''
+\3)*
+$$
+
+A big step is represented with the double arrow, where the tuple $(i,E)$ is the 
+set $E$ of emitting events to be matched at deepest depth $i$.
+
+For the initial big step, function $pop$ returns the single external event 
+emitted at starting depth $1$.
+For further big steps, $pop$ is defined in Figure~\ref{fig:pop} and returns the 
+deepest stack level and all emitted internal events (if any) from the previous 
+small-step sequence.
+%
+%\footnote{$pop$ needs only to be defined for blocked primitives ($awaiting$ 
+%and $stacked$), as small-step sequences that precede big steps always reach 
+%these primitives.}
+% TODO: colocar na definicao
+
+\begin{figure}[t]
+{\small
+\begin{align*}
+  pop(awaiting(e))   &= (-1, \{\})              \\
+  pop(stacked(i))    &= ( i, \{\})              \\
+  pop(emitting(i,e)) &= ( i, \{e\})             \\
+  pop(p~;~q)         &= pop(p)                  \\
+  pop(p~@~loop~q)    &= pop(p)                  \\
+  pop(p~and/or~q)    &= (max(j,k), F\cup{}G)    \\
+                     & \ten where~(j,F)=pop(p)  \\
+                     & \ten\2\2 and~(k,G)=pop(q)
+\end{align*}
+\emph{(*) Other primitives (nop,mem,await,emit,break,if,loop) do not apply.}
+}%
+\caption{ The recursive definition for $pop$.
+\label{fig:pop}
+}
+\end{figure}
+
+A small-step sequence is represented with the single arrow and is associated 
+with the same depth $i$ from the previous big step, which identifies the 
+current (deepest) stack depth.
+
+The sets of rules are interleaved until one of the two possible terminating 
+conditions for a reaction chain apply:
+
+\begin{itemize}
+\item The program is awaiting in all trails, i.e., function $pop$ returns 
+$(-1,\{\})$.
+\item The program terminates, i.e., the small-step rules transform the whole 
+program into a $nop$.
+\end{itemize}
+%
+In Section~\ref{sec.safety.bounded} we show that, by imposing syntactic 
+restrictions to programs, reaction chains always reach one of these conditions 
+in a finite number of steps, meaning that reactions to the environment always 
+execute in bounded time.
+
+To be compliant with the reactive nature of \CEU, we assume that all programs 
+start awaiting the main event ``$\$$'', which is emitted once by the 
+environment on startup, i.e., $(i,E)=(1,\{\$\})$ for the very first big step.
+
+\subsubsection{Small-step rules}
+\label{sec.sem.small}
+
+As briefly introduced, small-step rules continuously apply transformations to 
+unblocked trails.
+A program becomes blocked when all parallel branches are hanged in $awaiting$, 
+$stacked$, and/or $emitting$ primitives, as defined in 
+Figure~\ref{fig:isBlocked}.
+
+% TODO: [|
+
+\begin{figure}[t]
+{\small
+\begin{align*}
+  isBlocked(awaiting(e))   &= true                             \\
+  isBlocked(stacked(i))    &= true                             \\
+  isBlocked(emitting(i,e)) &= true                             \\
+  isBlocked(p~;~q)         &= isBlocked(p)                     \\
+  isBlocked(p~@~loop~q)    &= isBlocked(p)                     \\
+  isBlocked(p~and~q)       &= isBlocked(p) \wedge isBlocked(q) \\
+  isBlocked(p~or~q)        &= isBlocked(p) \wedge isBlocked(q) \\
+  isBlocked(*)             &= false \2  (nop,mem,await,        \\
+                           &    \5\5\5\2 emit,break,if,loop)   %\\
+\end{align*}
+}%
+\caption{ The recursive predicate $isBlocked$.
+\label{fig:isBlocked}
+}
+\end{figure}
+
+All small-step rules are associated with the current (deepest) stack depth 
+level $i$ acquired from the previous big step.
+
+We start with the small-step rules for the primary primitives:
+%
+\begin{eqnarray*}
+& mem \ST nop(v),~~(v~is~nondet)
+    & \textbf{(mem)}        \\
+%%%
+& await(e) \ST stacked(0)~;~awaiting(e)
+    & \textbf{(await)}      \\
+%%%
+& emit(e) \ST emitting(i+1,e)~;~stacked(i)
+    & \textbf{(emit)}       %\\
+\end{eqnarray*}
+
+A $mem$ operation terminates with a nondeterministic value (e.g., the value of 
+a variable or a $C$ function call).
+
+An $await$ is stacked with the lowest possible depth, being transformed in an 
+$awaiting$ only in the end of the reaction chain.
+This way, a trail that reaches an $await$ can only react to an $emit$ that 
+occurs in further reaction chains.
+
+An $emit$ is deferred to a deeper depth to be applied in the next big step.
+The rule actually transforms an $emit$ in two primitives in sequence:
+the $emitting(i+1,e)$ defers the immediate matching, while $stacked(i)$ holds 
+the trail in the current depth, resuming only after the complete reaction to 
+the event.
+
+Given that small-step rules execute at the current deepest level and that rule 
+\textbf{emit} is the only one that increases the stack depth, the next big step 
+will necessarily take all deferred emits.
+This explains why the definition for $pop$ in Figure~\ref{fig:pop} blindly 
+takes the union of all emitted events without considering their depths.
+
+All other primitives ($nop$, $break$, $awaiting$, $stacked$, and $emitting$) 
+represent terminated or blocked trails and, therefore, have no associated 
+small-step rules.
+
+The rules for conditionals and sequences are straightforward:
+%
+\begin{eqnarray*}
+& \frac
+    { m \ST m' }
+% -----------------------------------------------------------
+    { (if~m~then~p~else~q) \ST (if~m'~then~p~else~q) }
+    & \textbf{(if-adv)}       \\
+%%%
+& (if~nop(v)~then~p~else~q) \ST p \1,\3 (v \neq 0)
+    & \textbf{(if-true)}       \\
+%%%
+& (if~nop(0)~then~p~else~q) \ST q
+    & \textbf{(if-false)}       %\\
+%%%
+%& (if~mem~then~p) \ST (if~mem~then~p~else~nop)
+    %& \textbf{(if-else)}
+\end{eqnarray*}
+%%%
+\begin{eqnarray*}
+& \frac
+    { p \ST p' }
+%   -----------------------------------------------------------
+    { (p~;~q) \ST (p'~;~q) }
+    & \textbf{(seq-adv)}      \\
+%%%
+& (nop~;~q) \ST q
+    & \textbf{(seq-cst)}      \\
+%%%
+& (break~;~q) \ST break
+    & \textbf{(seq-brk)}     %\\
+\end{eqnarray*}
+%
+%A conditional proceeds to either $p$ or $q$, depending on the evaluation of 
+%$mem$ (rules \textbf{if-true} and \textbf{if-false}).
+%Note that an empty $else$ branch is substituted by a $nop$ (rule 
+%\textbf{if-else}).
+%
+%Rule \textbf{seq-1} advances composition $p$ until it becomes either a $nop$ 
+%(proceeding to $q$ in rule \textbf{seq-2}), or a $break$ (ignoring $q$ in rule 
+%\textbf{seq-3}).
+
+Given that the semantics focus on control, note that rules \textbf{if-true} and 
+\textbf{if-false} are the only to query $nop$ values.
+For all other rules, we omit these values (e.g., \textbf{seq-cst}).
+
+The rules for loops are analogous to sequences, but use \code{`@'} as 
+separators to properly bind breaks to their enclosing loops:
+%
+\begin{eqnarray*}
+& { (loop~p) \ST (p~@~loop~p) }
+    & \textbf{(loop-expd)}       \\
+%%%
+& \frac
+    { p \ST p' }
+% -----------------------------------------------------------
+    { (p~@~loop~q) \ST (p'~@~loop~q) }
+    & \textbf{(loop-adv)}    \\
+%%%
+& (nop~@~loop~p) \ST loop~p
+    & \textbf{(loop-cst)}    \\
+%%%
+& (break~@~loop~p) \ST nop
+    & \textbf{(loop-brk)}
+\end{eqnarray*}
+
+When a program first encounters a $loop$, it first expands its body in sequence 
+with itself (rule \textbf{loop-expd}).
+Rules \textbf{loop-adv} and \textbf{loop-cst} are similar to rules 
+\textbf{seq-adv} and \textbf{seq-cst}, advancing the loop until it reaches a 
+$nop$.
+However, what follows the loop is the loop itself (rule \textbf{loop-cst}).
+Rule \textbf{loop-brk} escapes the enclosing loop, transforming everything into 
+a $nop$.
+Note that if we used \code{`;'} as a separator in loops, rules 
+\textbf{loop-brk} and \textbf{seq-brk} would conflict.
+
+The small-step rules for parallel compositions advance trails independently and 
+require that both sides either block or terminate.
+% to advance to the next big step.
+For an $and$, if one of the sides terminate, the composition is simply
+substituted by the other side.
+For an $or$, if one of the sides terminate, the other side must advance until 
+it blocks.
+Then, the whole composition terminates and the blocked side is \emph{killed}, 
+i.e., all its $awaiting$, $stacked$, and $emitting$ primitives are eliminated 
+with the rule transformation.
+
+A similar situation occurs when an $and$ or $or$ reach a $break$ in either of 
+the sides.
+In this case, the enclosing $loop$ must terminate and both sides are killed, 
+transforming the whole composition into a $break$.
+As the rules make explicit, a trail can only be killed after it terminates or 
+blocks.
+
+Follow the rules for a parallel $and$:
+%
+\begin{eqnarray*}
+& \frac
+    { p \ST p' }
+%   -----------------------------------------------------------
+    { (p~and~q) \ST (p'~and~q) }
+    & \textbf{(and-adv1)}      \\
+%%%
+& \frac
+    { q \ST q' }
+%   -----------------------------------------------------------
+    { (p~and~q) \ST (p~and~q') }
+    & \textbf{(and-adv2)}      \\
+%\end{eqnarray*}
+%%%
+%\begin{eqnarray*}
+& (nop~and~q) \ST q
+    & \textbf{(and-cst1)}   \\
+%%%
+& (p~and~nop) \ST p
+    & \textbf{(and-cst2)}   \\
+%%%
+& \frac
+    { q=break \1\vee\1 isBlocked(q) }
+%   -----------------------------------------------------------
+    { (break~and~q) \ST break }
+    & \textbf{(and-brk1)}   \\
+%%%
+& \frac
+    { p=break \1\vee\1 isBlocked(p) }
+%   -----------------------------------------------------------
+    { (p~and~break) \ST break }
+    & \textbf{(and-brk2)}   %\\
+\end{eqnarray*}
+
+Rules \textbf{and-cst1} and \textbf{and-cst2} handle the termination of one of 
+the sides, substituting the whole composition by the other side.
+Rules \textbf{and-brk1} and \textbf{and-brk2} handle the special case for 
+reaching a $break$, in which the other blocked side is killed by transforming 
+the whole composition becomes into a $break$ to terminate the enclosing loop.
+For instance, the program \code{loop(break~and~emit(a))} never emits $a$, 
+because the $emit$ blocks (rule \textbf{emit}) and is then killed (rule 
+\textbf{and-brk1}).
+
+The rules for a parallel $or$ are slightly different:
+%
+\begin{eqnarray*}
+& \frac
+    { p \ST p' }
+%   -----------------------------------------------------------
+    { (p~or~q) \ST (p'~or~q) }
+    & \textbf{(or-adv1)}   \\
+%%%
+& \frac
+    { q \ST q' }
+%   -----------------------------------------------------------
+    { (p~or~q) \ST (p~or~q') }
+    & \textbf{(or-adv2)}   \\
+%%%
+& \frac
+    { q=nop \1\vee\1 isBlocked(q) }
+%   -----------------------------------------------------------
+    { (nop~or~q) \ST nop }
+    & \textbf{(or-cst1)}   \\
+%%%
+& \frac
+    { p=nop \1\vee\1 isBlocked(p) }
+%   -----------------------------------------------------------
+    { (p~or~nop) \ST nop }
+    & \textbf{(or-cst2)}   \\
+%%%
+& \frac
+    { q=nop \1\vee\1 q=break \1\vee\1 isBlocked(q) }
+%   -----------------------------------------------------------
+    { (break~or~q) \ST break }
+    & \textbf{(or-brk1)}   \\
+%%%
+& \frac
+    { p=nop \1\vee\1 p=break \1\vee\1 isBlocked(p) }
+%   -----------------------------------------------------------
+    { (p~or~break) \ST break }
+    & \textbf{(or-brk2)}   %\\
+\end{eqnarray*}
+
+Rules \textbf{or-cst1} and \textbf{or-cst2} terminate the $or$ when at least 
+one of the sides is a $nop$.
+For instance, the program \code{loop(nop~and~emit(a))} never emits $a$, because 
+the $emit$ blocks (rule \textbf{emit}) and is then killed (rule 
+\textbf{or-cst1}).
+%Note that these rules enforce both sides to advance until they either 
+%terminate or block.
+%, what necessarily happens because all unblocked primitives have associated 
+%small-step rules.
+Rules \textbf{or-brk1} and \textbf{or-brk2} are similar to their $and$ 
+counterparts, with the additional remark that a $break$ has preference over a 
+$nop$, i.e., when they appear on each side, the whole composition becomes a 
+$break$ instead of a $nop$.
+
+%(TODO: orthogonal preemption)
+
+Note that rule \textbf{mem} and the pairs \textbf{and-adv1}/\textbf{and-adv2} 
+and \textbf{or-adv1}/\textbf{or-adv2} bring nondeterminism to the semantics of 
+\CEU.
+%Also, rule \textbf{loop-exp} may expand the program indefinitely, leading to 
+%unbounded execution for \CEU programs.
+However, in Section~\ref{sec.safety.det} we discuss how to detect programs with 
+deterministic behavior (even with nondeterminism in $mem$ operations and 
+scheduling), refusing all other programs at compile time.
+
+\subsubsection{Big-step rules}
+\label{sec.sem.big}
+
+The big-step semantics matches $emitting$ and $awaiting$ trails, providing 
+broadcast communication in the language.
+It is important to use a big-step operational semantics in order to apply 
+transformations in parallel, all at once.
+Emits with no matching awaits are simply discarded, characterizing the 
+unbuffered communication typically adopted in synchronous languages.
+
+Big-step rules are associated with a tuple $(i,E)$ that represents the set of 
+occurring events $E$ triggered at stack depth $i$.
+
+\begin{comment}
+At the beginning of each reaction chain, only a single external event can be 
+active, as required by \CEU's synchronous execution model.
+Hence, initially $(i,E) = (0,\{ext\})$, where $ext$ is the external event 
+triggered at starting depth $0$.
+
+For further big steps following small steps, the tuple $(i,E)$ is acquired from 
+the recursive function $pop$, which takes the deepest stack depth and groups 
+all stacked emits (if any) together:
+
+As explained for small-step rule \textbf{emit}, all stacked emits necessarily 
+occur at deepest depth.
+Note also that $pop$ does not need to be defined for unblocked primitives, as a 
+small-step sequence that precedes a big step only terminates when the program 
+becomes blocked.
+
+We now present the big-step semantic rules.
+\end{comment}
+
+We start with the rules to check if deferred emits match previously awaiting 
+trails:
+%
+\begin{eqnarray*}
+& awaiting(e) \BT nop \1,\3 (e \in E)
+    & \textbf{(Await-awk)}    \\
+%%%
+& awaiting(e) \BT awaiting(e) \1,\3 (e \notin E)
+    & \textbf{(Await-rep)}    \\
+\end{eqnarray*}
+
+The $stacked$ and $emitting$ primitives are ``popped'' if they are at the 
+deepest level $i$ returned by function $pop$:
+
+\begin{eqnarray*}
+& stacked~(i) \BT nop \5
+    & \textbf{(Stack)}  \\
+%
+& emitting~(i,e) \BT nop \5
+    & \textbf{(Emitting)}  %\\
+\end{eqnarray*}
+
+\begin{comment}
+A deferred emit cannot unblock immediately because the just matched trails 
+(rule \textbf{Await-awk}) must all react before the emit continuation proceeds.
+Hence, rule \textbf{Stack} specifies that the emit continuation remains blocked 
+at the same (low) depth.
+This way, awaken trails will execute in the next small-step sequence and new 
+emits will be deferred at deeper depths (note the \code{i+1} in small-step rule 
+\textbf{emit}).
+Eventually, no new emits will take place, and function $pop$ will pop the 
+continuations with the highest depth, which will proceed through rule 
+\textbf{Cont}, providing the desired stacked execution for internal events.
+\end{comment}
+
+To conclude the big-step semantics, the rules for compound statements advance 
+their subparts all at once:
+%
+\begin{eqnarray*}
+& \frac
+    { p \BT p' }
+%   -----------------------------------------------------------
+    { (p~;~q) \BT (p'~;~q) }
+    & \textbf{(Seq)}    \\
+%%%
+& \frac
+    { p \BT p' }
+%   -----------------------------------------------------------
+    { (p~@~loop~q) \BT (p'~@~loop~q) }
+    & \textbf{(Loop)}   \\
+%%%
+& \frac
+    { p \BT p' \5 q \BT q' }
+%   -----------------------------------------------------------
+    { (p~and~q) \BT (p'~and~q') }
+    & \textbf{(And)}    \\
+%%%
+& \frac
+    { p \BT p' \5 q \BT q' }
+%   -----------------------------------------------------------
+    { (p~or~q) \BT (p'~or~q') }
+    & \textbf{(Or)}     %\\
+\end{eqnarray*}
+
+Note that there are no rules for $mem$, $break$, $emit$, $nop$, and $if$ 
+because none of these represent blocked primitives, and hence, never appear in 
+a big step.
+
+\begin{comment}
+
+\textbf{(TODO) An example:}
+
+{\small
+\begin{verbatim}
+    mem(1); emit a; mem(2); emit b; mem(3)
+or (
+    loop (mem(4); await a)
+or
+    await b; mem(5)
+)
+\end{verbatim}
+}
+
+$$
+p = program
+\ten
+ext = external~event
+$$
+
+$$
+*^1: \1 until \3 isBlocked(p'') \1\vee\1 (p''=nop)
+$$
+$$
+*^2: \1 until \3 pop(p'')=(0,\emptyset)
+$$
+
+\subsection{Examples}
+
+$$
+\textbf{(seq)} \5
+    \frac
+    { \textbf{(await 1)} \3 await~A \xrightarrow{(A,0)} delay~0 }
+%   -----------------------------------------------------------
+    { (await~A~;~await~A) \xrightarrow{(A,0)} (delay~0~;~await~A) }
+$$
+
+$$
+\textbf{(seq 1)} \5
+    \frac
+    {\textbf{(delay)} \5 (delay~0) \xrightarrow{0}
+        nop \1\nearrow^{~\emptyset}}
+%   -----------------------------------------------------------
+    { (delay~0~;~await~A) \xrightarrow{0} (nop~;~await~A)
+        \1\nearrow^{~\emptyset} }
+$$
+
+$$
+\textbf{(seq 2)} \3 (nop~;~await~A) \xrightarrow{i}
+                        await~A \1\nearrow^{~\emptyset}
+$$
+
+$$
+\textbf{(loop 1)} \5
+    \frac
+    {\textbf{(if)} \5
+        (if~...) \xrightarrow{(\_,0)} (if~...)}
+%   -----------------------------------------------------------
+    { loop~(if~...) \xrightarrow{(\_,0)}
+        (if~mem(v)~then~break~else~await~A)~@~loop~(if~...)) }
+$$
+
+$$
+\textbf{(if 0)} \3
+    (if~mem(0)~then~p~else~q) \xrightarrow{i} q \1\nearrow^{~\emptyset}
+\ten
+\textbf{(if 1)} \3
+    (if~mem(v)~then~p~else~q) \xrightarrow{i} p \1\nearrow^{~\emptyset}
+        \1,\3 (v \neq 0)
+$$
+
+$$
+\textbf{(loop 1)} \5
+    \frac
+    { \textbf{(if 1)} \3
+    (if~mem(1)~...) \xrightarrow{0} break \1\nearrow^{~\emptyset} }
+%   -----------------------------------------------------------
+    { (if~mem(1)~...~@~loop~q) \xrightarrow{0} (break~@~loop~(if~...))
+        \1\nearrow^{~\emptyset} }
+$$
+
+$$
+\textbf{(loop 1)} \5
+    \frac
+    { \textbf{(if 0)} \3
+    (if~mem(0)~...) \xrightarrow{0} await~A \1\nearrow^{~\emptyset} }
+%   -----------------------------------------------------------
+    { (if~mem(0)~...~@~loop~q) \xrightarrow{0} (await~A~@~loop~(if~...))
+        \1\nearrow^{~\emptyset} }
+$$
+
+$$
+\textbf{(loop 3)} \3
+    (break~@~loop~(if~...)) \xrightarrow{0} nop \1\nearrow^{~\emptyset}
+$$
+
+
+$$
+\textbf{(loop 2)} \3
+    \frac
+    { \textbf{(await 1)} \3 await~A \xrightarrow{(A,0)} delay~0 }
+%   -----------------------------------------------------------
+    { await~A~@~loop~(if~...) \xrightarrow{(e,i)} delay~0~@~loop~(if~...) }
+$$
+
+$$
+\textbf{(loop 1)} \5
+    \frac
+    { \textbf{(delay)} \5 (delay~0) \xrightarrow{0} nop
+        \1\nearrow^{~\emptyset} }
+%   -----------------------------------------------------------
+    { delay~0~@~loop~(if~...) \xrightarrow{0} nop~@~loop~(if~...)
+        \1\nearrow^{~\emptyset} }
+$$
+
+$$
+\textbf{(loop 2)} \3
+    (nop~@~loop~(if~...) \xrightarrow{0}
+        (if~...)~@~loop~(if~...) \1\nearrow^{~\emptyset}
+$$
+
+$$
+\textbf{(or)} \5
+    \frac
+    { \textbf{(seq)} \1 ... \xrightarrow{(A,0)} ... \5
+        \textbf{(or)} \3
+            \frac
+            { \textbf{(await~2)} \1 await~b \xrightarrow{(A,0)} await~b \5
+                \textbf{(seq)} \1
+                    \frac
+                    { \textbf{(await~1)} \1 await~A \xrightarrow{(A,0)} delay~0 
+}
+                %   -----------------------------------------------------------
+                    { (await~A~;~emit~a) \xrightarrow{(A,0)} (delay~0~;~emit~a) 
+            }
+            }
+        %   -----------------------------------------------------------
+            { (await~b~or~(await~A;emit~a)) \xrightarrow{(A,0)}
+                (await~b~or~(delay~0;emit~a)) }
+    }
+%   -----------------------------------------------------------
+    { (...~or~(await~b~or~(await~A;emit~a))) \xrightarrow{(A,0)}
+        (...~or~(await~b~or~(delay~0;emit~a))) }
+$$
+
+$$
+\textbf{(or)} \5
+    \frac
+    { p \xrightarrow{(e,i)} p' \5 q \xrightarrow{(e,i)} q' }
+%   -----------------------------------------------------------
+    { (p~or~q) \xrightarrow{(e,i)} (p'~or~q') }
+$$
+
+$$
+\textbf{(or 2)} \3
+    \frac
+    { isReady(q,i) \5 q \xrightarrow{i} q' \1\nearrow^{~(e,i)} }
+%   -----------------------------------------------------------
+    { (...~or~(await~b~or~(delay~0~;~emit~a))) \xrightarrow{0}
+        (...~or~nop~;~emit~a) \1\nearrow^{~(e,i)} }
+$$
+
+$$
+    \frac
+    {
+        \frac
+        {
+            \textbf{(seq 1)} \1 \frac {
+                \textbf{(delay)} \1 (delay~0) \xrightarrow{0} nop
+            }{
+                (delay~0;~emit~a) \xrightarrow{0} nop~;~emit~a
+            }
+        \3
+            \textbf{(seq 2)} \1 (nop~;~emit~a) \xrightarrow{0} emit~a
+        }
+%       -----------------------------------------------------------
+        { (delay~0~;~emit~a) \xrightarrow{0} emit~a }
+    \3
+        \textbf{(emit)} \1 emit~a \xrightarrow{0} delay~1 \1\nearrow^{~(a,2)}
+    }
+%   -----------------------------------------------------------
+    { (delay~0~;~emit~a) \xrightarrow{0} delay~1 \1\nearrow^{~(a,2)} }
+$$
+
+(seq 3)
+loop do
+    par/or do
+        se1 ;
+        break;
+    with
+        se2 ;
+    end
+    se3;
+end
+
+- restricao de tight loop é a única na sintaxe
+- depois vou fazer a semantica para ND
+    - criar um grafo
+    - mostrar que é o unico grafo
+- com a semantica de ND, também posso "falhar" em caso de tight loop, o que 
+  removeria a restricao na sintaxe e daria semantica p/ o tight loop
+
+Prova 1: mostrar que a inclusão de $(f,i+1)$ e $(\_,i+2)$ em E-global na regra 
+(emit) não causa problemas, já que as regras em paralelo estão reagindo a "i" e 
+a reação a "i+1" só é possível quando todas as outras terminarem (via regra 
+step)
+
+Prova 2: provar que eu chego em $S_{\emptyset}$
+
+Prova 3: não é possível fazer infinitas transições
+- preciso remover "same" e "nop"
+
+Prova 1 e 2 -> Reaction chain executa em bounded time
+
+\begin{figure}[t]
+\begin{eqnarray*}
+& mem \xrightarrow{i} nop(v)
+    & \textbf{(mem)}        \\
+%%%
+& emit~e \xrightarrow{i} delay~(e,i+1)
+    & \textbf{(emit)}       \\
+%%%
+& \frac
+    { mem \xrightarrow{i} nop(v) \1,\3 (v \neq 0) }
+% -----------------------------------------------------------
+    { (if~mem~then~p~else~q) \xrightarrow{i} p }
+    & \textbf{(if-true)}    \\
+%%%
+& \frac
+    { mem \xrightarrow{i} nop(0) }
+% -----------------------------------------------------------
+    { (if~mem~then~p~else~q) \xrightarrow{i} q }
+    & \textbf{(if-false)}   \\
+%%%
+& (if~mem~then~p) \xrightarrow{i} (if~mem~then~p~else~nop)
+    & \textbf{(if-else)}    \\
+%%%
+& \frac
+    { p \xrightarrow{i} p' }
+%   -----------------------------------------------------------
+    { (p~;~q) \xrightarrow{i} (p'~;~q) }
+    & \textbf{(seq-1)}      \\
+%%%
+& (nop~;~q) \xrightarrow{i} q
+    & \textbf{(seq-2)}      \\
+%%%
+& (break~;~q) \xrightarrow{i} break
+    & \textbf{(seq-3)}      \\
+%%%
+& { (loop~p) \xrightarrow{i} (p~@~loop~p) }
+    & \textbf{(loop-exp)}   \\
+%%%
+& \frac
+    { p \xrightarrow{i} p' }
+% -----------------------------------------------------------
+    { (p~@~loop~q) \xrightarrow{i} (p'~@~loop~q) }
+    & \textbf{(loop-1)}    \\
+%%%
+& (nop~@~loop~p) \xrightarrow{i} loop~p
+    & \textbf{(loop-2)}    \\
+%%%
+& (break~@~loop~p) \xrightarrow{i} nop
+    & \textbf{(loop-3)}     \\
+%%%
+& \frac
+    { p \xrightarrow{i} p' }
+%   -----------------------------------------------------------
+    { (p~and~q) \xrightarrow{i} (p'~and~q) }
+    & \textbf{(and-1)}      \\
+%%%
+& \frac
+    { q \xrightarrow{i} q' }
+%   -----------------------------------------------------------
+    { (p~and~q) \xrightarrow{i} (p~and~q') }
+    & \textbf{(and-2)}      \\
+%%%
+& (nop~and~q) \xrightarrow{i} q
+    & \textbf{(and-3)}      \\
+%%%
+& (p~and~nop) \xrightarrow{i} p
+    & \textbf{(and-4)}      \\
+%%%
+& \frac
+    { q=break \1\vee\1 isBlocked(q) }
+%   -----------------------------------------------------------
+    { (break~and~q) \xrightarrow{i} break }
+    & \textbf{(and-5)}      \\
+%%%
+& \frac
+    { p=break \1\vee\1 isBlocked(p) }
+%   -----------------------------------------------------------
+    { (p~and~break) \xrightarrow{i} break }
+    & \textbf{(and-6)}      \\
+%%%
+& \frac
+    { p \xrightarrow{i} p' }
+%   -----------------------------------------------------------
+    { (p~or~q) \xrightarrow{i} (p'~or~q) }
+    & \textbf{(or-1)}   \\
+%%%
+& \frac
+    { q \xrightarrow{i} q' }
+%   -----------------------------------------------------------
+    { (p~or~q) \xrightarrow{i} (p~or~q') }
+    & \textbf{(or-2)}   \\
+%%%
+& \frac
+    { q=nop \1\vee\1 isBlocked(q) }
+%   -----------------------------------------------------------
+    { (nop~or~q) \xrightarrow{i} nop }
+    & \textbf{(or-3)}   \\
+%%%
+& \frac
+    { p=nop \1\vee\1 isBlocked(p) }
+%   -----------------------------------------------------------
+    { (p~or~nop) \xrightarrow{i} nop }
+    & \textbf{(or-4)}   \\
+%%%
+& \frac
+    { q=nop \1\vee\1 q=break \1\vee\1 isBlocked(q) }
+%   -----------------------------------------------------------
+    { (break~or~q) \xrightarrow{i} break }
+    & \textbf{(or-5)}   \\
+%%%
+& \frac
+    { p=nop \1\vee\1 p=break \1\vee\1 isBlocked(p) }
+%   -----------------------------------------------------------
+    { (p~or~break) \xrightarrow{i} break }
+    & \textbf{(or-6)}   \\
+\end{eqnarray*}%
+\caption{ Small-step rules. }
+\label{lst:ceu:1}
+\end{figure}
+
+\end{document}
+\end{comment}
