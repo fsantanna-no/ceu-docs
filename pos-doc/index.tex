@@ -177,14 +177,13 @@ constrained embedded platforms, such as Arduino%
 \footnote{\url{http://www.arduino.cc}}
 and wireless sensor nodes (e.g. \emph{micaz}%
 \footnote{\url{http://www.xbow.com}}).
-It is designed from scratch and pursues safety and efficiency, targeting highly 
-constrained embedded systems.
+It is designed from scratch and pursues safety and efficiency.
 Most of the complexity of the language resides on the static analysis that 
 happens at compile time.
 The compiler forbids unbounded loops and verifies that no two accesses to the 
 same variable occur at the same time.
 It also calculates exact upper limits for memory usage, concurrent lines of 
-execution, and nested invocations of internal events.
+execution, and nested invocations of events.
 Therefore, there are no runtime errors regarding memory allocations, race 
 conditions, and unbounded execution.
 
@@ -222,14 +221,14 @@ while accommodating two conflicting requirements:
     \item Overcome the two main limitations of synchronous languages:
             \emph{dynamic memory allocation}
             and
-            \emph{performing algorithmic-intensive computations}.
+            \emph{algorithmic-intensive computations}.
 \end{itemize}
 
 \CEU was designed for constrained embedded systems, and we do not want to 
 abdicate of its small footprint and compile-time safety guarantees.
 %
 In order to overcome the limitations in expressiveness and embrace 
-general-purpose reactive systems, we plan to add new functionality keeping the 
+general-purpose reactive systems, we plan to add new functionality, keeping the 
 safety mindset of the language:
 
 \begin{itemize}
@@ -293,7 +292,7 @@ non-preemptive and deterministic.
 %
 Reactions to subsequent events never overlap, and the compiler ensures that 
 programs do not contain \emph{unbounded loops} (i.e., loops without 
-\code{await} statements) which could lead to unresponsiveness for incoming 
+\code{await} statements), which could lead to unresponsiveness for incoming 
 events.
 %
 %Note in the example of Figure~\ref{lst.blink} that every second the three 
@@ -357,10 +356,10 @@ Note that the body of \textbf{\code{<...>}} may contain arbitrary code with
 nested compositions and awaits, but the described patterns will work as 
 expected.
 
-The conjunction of parallel compositions with the disciplined synchronous 
-execution model provides precise information about the control flow of 
-applications, such as which lines of executions can be active, and which 
-variables are accessed in reaction to a specific event.
+The use of parallel compositions under the disciplined synchronous execution 
+model provides precise information about the control flow of applications, such 
+as which lines of executions can be active at the same time, and which 
+variables can be accessed in reaction to a specific event.
 %
 As a summary, the following safety properties hold for all programs that 
 successfully compile in \CEU~\cite{ceu.sensys13}:
@@ -453,12 +452,12 @@ opportunity for an alternative approach that is efficient and avoids explicit
 memory reclamation by the programmer.
 %
 In the example of Figure~\ref{lst.container}, the hypothetical \code{container} 
-keyword (line 2) encloses a block of code that allocates dynamic memory (lines 
-3-7).
+keyword (line 2) encloses a block of code that allocates dynamic memory 
+multiple times (line 6).
 When the container goes out of scope (suppose the block in line 10 terminates), 
 all memory allocated inside it can be automatically reclaimed.
 It is important that references to allocated blocks do not escape the 
-container, what requires a trivial lexical analysis at compile time.
+container, which requires a trivial lexical analysis at compile time.
 
 \subsection{Algorithmic-intensive computations}
 
@@ -535,7 +534,7 @@ scenarios that follow:
 \begin{description}
     \item [Games.]
     Video games push the limits of reactive systems, requiring real time 
-    responsivenes for user input.
+    responsivenes for user interaction.
     Games also have plenty of heavy computations that allow us to explore 
     asynchronous execution, such as collision detection and path finding 
 algorithms.
@@ -584,7 +583,7 @@ limitations:
 
 \begin{itemize}
     \item Employ the use of memory pools to predict memory usage and enforce 
-    deterministic behavior.
+    deterministic behavior;
     Limit the scope of objects for automatic and efficient reclaiming of 
     memory.
     \item Introduce a ``share nothing'' asynchronous primitive with no 
