@@ -1,0 +1,727 @@
+%\begin{document}
+
+The disciplined synchronous execution of \CEU, together with broadcast 
+communication and stacked execution for internal events, may raise doubts about 
+the precise execution of programs.
+%
+In this chapter, we introduce a reduced syntax of \CEU and propose an 
+operational semantics in order to formally describe the language, eliminating 
+imprecisions with regard to how a program reacts to an external event.
+%
+For the sake of simplicity, we focus on the control aspects of the language, 
+leaving out side effects and $C$ calls (which behave like in any conventional 
+imperative language).
+
+%The full syntax and semantic rules can be obtained in 
+%Appendix~\ref{app.formal}.
+
+%In section~\ref{sec.formal.ceu}, we show how to translate \CEU statements into
+
+\section{Abstract syntax}
+\label{sec.sem.syntax}
+
+\begin{figure}[h]
+%\rule{8.5cm}{0.37pt}
+{\small
+\begin{verbatim}
+                                   // primary expressions
+  p ::= mem(id)                    (any memory access to `id')
+      | await(id)                  (await event `id')
+      | emit(id)                   (emit event `id')
+      | break                      (loop escape)
+                                   // compound expressions
+      | if mem(id) then p else p   (conditional)
+      | p ; p                      (sequence)
+      | loop p                     (repetition)
+      | p and p                    (par/and)
+      | p or p                     (par/or)
+      | fin p                      (finalization)
+                                   // derived by semantic rules
+      | awaiting(id,n)             (awaiting `id' since sequence number `n')
+      | emitting(n)                (emitting on stack level `n')
+      | p @ loop p                 (unwinded loop)
+\end{verbatim}
+}%
+\caption{
+    Reduced syntax of \CEU.
+\label{lst.formal.syntax}
+}
+\end{figure}
+
+Figure~\ref{lst.formal.syntax} shows the BNF-like syntax for a subset of \CEU 
+that is sufficient to describe all semantic peculiarities of the language.
+%
+The $mem(id)$ primitive represents all accesses, assignments, and $C$ function 
+calls that affect a memory location identified by $id$.
+As the challenging parts of \CEU reside on its control structures, we are not 
+concerned here with a precise semantics for side effects, but only with their 
+occurrences in programs.
+%In accordance with the zero-delay hypothesis of \CEU, $mem$ expressions are 
+%considered to be atomic and instantaneous
+%
+The special notation $nop$ is used to represent an innocuous $mem$ expression 
+(it can be though as a synonym for $mem(\epsilon)$, where $\epsilon$ is an 
+unused identifier).
+%
+Except for the $fin$ and semantic-derived expressions, which are discussed 
+further, the other expressions map to their counterparts in the concrete 
+language in Figure~\ref{lst.syntax}.
+%
+Note that $mem$ expressions cannot share identifiers with $await$/$emit$ 
+expressions.
+
+\section{Operational semantics}
+\label{sec.sem}
+
+The core of our semantics is a relation that, given a sequence number $n$ 
+identifying the current reaction chain, maps a program $p$ and a stack of 
+events $S$ in a single step to a modified program and stack:
+%
+$$
+\LL S, p \RR
+    \xrightarrow[~~n~~]{}
+\LL S', p' \RR
+$$
+%
+where
+%
+\begin{align*}
+S, S' &\in id^*
+    &&(sequence~of~event~identifiers: [id_{top}, ..., id_1]) \\
+p, p' &\in P
+    && (as~described~in~Figure~\ref{lst.formal.syntax}) \\
+n     &\in \mathds{N}
+    && (univocally~identifies~a~reaction~chain)
+\end{align*}
+
+At the beginning of a reaction chain, the stack is initialized with the 
+occurring external event $ext$ ($S=[ext]$), but $emit$ expressions can push new 
+events on top of it (we discuss how they are popped further).
+
+%Therefore, there is a single order of execution for side effects (represented 
+%by \code{mem} operations), thus, reaction chains are always deterministic.
+%
+% TODO
+%\footnote{We could extend the semantics to describe the full execution of a 
+%program by holding new incoming external events in a queue and processing them 
+%in consecutive reaction chains that never overlap.}
+%
+%The semantics requires an explicit stack to properly nest the emission of 
+%internal events.
+%to prevent that $awaiting$ expressions awake in the same reaction they are 
+%reached.
+
+We describe this relation with a set of \emph{small-step} structural semantics 
+rules, which are built in such a way that at most one transition is possible at 
+any time, resulting in deterministic reaction chains.
+%
+The transitions rules for the primary expressions are as follows:
+%
+{ \setlength{\jot}{20pt}
+\begin{align*}
+\LL S,\1await(id) \RR &\ST
+\LL S,\1awaiting(id,n) \RR
+    & \textbf{(await)}      \\
+%%%
+\LL id:S,\1awaiting(id,m) \RR &\ST
+\LL id:S,\1nop \RR, \2m<n
+    & \textbf{(awaiting)}   \\
+%%%
+\LL S,\1emit(id) \RR &\ST
+\LL id:S,\1emitting(|S|) \RR
+    & \textbf{(emit)}       \\
+%%%
+\LL S,\1emitting(|S|) \RR &\ST
+\LL S,\1nop \RR
+    & \textbf{(emitting)}
+\end{align*}
+}
+
+An $await$ is simply transformed into an $awaiting$ that remembers the current 
+external sequence number $n$ (rule \textbf{await}).
+An $awaiting$ can only transit to a $nop$ (rule \textbf{awaiting}) if its 
+referred event $id$ matches the top of the stack and its sequence number is 
+smaller than the current one ($m<n$).
+%
+%Remember that in \CEU, the \code{await} statement returns the value associated 
+%with the corresponding event: the yielded $mem$ represents the operation to 
+%query that value.
+%
+An $emit$ transits to an $emitting$ holding the current stack level ($|S|$ 
+stands for the stack length), and pushing the referred event on the stack (in 
+rule \textbf{emit}).
+With the new stack level $|S|+1$, the $emitting(|S|)$ itself cannot transit, as 
+rule \textbf{emitting} expects its parameter to match the current stack level.
+This trick provides the desired stack-based semantics for internal events.
+
+Proceeding to compound expressions, the rules for conditionals and sequences 
+are straightforward:
+
+{ \setlength{\jot}{20pt}
+\begin{eqnarray*}
+& \frac
+    { \DS val(id,n) \neq 0 }
+%   -----------------------------------------------------------
+    { \DS \LL S, (if~mem(id)~then~p~else~q) \RR \ST
+          \LL S, p \RR }
+    & \textbf{(if-true)}       \\
+%%%
+& \frac
+    { \DS val(id,n) = 0 }
+%   -----------------------------------------------------------
+    { \DS \LL S, (if~mem(id)~then~p~else~q) \RR \ST
+          \LL S, q \RR }
+    & \textbf{(if-false)}       \\
+%%%
+& \frac
+    {\DS \LL S,p \RR \ST \LL S',p' \RR }
+%   -----------------------------------------------------------
+    {\DS \LL S, (p~;~q) \RR \ST \LL S', (p'~;~q) \RR }
+    & \textbf{(seq-adv)}      \\
+%%%
+& \LL S, (mem(id)~;~q) \RR \ST  \LL S, q \RR
+    & \textbf{(seq-nop)}      \\
+%%%
+& \LL S, (break~;~q) \RR \ST \LL S, break \RR
+    & \textbf{(seq-brk)}
+\end{eqnarray*}
+}
+
+Given that our semantics focuses on control, rules \textbf{if-true} and 
+\textbf{if-false} are the only to query $mem$ expressions.
+%
+The ``magical'' function $val$ receives the memory identifier and current 
+reaction sequence number, returning the current memory value.
+%
+Although the value is arbitrary, it is unique in a reaction chain, because a 
+given expression can execute only once within it (remember that $loops$ must 
+contain $awaits$ which, from rule \textbf{await}, cannot awake in the same 
+reaction they are reached).
+%For all other rules, we omit these values (e.g., \textbf{seq-nop}).
+
+The rules for loops are analogous to sequences, but use \code{`@'} as 
+separators to properly bind breaks to their enclosing loops:
+
+{ \setlength{\jot}{20pt}
+\begin{eqnarray*}
+& \LL S, (loop~p) \RR \ST \LL S, (p~@~loop~p) \RR
+    & \textbf{(loop-expd)}       \\
+%%%
+& \frac
+    {\DS \LL S,p \RR \ST \LL S',p' \RR }
+% -----------------------------------------------------------
+    {\DS \LL S, (p~@~loop~q) \RR \ST \LL S', (p'~@~loop~q) \RR }
+    & \textbf{(loop-adv)}    \\
+%%%
+& \LL S, (mem(id)~@~loop~p) \RR \ST \LL S, loop~p \RR
+    & \textbf{(loop-nop)}    \\
+%%%
+& \LL S, (break~@~loop~p) \RR \ST \LL S, nop \RR
+    & \textbf{(loop-brk)}
+\end{eqnarray*}
+}
+
+When a program first encounters a $loop$, it first expands its body in sequence 
+with itself (rule \textbf{loop-expd}).
+Rules \textbf{loop-adv} and \textbf{loop-nop} are similar to rules 
+\textbf{seq-adv} and \textbf{seq-nop}, advancing the loop until they reach a 
+$mem(id)$.
+However, what follows the loop is the loop itself (rule \textbf{loop-nop}).
+Note that if we used \code{`;'} as a separator in loops, rules 
+\textbf{loop-brk} and \textbf{seq-brk} would conflict.
+%
+Rule \textbf{loop-brk} escapes the enclosing loop, transforming everything into 
+a $nop$.
+%Rule \textbf{loop-brk} escapes the enclosing loop, transforming everything 
+%into a $clear(p)$.
+%We cannot simply transform the loop into a $nop$ because its body may be a 
+%parallel composition containing finalization blocks.
+
+The rules for parallel $and$ compositions force transitions on the left branch 
+$p$ to occur before transitions on the right branch $q$ (rules 
+\textbf{and-adv1} and \textbf{and-adv2}).
+Then, if one of the sides terminate, the composition is simply substituted by 
+the other side (rules \textbf{and-nop1} and \textbf{and-nop2}):
+
+{ \setlength{\jot}{20pt}
+\begin{eqnarray*}
+& \frac
+    {\DS \LL S,p \RR \ST \LL S',p' \RR }
+%   -----------------------------------------------------------
+    {\DS \LL S, (p~and~q) \RR \ST \LL S', (p'~and~q) \RR }
+    & \textbf{(and-adv1)}      \\
+%%%
+& \frac
+    {\DS isBlocked(n,S,p) \1,\2 \LL S,q \RR \ST \LL S',q' \RR }
+%   -----------------------------------------------------------
+    {\DS \LL S, (p~and~q) \RR \ST \LL S', (p~and~q') \RR }
+    & \textbf{(and-adv2)}      \\
+%%%
+& \LL S, (mem(id)~and~q) \RR \ST \LL S, q \RR
+    & \textbf{(and-nop1)}   \\
+%%%
+& \LL S, (p~and~mem(id)) \RR \ST \LL S, p \RR
+    & \textbf{(and-nop2)}   \\
+%%%
+& \LL S, (break~and~q) \RR \ST \LL S, (clear(q)~;~break) \RR
+    & \textbf{(and-brk1)}   \\
+%%%
+& \frac
+    {\DS isBlocked(n,S,p) }
+%   -----------------------------------------------------------
+    {\DS \LL S, (p~and~break) \RR \ST \LL S, (clear(p)~;~break) \RR }
+    & \textbf{(and-brk2)}   \\
+\end{eqnarray*}
+}
+
+The deterministic behavior of the semantics relies on the \emph{isBlocked} 
+predicate, defined in Figure~\ref{fig.isBlocked} and used in rule 
+\textbf{and-adv2}, requiring the left branch $p$ to be blocked in order to 
+allow the right transition from $q$ to $q'$.
+%
+An expression becomes blocked when all of its trails in parallel hang in 
+$awaiting$ and $emitting$ expressions.
+
+\begin{figure}[t]
+{\small
+\begin{align*}
+  isBlocked(n,a:S, awaiting(b,m)) &= (a \neq b \1\vee\1 m = n)   \\
+  isBlocked(n,S, emitting(s))    &= (|S| \neq s)                     \\
+  isBlocked(n,S, (p~;~q))        &= isBlocked(n,S,p)             \\
+  isBlocked(n,S, (p~@~loop~q))   &= isBlocked(n,S,p)             \\
+  isBlocked(n,S, (p~and~q))      &= isBlocked(n,S,p) \wedge
+                                    isBlocked(n,S,q)             \\
+  isBlocked(n,S, (p~or~q))       &= isBlocked(n,S,p) \wedge
+                                    isBlocked(n,S,q)             \\
+  isBlocked(n,S, \_)             &= false \2  (mem,await,      \\
+                                  &    \5\5\5\2 emit,break,if,loop)   %\\
+\end{align*}
+}%
+\rule{14cm}{0.37pt}
+\caption{
+The recursive predicate $isBlocked$ is true only if all branches in parallel 
+are hanged in $awaiting$ or $emitting$ expressions that cannot transit.
+\label{fig.isBlocked}
+}
+\end{figure}
+
+\begin{figure}[t]
+{\small
+\begin{align*}
+  clear( fin~p )       &= p                   \\
+  clear( p~;~q )       &= clear(p)            \\
+  clear( p~@~loop~q) ) &= clear(p)            \\
+  clear( p~and~q )     &= clear(p)~;~clear(q) \\
+  clear( p~or~q )      &= clear(p)~;~clear(q) \\
+  clear( \_ )          &= mem(id)
+\end{align*}
+}%
+\rule{14cm}{0.37pt}
+\caption{
+The function $clear$ extracts $fin$ expressions in parallel and put their 
+bodies in sequence.
+\label{fig.formal.clear}
+}
+\end{figure}
+
+The last two rules \textbf{and-brk1} and \textbf{and-brk2} deal with a $break$ 
+in each of the sides in parallel.
+A $break$ should terminate the whole composition in order to escape the 
+innermost loop (\emph{aborting} the other side).
+%
+The $clear$ function in the rules, defined in Figure~\ref{fig.formal.clear}, 
+concatenates all active $fin$ bodies of the side being aborted (to execute 
+before the $and$ rejoins).
+Note that there are no transition rules for $fin$ expressions.
+This is because once reached, an $fin$ expression only executes when it is 
+aborted by a trail in parallel.
+In Section~\ref{sec.formal.fins}, we show how an $fin$ is mapped to a 
+finalization block in the concrete language.
+%
+Note that there is a syntactic restriction that an $fin$ body cannot $emit$ or 
+$await$---they are guaranteed to completely execute within a reaction chain.
+
+Most rules for parallel $or$ compositions are similar to $and$ compositions:
+
+{ \setlength{\jot}{20pt}
+\begin{eqnarray*}
+& \frac
+    {\DS \LL S,p \RR \ST \LL S',p' \RR }
+%   -----------------------------------------------------------
+    {\DS \LL S, (p~or~q) \RR \ST \LL S', (p'~or~q) \RR }
+    & \textbf{(or-adv1)}   \\
+%%%
+& \frac
+    {\DS isBlocked(n,S,p) \1,\2 \LL S,q \RR \ST \LL S',q' \RR }
+%   -----------------------------------------------------------
+    {\DS \LL S (p~or~q) \RR \ST \LL S', (p~or~q') \RR }
+    & \textbf{(or-adv2)}   \\
+%%%
+& \LL S, (mem(id)~or~q) \RR \ST \LL S, clear(q) \RR
+    & \textbf{(or-nop1)}   \\
+%%%
+& \frac
+    {\DS isBlocked(n,S,p) }
+%   -----------------------------------------------------------
+    {\DS \LL S, (p~or~mem(id)) \RR \ST \LL S, clear(p) \RR }
+    & \textbf{(or-nop2)}   \\
+%%%
+& \LL S, (break~or~q) \ST \LL S, (clear(q)~;~break) \RR
+    & \textbf{(or-brk1)}   \\
+%%%
+& \frac
+    {\DS isBlocked(n,S,p) }
+%   -----------------------------------------------------------
+    {\DS \LL S, (p~or~break) \RR \ST \LL S, (clear(p)~;~break) \RR }
+    & \textbf{(or-brk2)}   %\\
+\end{eqnarray*}
+}
+
+For a parallel $or$, the rules \textbf{or-nop1} and \textbf{or-nop2} must 
+terminate the composition, and also apply the function $clear$ to the aborted 
+side, in order to properly finalize it.
+
+A reaction chain eventually blocks in $awaiting$ and $emitting$ expressions in 
+parallel trails.
+%
+If all trails hangs only in $awaiting$ expressions, it means that the program 
+cannot advance in the current reaction chain.
+%
+However, $emitting$ expressions should resume their continuations of previous 
+$emit$ in the ongoing reaction, they are just hanged in lower stack indexes 
+(see rule \textbf{emit}).
+%
+Therefore, we define another relation that behaves as the previous if the 
+program is not blocked, and, otherwise, pops the stack:
+%
+$$
+\frac
+    { \DS \LL S,p \RR \ST                   \LL S',p' \RR }
+%   -----------------------------------------------------------
+    {     \LL S,p \RR \xRightarrow[~~n~~]{} \LL S',p' \RR }
+%
+\5\5\5
+%
+\frac
+    { \DS isBlocked(n,\1s:S,\1p) }
+%   -----------------------------------------------------------
+    { \LL s:S,p \RR \xRightarrow[~~n~~]{} \LL S,p \RR }
+$$
+%
+To describe a \emph{reaction chain} in \CEU, i.e., how a program behaves in 
+reaction to a single external event, we use the reflexive transitive closure of 
+this relation:
+%
+$$
+    \LL S,p \RR \xRightarrow[~~n~~]{*} \LL S',p' \RR
+$$
+%
+Finally, to describe the complete execution of a program, we need multiple 
+``invocations'' of reaction chains, incrementing the sequence number:
+%
+\begin{align*}
+\LL [e1], p \RR
+    & \xRightarrow[~~1~~]{*}
+\LL [  ], p' \RR
+\\
+\LL [e2], p' \RR
+    & \xRightarrow[~~2~~]{*}
+\LL [  ], p'' \RR
+\\
+& ...
+\end{align*}
+%
+Each invocation starts with an external event at the top of the stack and 
+finishes with a modified program and an empty stack.
+After each invocation, the sequence number is incremented.
+
+\section{Concrete language mapping}
+
+Although the reduced syntax presented in Figure~\ref{lst.formal.syntax} is 
+similar to the concrete language in Figure~\ref{lst.syntax}, there are some 
+significant mismatches between \CEU and the formal semantics that require some 
+clarification.
+In this section, we describe an informal mapping between the two.
+
+Most statements from \CEU map directly to the formal semantics, e.g.,
+$
+    \code{if}      \mapsto if   ,\2
+    \code{';'}     \mapsto ~';' ,\2
+    \code{loop}    \mapsto loop ,\2
+    \code{par/and} \mapsto and  ,\2
+    \code{par/or}  \mapsto or
+$.
+(Again, we are not considering side-effects, which are all mapped to the $mem$ 
+semantic construct.)
+
+\subsection{await and emit}
+
+The \code{await} and \code{emit} primitives of \CEU are slightly more complex 
+in comparison to the formal semantics, as they support communication of values 
+between emits and awaits.
+In the two-step translation below, we start with the program in \CEU, which 
+communicates the value $1$ between the \code{emit} and \code{await} in parallel 
+(left-most code).
+In the intermediate translation, we include the shared variable \code{e\_} to 
+hold the value being communicated between the two trails in order to simplify 
+the \code{emit}.
+Finally, we convert the program into the equivalent in the formal semantics, 
+translating side-effect statements into $mem$ expressions:
+
+\begin{figure}[h!]
+\begin{minipage}[t]{0.32\linewidth}
+\begin{lstlisting}
+par/or do
+  <...>
+  emit e => 1;
+with
+  v = await e;
+  _printf("%d\n",v);
+end
+\end{lstlisting}
+\end{minipage}
+%
+\begin{minipage}[t]{0.32\linewidth}
+\begin{lstlisting}
+par/or do
+  <...>
+  e_ = 1;
+  emit e;
+with
+  await e;
+  v = e_;
+  _printf("%d\n",v);
+end
+\end{lstlisting}
+\end{minipage}
+%
+\begin{minipage}[t]{0.34\linewidth}
+\begin{lstlisting}
+<...> ; mem ; emit(e)
+        or
+await(e) ; mem ; mem
+\end{lstlisting}
+\end{minipage}
+\end{figure}
+
+Note that a similar translation is required for external events, i.e., each 
+external event has a corresponding variable that is explicitly set by the 
+environment before each reaction chain.
+
+\subsection{First-class timers}
+
+To encompass first-class timers, we need a special \code{TICK} event that 
+should be intercalated with each other event occurrence in an application:
+
+\begin{align*}
+\LL [TICK], p \RR
+    & \xRightarrow[~~1~~]{*}
+\LL [    ], p' \RR
+\\
+\LL [e1], p' \RR
+    & \xRightarrow[~~2~~]{*}
+\LL [  ], p'' \RR
+\\
+\LL [TICK], p'' \RR
+    & \xRightarrow[~~3~~]{*}
+\LL [    ], p''' \RR
+\\
+\LL [e2], p''' \RR
+    & \xRightarrow[~~4~~]{*}
+\LL [  ], p'''' \RR
+\\
+& ...
+\end{align*}
+
+The \code{TICK} event has an associated variable \code{TICK\_} (as illustrated 
+in the previous section) with the time elapsed between the two occurrences of 
+external events.
+
+The translation in two steps from a timer await to the semantics is as follows:
+
+\noindent
+\begin{minipage}[t]{0.30\linewidth}
+\begin{lstlisting}
+dt = await 10ms;
+\end{lstlisting}
+\end{minipage}
+%
+\begin{minipage}[t]{0.37\linewidth}
+\begin{lstlisting}
+var int tot = 10000;
+loop do
+    await TICK;
+    tot = tot - TICK_;
+    if tot <= 0 then
+        dt = tot;
+        break;
+    end
+end
+\end{lstlisting}
+\end{minipage}
+%
+\begin{minipage}[t]{0.30\linewidth}
+\begin{lstlisting}
+mem;
+loop(
+    await(TICK);
+    mem;
+    if mem then
+        mem;
+        break
+    else
+        nop
+)
+\end{lstlisting}
+\end{minipage}
+
+\subsection{Finalization blocks}
+\label{sec.formal.fins}
+
+The biggest mismatch between \CEU and the formal semantics is regarding 
+finalization blocks, which require more complex modifications in the program
+for a proper mapping using the $fin$ semantic construct.
+The code that follows uses a \code{finalize} to safely \code{\_release} the 
+reference to \code{ptr} kept after the call to \code{\_hold}:
+
+\begin{lstlisting}
+do
+    var int* ptr = <...>;
+    await A;
+    finalize
+        _hold(ptr);
+    with
+        _release(ptr);
+    end
+    await B;
+end
+\end{lstlisting}
+
+In the translation to the semantics, the first required modification is to 
+catch the \code{do-end} termination to run the finalization code.
+For this, we translate the block into a \code{par/or} with the original body in 
+parallel with a $fin$ to run the finalization code:
+
+\begin{lstlisting}
+par/or do
+    var int* ptr = <...>;
+    await A;
+    _hold(ptr);
+    await B;
+with
+    { fin
+        _release(ptr); }
+end
+\end{lstlisting}
+
+In this intermediate code (mixing the syntaxes), the $fin$ body will execute
+whenever the \code{par/or} terminates, either normally (after the \code{await 
+B}) or aborted from an outer composition (rules \textbf{and-brk1}, 
+\textbf{and-brk2}, \textbf{or-nop1}, \textbf{or-nop2}, \textbf{or-brk1}, and 
+\textbf{or-brk2} in the semantics).
+%
+%Note the choice for a \code{par/or} which terminates only with the first 
+%trail.
+%
+However, the $fin$ will also (incorrectly) execute even if the call to 
+\code{\_hold} is not reached in the body due to an abort before awaking from 
+the \code{await A}.
+%It may happen that the call to \code{\_release} occurs without a previous call 
+%to \code{\_hold}.
+%
+To deal with this issue, for each $fin$ we need a corresponding flag to keep 
+track of code that needs to be finalized:
+
+\begin{lstlisting}[numbers=left,xleftmargin=2em]
+f_ = 0;
+par/or do
+    var int* ptr = <...>;
+    await A;
+    _hold(ptr);
+    f_ = 1;
+    await B;
+with
+    { fin
+        if f_ then
+            _release(ptr);
+        end }
+end
+\end{lstlisting}
+
+The flag is initially set to false (line 1), avoiding the finalization code to 
+execute (lines 9-12).
+Only after the call to \code{\_hold} (line 5) that we set the flag to true 
+(line 6) and enable the $fin$ body to execute.
+%
+The complete translation from the original example in \CEU is as follows:
+
+\begin{lstlisting}
+mem;    // f_ = 0
+(
+   mem;         // ptr = <...>
+   await(A);
+   mem;         // _hold(ptr)
+   mem;         // f_ = 1
+   await(B);
+or
+   fin
+     if mem then    // if f_
+        mem         // release _ptr
+     else
+        nop
+)
+\end{lstlisting}
+
+\begin{comment}
+
+There are also some restriction on valid programs in \CEU, which the semantic 
+allows:
+- loops
+- awaits in fins
+- local scopes
+
+handled in separate, in a parsing phase that is not related to the execution
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The semantic rules are continuously applied (note the `$*$' klenee operator) 
+until
+consider only the top of the stack and continuously apply transformations to 
+the program until it blocks and no rules can be applied.
+The \emph{isBlocked} predicate of Figure~\ref{fig.isBlocked} identifies a 
+blocked program based on its structure and event at the top of the stack.
+xxx
+A program becomes blocked when all parallel branches are hanged in $awaiting$, 
+$stacked$, and/or $emitting$ primitives, as defined in 
+Figure~\ref{fig:isBlocked}.
+an \code{awaiting} is unblocked only if its event matches the top of the stack
+the \code{emitting} primitive only proceeds once its stack level is restored.
+
+\begin{itemize}
+\item The program is awaiting in all trails, i.e., function $pop$ returns 
+$(0,\{\})$.
+\item The program terminates, i.e., the small-step rules transform the whole 
+program into a $mem(id)$.
+\end{itemize}
+%
+In Section~\ref{XXX} we show that by imposing syntactic restrictions to 
+programs, reaction chains always reach one of these conditions in a finite 
+number of steps, meaning that reactions to the environment always execute in 
+bounded time.
+
+To be compliant with the reactive nature of \CEU, we assume that all programs 
+start awaiting the main event ``$\$$'', which is emitted once by the 
+environment on startup, i.e., $(i,E)=(1,\{\$\})$ for the very first big step.
+
+As briefly introduced, small-step rules continuously apply transformations to 
+unblocked trails.
+A program becomes blocked when all parallel branches are hanged in $awaiting$, 
+$stacked$, and/or $emitting$ primitives, as defined in 
+Figure~\ref{fig:isBlocked}.
+
+All small-step rules are associated with the current (deepest) stack depth 
+level $i$ acquired from the previous big step.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{comment}

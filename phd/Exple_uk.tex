@@ -1,0 +1,328 @@
+% PT
+%\documentclass[phd,twoside,brazil]{ThesisPUC}
+\documentclass[phd,twoside,british]{ThesisPUC_uk}
+
+\usepackage{verbatim}
+\usepackage{xspace}
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{alltt}
+
+\usepackage[T1]{fontenc}
+%\usepackage{lmodern}
+%\usepackage[utf8]{inputenc}
+
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage{dsfont}
+
+\usepackage{color}
+\usepackage{xcolor,colortbl}
+\definecolor{light}{gray}{0.90}
+\definecolor{dark}{gray}{0.30}
+%\definecolor{light}{rgb}{.90,.90,.90}
+\definecolor{darkgreen}{rgb}{0,.50,0}
+\definecolor{darkblue}{rgb}{0,0,.50}
+\definecolor{darkred}{rgb}{.50,0,0}
+\definecolor{darkpur}{rgb}{.50,0,.50}
+\usepackage{listings}
+\lstset{
+%columns=fullflexible,
+%basicstyle=\ttfamily,
+escapeinside={||},
+mathescape=true,
+    language=C, % choose the language of the code
+    basicstyle=\fontfamily{pcr}\selectfont\footnotesize\color{black},
+    keywordstyle=\color{black}\bfseries, % style for keywords
+    numbers=none, % where to put the line-numbers
+    numberstyle=\tiny, % the size of the fonts that are used for the line-numbers
+    backgroundcolor=\color{light},
+    %showspaces=false, % show spaces adding particular underscores
+    %showstringspaces=false, % underline spaces within strings
+    showtabs=false, % show tabs within strings adding particular underscores
+    %frame=single, % adds a frame around the code
+    tabsize=2, % sets default tabsize to 2 spaces
+    %rulesepcolor=\color{gray}
+    captionpos=t, % sets the caption-position to bottom
+    breaklines=false, % sets automatic line breaking
+    %breakatwhitespace=false,
+    numbersep=2em,
+    emph={par,or,do,end,loop,await,emit,input,event,call,with,command,%
+          var,and,not,then,else,native,return,pure,safe,nohold,finalize,%
+          fin,mem,nop,PROC,PAR,CHAN,SIGNAL,async,sync,class},
+    emphstyle={\bfseries},
+    commentstyle=\color{dark},
+    %xleftmargin=20pt,
+    %xrightmargin=20pt,
+    framesep=20pt,
+    %upquote=true,
+    %aboveskip={1.5\baselineskip},
+}
+
+\newcommand{\code}[1] {{\small{\texttt{#1}}}}
+\newcommand{\Code}[1] {\texttt{#1}}
+
+\newcommand{\CEU}{\textsc{C\'{e}u}\xspace}
+\newcommand{\nesc}{\emph{nesC}\xspace}
+\newcommand{\FIN}{\code{finally}\xspace}
+\newcommand{\DOFIN}{\code{do-finally}\xspace}
+
+\newcommand{\footnoteremember}[2]{%
+\footnote{#2}%
+\newcounter{#1}%
+\setcounter{#1}{\value{footnote}}%
+}
+\newcommand{\footnoterecall}[1]{%
+\footnotemark[\value{#1}]%
+}
+
+\newcommand{\ST}{\1\xrightarrow[~n~]{}\1}
+\newcommand{\BT}{\xRightarrow[(i,E)]{}}
+\newcommand{\LL}{\langle}
+\newcommand{\RR}{\rangle}
+\newcommand{\DS}{\displaystyle}
+
+\newcommand{\1}{\;}
+\newcommand{\2}{\;\;}
+\newcommand{\3}{\;\;\;}
+\newcommand{\5}{\;\;\;\;\;}
+\newcommand{\ten}{\5\5}
+\newcommand{\twenty}{\ten\ten}
+
+\definecolor{dark-red}{rgb}{0.2,0.15,0.15}
+\definecolor{dark-blue}{rgb}{0.15,0.15,0.4}
+\definecolor{medium-blue}{rgb}{0,0,0.5}
+% PT
+\hypersetup{
+    colorlinks, linkcolor={dark-red},
+    citecolor={dark-blue}, urlcolor={medium-blue}
+}
+%\usepackage[hidelinks]{hyperref}
+%\hypersetup{hidelinks=true}
+%\hypersetup{frenchlinks=true}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\author{Francisco Figueiredo Goytacaz Sant'Anna}
+\authorR{Sant'Anna, Francisco Figueiredo Goytacaz}
+\adviser{Roberto Ierusalimschy}
+\adviserR{Ierusalimschy, Roberto}
+\coadviser{Noemi de La Roque Rodriguez}
+\coadviserR{Rodriguez, Noemi de La Roque}
+
+% PT
+%\titulo{
+%Concorr\^encia Segura em n\'ivel de Sistema para N\'os com Restri\c{c}\~oes de 
+%Recursos com C\'eu
+%}
+
+\title{Safe System-level Concurrency on Resource-Constrained Nodes with C\'eu}
+
+\day{12} \month{September} \year{2013}
+
+\city{Rio de Janeiro}
+\CDD{004}
+\department{Inform\'atica}
+\program{Computer Science}
+\school{Centro T\'{e}cnico Cient\'{i}fico}
+\university{Pontif\'{i}cia Universidade Cat\'{o}lica do Rio de Janeiro}
+\uni{PUC--Rio}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\jury {
+    %\jurymember{Edward Hermann Haeusler}
+                %{Departamento de Inform\'{a}tica --- PUC-Rio}
+    %\jurymember{Renato Fontoura de Gusm\~{a}o Cerqueira}
+                %{Departamento de Inform\'{a}tica --- PUC-Rio}
+    %\schoolhead{Jos\'{e} Eugenio Leal}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\resume {
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\acknowledgment{
+I would like to thank my supervisors Roberto Ierusalimschy and Noemi Rodriguez 
+for their time and knowledge sharing.
+
+TTT: Olaf / Philippas
+
+I'm also thankful to Luiz Fernando Soares, for my period in the Telem\'idia 
+Lab, and all my teachers in CAp-UERJ, responsible for my education before 
+college.
+
+My studies were funded by CNPq and SAAB.
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% PT
+\begin{comment}
+\keywords {
+    \key{Concorr\^encia}
+    \key{Determinismo}
+    \key{Sistemas Embarcados}
+    \key{Esterel}
+    \key{S\'incrono}
+    \key{Reativo}
+    \key{Redes de Sensores sem Fio}
+}
+\end{comment}
+
+%\begin{comment}
+\keywords{
+  \key{Concurrency}%
+  \key{Determinism}%
+  \key{Embedded Systems}%
+  \key{Esterel}%
+  \key{Reactivity}%
+  \key{Synchronous}%
+  \key{Wireless Sensor Networks}%
+}
+%\end{comment}
+
+% TODO muito corrido
+
+%\begin{comment}
+\abstract {
+% TODO: split 2 sents.
+Despite the continuous research to facilitate Wireless Sensor Networks 
+development,
+most safety analysis and mitigation efforts in concurrency are still left to 
+developers, who must manage synchronization and shared memory explicitly.
+% among activities explicitly.
+%
+We propose a system language that ensures safe concurrency by handling threats 
+at compile time, rather than at runtime.
+%
+The synchronous and static foundation of our design allows for a simple 
+reasoning about concurrency that enables compile-time analysis resulting in
+deterministic and memory-safe programs.
+%
+As a trade-off, our design imposes limitations on the language expressiveness, 
+such as doing computationally-intensive operations and meeting hard real-time 
+responsiveness.
+% defining, doing, executing, describing
+%
+To show that the achieved expressiveness and responsiveness is sufficient for a 
+wide range of WSN applications, we implement widespread network protocols and 
+the CC2420 radio driver.
+%
+The implementations show a reduction in source code size, with a penalty of 
+memory increase below 10\% in comparison to \emph{nesC}.
+%
+Overall, we ensure safety properties for programs relying on high-level control 
+abstractions that also lead to concise and readable code.
+% in terms of total ROM/RAM.
+%, and a negligible increase in CPU usage.
+}
+%\end{comment}
+
+% PT
+
+\begin{comment}
+\resumo{
+Apesar da pesquisa cont\'inua para facilitar a programa\c{c}\~ao de redes de 
+sensores sem fio, a an\'alise de perigos de concorr\^encia ainda \'e de 
+responsabilidade do programador, que deve tratar manualmente de quest\~oes como 
+sincroniza\c{c}\~ao e mem\'oria compartilhada.
+N\'os apresentamos uma linguagem de sistema que garante concorr\^encia segura 
+tratando amea\c{c}as em tempo de compila\c{c}\~ao.
+A fundamenta\c{c}\~ao est\'atica e s\'incrona da nossa abordagem permite um 
+racioc\'inio mais simples sobre quest\~oes de concorr\^encia, permitindo uma 
+an\'alise em tempo de compila\c{c}\~ao que garante programas determin\'isticos.
+Como contra-partida, nosso modelo imp\~oe em termos da expressividade da 
+linguagem, tais como para efetuar c\'alculos demorados, ou atender prazos 
+estritos em tempo real.
+N\'os implementamos diversos protocolos de rede conhecidos e o driver para o 
+r\'adio CC2420 para mostrar que a expressividade e responsividade obtida com a 
+linguagem \'e suficiente para uma gama consider\'avel de aplica\c{c}\~oes para 
+redes de sensores.
+As implementa\c{c}\~es mostram uma redu\c{c}\~ao de tamanho de c\'odigo, com um 
+aumento de mem\'oria abaixo de 10\% em compara\c{c}\~ao com nesC.
+O uso da linguagem proposta implica em diversas propriedades de seguran\c{c}a 
+que se baseiam em abstra\c{c}\~oes de controle de alto n\'ivel, tamb\'em 
+resultando em c\'odigo mais conciso e leg\'ivel.
+}
+\end{comment}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\tablesmode{fig} % none, fig, tab ou figtab
+\setcounter{tocdepth}{1}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+% PT
+%\chapter{oi}
+
+%\begin{comment}
+
+\chapter{Introduction}
+    \label{sec.intro}
+    \input{intro.tex}
+
+\chapter{Overview of programming models}
+    \label{sec.models}
+    \input{models.tex}
+
+\chapter{The design of C\'eu}
+    \label{sec.ceu}
+    \input{ceu.tex}
+
+\chapter{Demo applications}
+    \label{sec.demos}
+    \input{demo.tex}
+
+\chapter{Evaluation}
+    \label{sec.eval}
+    \input{eval.tex}
+
+\chapter{The semantics of C\'eu}
+    \label{sec.formal}
+    \input{formal.tex}
+
+\chapter{The implementation of C\'eu}
+    \label{sec.impl}
+    \input{impl.tex}
+
+%\chapter{Going Dynamic}
+    %\section{Abstractions in C\'eu: Organisms}
+    %\section{C\'eu organisms}
+    %\label{sec.dyn}
+    %\input{dyn.tex}
+
+\chapter{Related work}
+    \label{sec.related}
+    \input{related.tex}
+
+%\chapter{Ongoing work}
+    %\label{sec.future}
+    %\input{future.tex}
+
+\chapter{Conclusion}
+    \label{sec.conclusion}
+    \input{conclusion.tex}
+
+%\end{comment}
+
+%\bibliographystyle{plain}
+\bibliography{my,other}
+
+%\appendix
+%\chapter{The Full Semantics of C\'eu}
+    %\label{app.formal}
+    %\input{f.tex}
+
+\end{document}

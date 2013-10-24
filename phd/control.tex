@@ -1,0 +1,537 @@
+In this section, we explore the stacked execution for internal events in \CEU, 
+demonstrating how it enables advanced control-flow mechanisms in the language 
+without requiring new primitives.
+We first describe a restricted form of subroutines that is used as the basis 
+for the more elaborate mechanisms.
+
+Although the described mechanisms involve thoughtful techniques, they can be 
+easily abstracted with compile-time macros taking advantage of the structured 
+style of \CEU%
+\footnote{Our programs in \CEU make extensive use of the \emph{m4} 
+preprocessor.}.
+As an exception, the \DOFIN construct to be presented in 
+Section~\ref{sec.adv.fin} makes slight global additions to the program tree and 
+requires a dedicated syntax.
+
+\subsection{Subroutines}
+\label{sec.adv.sub}
+
+Internal events bring support for a limited form of subroutines.
+In the example that follows, we define a function \code{inc} that increments 
+the value passed as reference.
+A trail in parallel calls this function in reaction to external event \code{A}:
+ 
+{\small
+\begin{verbatim}
+ 1:  event int* inc;    // function `inc' receives an int
+ 2:  par/or do
+ 3:      loop do        // function definitions are loops
+ 4:          int* p = await inc; // that await the event
+ 5:          *p = *p + 1;        // to execute the body
+ 6:      end                     // and await again
+ 7:  with
+ 8:      int v = 1;
+ 9:      await A;
+10:      emit inc(&v);           // call `inc'
+11:      _assert(v==2);          // assert after return
+12:  end
+\end{verbatim}
+}
+
+A subroutine is represented as a loop that awaits an identifying event 
+(\code{await inc}, in line 4).
+A subroutine is called in a parallel trail through an emit on the corresponding 
+event (\code{emit inc}, in line 10).
+The parameter of a subroutine is the type of its corresponding event 
+(\code{event int* inc}, in line 1).
+
+In the example, the trails start awaiting events \code{inc} and \code{A}.
+Once the input event \code{A} occurs, the second trail awakes and invokes 
+\code{emit~inc(\&v)} to ``call'' subroutine \code{f}.
+Given the stacked execution for internal events, the calling trail pauses and 
+the subroutine awakes.
+The subroutine increments the parameter, loops, and awaits to be called again.
+Finally, the calling trail resumes and passes the assertion test, terminating 
+the program.
+
+This form of subroutines has some significant limitations:
+
+\begin{description}
+\item[\emph{Single calling}:] Further calls to a subroutine in a reaction chain 
+have no effect.
+Suppose that after the assertion test in line 11, the trail tries to call the 
+function again.
+Given that awaking $await$ statements require them to be $awaiting$ before a 
+reaction chain starts, the second call is ignored.
+Remember that events are not buffered in \CEU.
+
+\item[\emph{No recursion}:] Recursive calls to a subroutine also have no 
+effect.
+Suppose that after the increment in line 5, the subroutine tries to call 
+itself.
+As the trail cannot be awaiting itself while running, the recursive call is 
+ignored.
+
+\item[\emph{Single instance}:] Calls to a running subroutine also have no 
+effect.
+Suppose that after the increment in line 5, the subroutine awaits an event 
+(e.g. an external event \code{B}).
+While this event does not occur, the subroutine is hanged and cannot serve 
+other requests (even in other reaction chains).
+
+\item[\emph{No concurrency}:] If two trails in parallel try to call the same 
+subroutine passing a parameter, the static analysis complains about 
+nondeterminism.
+Considering the formal semantics, an $emit$ needs to be translated to 
+$mem;emit(e)$ in order to describe parameter passing (where $mem$ accesses 
+$e$).
+This way, the concurrent $mem$ operations would be detected as 
+nondeterministic.
+\end{description}
+
+\vspace{5pt}
+\CEU provides no support for standard functions for a number of reasons:
+\begin{itemize}
+\item The interaction with other \CEU control primitives is not obvious (e.g., 
+executing an $await$ or a $par/or$ inside a function).
+\item They would still be restricted in some ways given the embedded context 
+(e.g.  no recursion or closures).
+\item Programs can always recur to $C$ when absolutely necessary.
+%\item A dedicated primitive would behave just as described, being a matter of 
+%syntactic sugar.
+\end{itemize}
+
+Regardless of the limitations, this form of subroutines is widely adopted in 
+\CEU programs, given that they were designed to work with the other control 
+mechanisms.
+Keep in mind that the typical reactive organization of programs (awaiting an 
+external stimulus, reacting to it, and going back to awaiting) does not demand 
+unrestricted subroutines.
+In Section~\ref{sec.adv.frp}, we show that we can even take advantage of 
+non-recursive subroutines to properly describe mutual dependency among trails 
+in parallel.
+
+\subsection{Finalization blocks}
+\label{sec.adv.fin}
+
+Finalization blocks (as found in $Java$ and $C\#$) are often useful to handle 
+dynamic resource allocation in a structured way.
+As an example, the naive program in \CEU that follows allocates a block of 
+memory and uses it across reactions to events before freeing it:
+
+{\small
+\begin{verbatim}
+    input void A,F;
+    par/or do
+        tp* ptr = _malloc(...);
+        ... // use `ptr'
+        await A;
+        ... // use `ptr'
+        _free(ptr);
+    with
+        await F;
+    end
+    ...     // program continues
+\end{verbatim}
+}
+
+In the program, if event \code{F} occurs before \code{A}, the \code{par/or} 
+composition terminates and does not free the allocated memory, leading to a 
+leak.
+
+\CEU provides a \DOFIN construct to ensure the execution of a block of code to 
+safely release resources.
+The previous example can be rewritten as the code in the left side of
+Figure~\ref{lst:finally}, which forces the execution of the finalization block 
+after the \FIN keyword, even when the outer \code{par/or} terminates.
+
+\DOFIN constructs do not add any complexity to the semantics of \CEU, relying 
+only on the set of primitives already presented in 
+Section~\ref{sec.sem.syntax}.
+% TODO: RW
+For instance, the example is translated at compile time into the code shown in 
+the right side of the figure, as follows:
+
+\begin{enumerate}
+\item A unique global internal event \code{fin} is declared.%
+\footnote{Each \DOFIN is associated to an unique event (e.g.,  \code{fin\_1}, 
+\code{fin\_2}, etc.).}
+\item The \DOFIN is converted into a \code{par/and}.
+\item The first \code{par/and} trail emits \code{fin} on termination to invoke 
+the finalization block.
+\item The second \code{par/and} trail (the finalization block) awaits 
+\code{fin} to start executing.
+\item All trails that terminate a \code{par/or} or escape a \code{loop} emit 
+\code{fin} to also invoke the finalization block.
+\end{enumerate}
+
+We opted for a dedicated syntax given that the transformation is not 
+self-contained, affecting the global structure of programs.
+
+The cases that follow illustrate the precise behavior of finalization blocks 
+when a third trail in parallel encloses a \DOFIN construct and kills it:
+
+\begin{itemize}
+\item \emph{3rd trail terminates before the \DOFIN starts to execute.}
+In this case, 3rd trail emits the corresponding \code{fin}, which is not yet 
+being awaited for, and the finalization block does not execute.
+\item \emph{3rd trail terminates while the \DOFIN is blocked.}
+In this case, the resource has been acquired but not released.
+The corresponding \code{fin} is emitted and holds 3rd trail to awake the 
+finalization block, which safely releases the resource before resuming the 
+terminating trail.
+\item \emph{3rd trail terminates concurrently with the \DOFIN.} (Suppose they 
+react to the same event.)
+In this case, both trails emit \code{fin}, executing the finalization block 
+only once, as expected.
+\end{itemize}
+
+\begin{figure}[t]
+%\rule{14cm}{0.37pt}
+{\small
+\begin{minipage}[t]{0.45\linewidth}
+\begin{alltt}
+  input void A,F;
+
+  par/or do
+    \textbf{do}
+      \_t* ptr = \_malloc();
+      ... // use `ptr'
+      await A;
+      ... // use `ptr'
+
+    \textbf{finally}
+
+      \_free(ptr);
+    \textbf{end}
+  with
+    await F;
+
+  end
+\end{alltt}
+\end{minipage}
+%
+\hspace{0.5cm}
+%
+\begin{minipage}[t]{0.45\linewidth}
+\begin{alltt}
+input void A,F;
+\textbf{event void fin;}      (1)
+par/or do
+  \textbf{par/and do}          (2)
+    \_t* ptr = \_malloc();
+    ... // use `ptr'
+    await A;
+    ... // use `ptr'
+    \textbf{emit fin;}        (3)
+  \textbf{with}
+    \textbf{await fin};       (4)
+    \_free(ptr);
+  \textbf{end}
+with
+  await F;
+  \textbf{emit fin;}          (5)
+end
+\end{alltt}
+\end{minipage}
+
+\caption{ \DOFIN code and corresponding translation.
+\label{lst:finally}
+}
+}
+\end{figure}
+
+%\TODO: limitation: `do´ must await
+
+\DOFIN constructs have the restriction that finalization code cannot await 
+events, otherwise they would be killed by the terminating trail before 
+releasing the acquired resources.
+However, releasing resources does not typically involve awaiting.
+
+\subsection{Exception handling}
+\label{sec.adv.excpt}
+
+Exception handling can be provided by specialized programming language 
+constructs (e.g., \code{try-catch} blocks in Java), but also with techniques 
+using standard control-flow primitives (e.g., \code{setjmp/longjmp} in $C$).
+\CEU can naturally express different forms of exception handling without a 
+specific construct.
+
+As an illustrative example, suppose an external entity periodically writes to a 
+log file and notifies the program through the event \code{ENTRY}, which carries 
+the number of available characters to read.
+We start with the simple and straightforward specification of 
+Figure~\ref{lst:excpt1}.
+The normal flow is to open the file and wait in a loop for \code{ENTRY} 
+occurrences.
+We use a finalization block to safely close the file in the case of abrupt 
+terminations, as discussed in previous section.
+The low-level file operations \code{open} and \code{read} are defined as 
+internal events working as subroutines.
+%A \code{read} operation does not await external events, hence, the program 
+%loops and awaits event \code{ENTRY} continuously, reacting to all log writes.
+
+\begin{figure}[t]
+%\rule{14cm}{0.37pt}
+{\small
+\begin{verbatim}
+ // DECLARATIONS
+ input int START;  // start handling the log
+ input int ENTRY;  // new log entry
+ _FILE*    f;      // holds a reference to the log
+ char[10] buf;     // holds the current log entry
+ event char* open; // opens filename into `f'
+ event int read;   // reads a number of bytes into `buf'
+ event int excpt;  // callback event for exceptions
+
+ // NORMAL FLOW
+ await START;
+ do
+    emit open("log.txt");
+    loop do
+       int n = await ENTRY;
+       emit read(n);              // reads into `buf'
+       _printf("log: %s\n", buf); // handles log string
+    end
+ finally
+    if f != _NULL then
+       _fclose(f);
+    end
+ end
+\end{verbatim}
+}%
+\caption{ Program to handle log entries.
+\label{lst:excpt1}
+}
+\end{figure}
+
+The operations that perform the actual low-level system calls are placed in 
+parallel and may emit exceptions through event \code{excpt}, as 
+Figure~\ref{lst:excpt2} shows.
+
+\begin{figure}[t]
+{\small
+\begin{verbatim}
+ // DECLARATIONS (as in previous code)
+ par/or do
+     // NORMAL FLOW (as in previous code)
+ with
+     loop do     // OPEN subroutine
+         char* filename = await open;
+         f = _open(filename);
+         if f == _NULL then
+             emit excpt(1);  // 1 = open exception
+         end
+     end
+ with
+     loop do     // READ subroutine
+         int n = await read;
+         if (n > 10) || (_read(f,buf,n) != n) then
+             emit excpt(2);  // 2 = read exception
+         end
+     end
+ end
+\end{verbatim}
+}%
+\caption{ Low-level operations are placed in parallel.
+\label{lst:excpt2}
+}
+\end{figure}
+
+To handle exceptions, we enclose the normal flow with another \code{par/or} to 
+terminate it on any exception thrown by file operations:
+
+{\small
+\begin{verbatim}
+ // DECLARATIONS
+ par/or do
+     par/or do
+         // NORMAL FLOW
+     with
+         await excpt;    // catch exceptions
+     end
+ with
+     // OPERATIONS       // throw exceptions
+ end
+\end{verbatim}
+}
+
+To illustrate an exception, suppose the normal flow tries to read a string and 
+fails.
+The program behaves as follows (with the stack in emphasis):
+
+{\small
+\begin{enumerate}
+\setlength{\itemsep}{0pt}
+\item Normal flow invokes the read operation (\code{emit read}) and pauses;\\
+    \emph{stack: [norm]}
+\item Read operation awakes, throws an exception (\code{emit excpt}), and 
+    pauses;\\
+    \emph{stack: [norm, read]}
+\item Exception handler (\code{await excpt}) awakes, invokes the \FIN (through 
+    implicit \code{emit fin}), and pauses;\\
+    \emph{stack: [norm, read, hdlr]}
+\item The \FIN block executes, closes the file, and terminates;\\
+    \emph{stack: [norm, read, hdlr]}
+\item The exception continuation terminates the \code{par/or}, cancelling all 
+remaining stacked continuations.\\
+    \emph{stack: []}
+\end{enumerate}
+}
+
+This mechanism for exceptions can also support resumption if the handler does 
+not terminate its surrounding \code{par/or}.
+For instance, the new handler of Figure~\ref{lst:excpt3} waits for exceptions 
+in a loop and recovers from each type of exception.
+
+\begin{figure}[t]
+{\small
+\begin{verbatim}
+ ...
+     par/or do
+         // NORMAL FLOW
+     with
+         loop do
+             int err = await excpt;  // catch exceptions
+             if err == 1 then        // open exception
+                 f = <creates a new file>
+             else/if err == 2 then   // read exception
+                 buf = <assigns a default string>
+             end
+         end
+     end
+ ...
+\end{verbatim}
+}%
+\caption{ Exception handling with resumption.
+\label{lst:excpt3}
+}
+\end{figure}
+
+Now, step 3 in the previous execution trace would not fire the \FIN block, but 
+instead, assign a default string to \code{buf}, loop and await the next 
+exception.
+Then, the exception continuation would loop and await further file operations.
+In the end, the read operation would resume as if no exceptions had occurred.
+
+Note that throughout the example, the normal flow of Figure~\ref{lst:excpt1} 
+remained unchanged, with all machinery to handle exceptions placed around it.
+Also, although we use globals in the example (\code{f} and \code{buf}), 
+remember that they are guaranteed to be safely accessed.
+%The only modification was actually a bug removal, as we included the 
+%\code{do-finally} block to ensure closing the file safely.
+
+In terms of memory usage, switching from the original normal flow (without 
+exception throws) to the last example (with recovery) incurred extra 450 bytes 
+of ROM and 24 bytes of RAM.
+
+The presented approach for exceptions has the limitation that a file operation 
+cannot be called twice within a reaction chain and that exception handlers 
+cannot await other events, which are related to the single-call and 
+single-instance property of subroutines in \CEU.
+
+\subsection{Dataflow programming}
+\label{sec.adv.frp}
+
+Reactive dataflow programming \cite{frp.survey} provides a declarative style to 
+express dependency relationships among data.
+Mutual dependency is a known issue in dataflow languages, requiring the 
+explicit placement of a specific delay operator to avoid runtime
+cycles~\cite{frtime.embedding,luagravity.sblp}.
+This solution is somewhat \emph{ad hoc} and splits an internal dependency 
+problem across two reactions to the environment.
+%It also requires the mutual dependency to eventually converge to a value so 
+%that variables do not affect each other forever.
+
+\CEU can naturally express safe mutual dependencies, making it impossible to 
+implement recursive definitions (as shown in Section~\ref{sec.safety.bounded}).
+For instance, the program in Figure~\ref{lst:ceu:frp:2} applies the temperature 
+conversion formula between Celsius and Fahrenheit, so that whenever the value 
+in one unit is set, the other is automatically recalculated (a problem proposed 
+in~\cite{frp.survey}).
+
+\begin{figure}[t]
+%\rule{14cm}{0.37pt}
+{\small
+\begin{verbatim}
+ 1:   event int TC, TF;
+ 2:   int tc, tf;
+ 3:   event int tc_evt, tf_evt;
+ 4:   par/or do
+ 5:      loop do                // 1st trail
+ 6:         tc = await tc_evt;
+ 7:         emit tf_evt(9 * tc / 5 + 32);
+ 8:      end
+ 9:   with
+10:      loop do                // 2nd trail
+11:         tf = await tf_evt;
+12:         emit tc_evt(5 * (tf-32) / 9);
+13:      end
+14:   with
+15:      loop do
+16:         int v = await TC;   // 3rd trail
+17:         emit tc_evt(v);
+18:         ...   // use `tc' or `tf'
+19:      end
+20:   with
+21:      loop do
+22:         int v = await TF;   // 4th trail
+23:         emit tf_evt(v);
+24:         ...   // use `tc' or `tf'
+25:      end
+26:   end
+\end{verbatim}
+}%
+\caption{ A dataflow program with mutual dependency.
+\label{lst:ceu:frp:2}
+}
+\end{figure}
+
+We first define the external events that signal changes, the variables to hold 
+the temperatures, and corresponding internal events (lines 1-3).
+Any change to a variable in the program must be signalled by an emit on the 
+corresponding internal event so that dependent variables can react.
+Then, we create two trails to await for internal changes and update the 
+dependency relations among the temperatures (lines 5-8 and 10-13).
+For instance, the first trail is a \code{loop} that waits for changes on 
+\code{tc\_evt} (line 6) and signals the conversion formula to \code{tf\_evt} 
+(line 7).
+The behavior for the second trail that awaits \code{tf\_evt} (lines 10-13) is 
+analogous.
+The third and fourth trails (lines 15-19 and 21-25) await external updates in
+loop to notify the internal changes;
+The program behaves as follows (with the stack in emphasis):
+
+{\small
+\begin{enumerate}
+\setlength{\itemsep}{0pt}
+\item 1st and 2nd trail await \code{tc\_evt} and \code{tf\_evt};\\
+    \emph{stack: []}
+\item If \code{TC} occurs, 3rd trail signals a change to \code{tc\_evt} and 
+    pauses;\\
+    \emph{stack: [3rd]}
+\item 1st trail awakes, sets \code{tc=0}, emits \code{tf\_evt}, and pauses;\\
+    \emph{stack: [3rd,1st]}
+\item 2nd trail awakes, sets \code{tf=32}, emits \code{tc\_evt}, and pauses;\\
+    \emph{stack: [3rd,1st,2nd]}
+\item no trails are awaiting \code{tc\_evt} (1st trail is paused), so 2nd trail 
+    (on top of the stack) resumes, loops, and awaits \code{tf\_evt} again;\\
+    \emph{stack: [3rd,1st]}
+\item 1st trail resumes, loops, and awaits \code{tc\_evt} again;\\
+    \emph{stack: [3rd]}
+\item 3rd trail resumes \emph{with all dependencies resolved} and awaits the 
+    next external change;\\
+    \emph{stack: []}
+\item ... (analogous behavior for further external occurrences)
+\end{enumerate}
+}
+
+The complexity of the solution is disproportionate to the problem it solves, 
+but illustrates the circular dependency issue (similar examples appear in other 
+references~\cite{frp.survey,frtime.embedding}).
+The bottom line is that dataflow techniques permit that complex dependency 
+patterns are handled internally, providing well-defined entry points to 
+application programmers (i.e. they would be required to write only the 3rd and 
+4th trails in the example).
+
+%Altough xxx, no support for dynamic reconfiguration given the static nature of

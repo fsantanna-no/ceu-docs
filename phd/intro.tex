@@ -1,0 +1,161 @@
+\begin{comment}
+System-level development for WSNs basically consists of abstracting access to 
+the hardware and designing specially tweaked network protocols to be further 
+integrated as services in higher-level applications or macro-programming 
+systems~\cite{wsn.state_of_art,wsn.tos,wsn.survey}.
+%The external environment plays an important, as it interacts with applications 
+%permanently (and concurrently) by issuing events that represent expiring 
+%timers, messages arrivals, sensor readings, etc.
+
+Our design is first compromised with the main principles that govern WSN 
+development: \emph{resource minimization} and \emph{bug prevention}, as defined 
+by Levis~\cite{wsn.decade}.
+
+\end{comment}
+
+Wireless sensor networks (WSNs) are composed of a large number of tiny devices 
+(known as ``motes'') capable of sensing the environment and communicating.
+They are usually employed to continuously monitor physical phenomena in large 
+or unreachable areas, such as wildfire in forests and air temperature in 
+buildings.
+Each mote features limited processing capabilities, a short-range radio link, 
+and one or more sensors (e.g. light and temperature) \cite{wsn.survey}.
+
+WSNs are usually designed with safety and (soft) real-time requirements under 
+constrained hardware platforms.
+At the same time, developers demand effective programming abstractions, ideally 
+with unrestricted access to low-level functionality.
+%
+These particularities impose a challenge to WSN-language designers, who must 
+provide a comprehensive set of features requiring correct and predicable 
+behavior under platforms with limited memory and CPU.
+As a consequence, WSN languages either lack functionality or fail to offer a 
+small and reliable programming environment.
+
+System-level development for WSNs commonly follows one of three major 
+programming models: \emph{event-driven}, \emph{multi-threaded}, and 
+\emph{synchronous}.
+%
+In event-driven programming \cite{wsn.tos,wsn.contiki}, each external event can 
+be associated with a short-lived function callback to handle a reaction to the 
+environment.
+This model is efficient,
+% for the severe resource constraints of WSNs,
+but is known to be difficult to 
+program~\cite{sync_async.cooperative,wsn.protothreads}.
+%
+Multi-threaded systems emerged as an alternative in WSNs, providing traditional 
+structured programming in multiple lines of 
+execution~\cite{wsn.protothreads,wsn.mantisos}.
+However, the development process still requires manual synchronization and 
+bookkeeping of threads~\cite{sync_async.threadsproblems}.
+%(e.g. create, start, and rejoin)
+%
+Synchronous languages~\cite{rp.twelve} have also been adapted to WSNs and offer 
+higher-level compositions of activities with a step-by-step execution, 
+considerably reducing programming efforts~\cite{wsn.sol,wsn.osm}.
+
+Despite the increase in development productivity, WSN system languages still 
+fail to ensure static safety properties for concurrent programs.
+%
+However, given the difficulty in debugging WSN applications, it is paramount to 
+push as many safety guarantees to compile time as possible~\cite{wsn.decade}.
+%
+Shared-memory concurrency is an example of a widely adopted mechanism that 
+typically relies on runtime safety primitives only.
+For instance, current WSN languages ensure atomic memory access either through 
+runtime barriers, such as mutexes and 
+locks~\cite{wsn.mantisos,wsn.tinythreads}, or by adopting cooperative 
+scheduling which also requires explicit yield points in the 
+code~\cite{wsn.sol,wsn.protothreads}.
+%Requiring explicit synchronization primitives lead to potential safety 
+%hazards~\cite{sync_async.threadsproblems}.
+%Enforcing cooperative scheduling is no less questionable, as it assumes that 
+%\emph{all} accesses are dangerous.
+In either case, there is no additional static guarantees or warnings about 
+unsafe memory accesses.
+%The bottom line is that existing languages cannot detect and enforce atomicity 
+%only when they are required.
+
+We believe that programming WSNs can benefit from a new language that takes 
+concurrency safety as a primary goal, while preserving typical multi-threading 
+features that programmers are familiarized with, such as shared memory 
+concurrency.
+%
+We present \CEU%
+\footnote{C\'eu is the Portuguese word for \emph{sky}.},
+a synchronous system-level programming language that provides a reliable yet 
+powerful set of abstractions for the development of WSN applications.
+%
+\CEU is based on a small set of control primitives similar to 
+Esterel's~\cite{esterel.ieee91}, leading to implementations that more closely 
+reflect program specifications.
+%
+As a main contribution, we propose a static analysis that permeates all 
+language mechanisms and detects safety threats, such as concurrent accesses to 
+shared memory and concurrent termination of threads, at compile time.
+%
+In addition, we introduce the following new safety mechanisms:
+\emph{first-class timers} to ensure that timers in parallel remain synchronized 
+(not depending on internal reaction timings);
+\emph{finalization blocks} for local pointers going out of scope;
+and \emph{stack-based communication} that avoids cyclic dependencies.
+%
+Our work focuses on \emph{concurrency safety}, rather than \emph{type 
+safety}~\cite{wsn.safety}.%
+\footnote{
+We consider both safety aspects to be complimentary and orthogonal, i.e., 
+type-safety techniques could also be applied to \CEU.
+}
+
+In order to enable the static analysis, programs in \CEU must suffer some 
+limitations.
+Computations that run in unbounded time (e.g., compression, image processing) 
+cannot be elegantly implemented~\cite{rp.hypothesis}, and dynamic loading is 
+forbidden.
+%do not fit the zero-delay reaction hypothesis~\cite{rp.hypothesis}, and
+%
+%Also, dynamic support in the language, such as memory allocation and dynamic 
+%loading, is forbidden.
+%
+However, we show that \CEU is sufficiently expressive for the context of WSN 
+applications.
+We successfully implemented the \emph{CC2420} radio driver, and the 
+\emph{DRIP}, \emph{SRP}, and \emph{CTP} network protocols~\cite{wsn.teps} in 
+\CEU.
+In comparison to \emph{nesC}~\cite{wsn.nesc}, the implementations reduced the 
+number of source code tokens by 25\%, with an increase in ROM and RAM below 
+10\%.
+%The radio driver also shows a responsiveness equivalent to \emph{nesC} in most 
+%scenarios.
+
+% TTT, mais coisas
+
+The rest of the thesis is organized as follows:
+%
+Chapter~\ref{sec.models} introduces \CEU through comparisons with 
+state-of-the-art languages representing the prevailing concurrency models used 
+in WSNs.
+%
+Chapter~\ref{sec.ceu} details the design of \CEU, motivating and discussing the
+safety aspects of each relevant language feature.
+%
+Chapter~\ref{sec.demos} presents two demo applications, exploring the safe and 
+high-level programming style promoted by the language.
+%
+Chapter~\ref{sec.eval} evaluates the implementation of some network protocols 
+in \CEU and compares some of its aspects with \emph{nesC} (e.g. memory usage 
+and tokens count).
+We also evaluate the responsiveness of the radio driver written in \CEU.
+%
+Chapter~\ref{sec.formal} presents a formal semantics of \CEU restricted to its 
+control primitives, which comprises most novelties and challenging parts of our 
+design.
+%
+Chapter~\ref{sec.impl} discusses key aspects of the implementation of \CEU, 
+such as the static analysis algorithm and stackless lines of execution.
+%
+Chapter~\ref{sec.related} discusses related work to \CEU.
+% TTT: future
+%
+Chapter~\ref{sec.conclusion} concludes the thesis and makes final remarks.
