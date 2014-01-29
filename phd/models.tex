@@ -39,7 +39,7 @@ require \emph{synchronous primitives} (e.g. locks and semaphores).
 \section{Asynchronous model}
 
 The asynchronous model of computation can be classified according to how 
-independent activities coordinate.
+independent activities communicate and synchronize.
 In \emph{shared memory} concurrency, communication is via global state, while 
 synchronization is via mutual exclusion.
 %Examples following this style are \emph{pthreads} and other multithreading 
@@ -132,7 +132,8 @@ synchronized.
 }
 \end{figure}
 
-The LEDs should blink together every 3 seconds (LCM between 600ms and 1s).
+The LEDs should blink together every 3 seconds (\emph{least common denominator} 
+between 600ms and 1s).
 As we expected, even for such a simple application, the LEDs in the two 
 asynchronous implementations lost synchronism after some time of execution.
 The \CEU{} implementation remained synchronized for all tests that we have 
@@ -163,7 +164,7 @@ Example 1 in the RTOS \emph{DuinOS v0.3}:
 Example 3 in the occam-based \emph{Concurrency for Arduino v20110201.1855}:
 \url{http://concurrency.cc/}.
 }, suggesting that LEDs are really supposed to blink synchronized, a guarantee 
-that the language cannot provide.
+that the language cannot provide (as shown with the examples).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -177,21 +178,22 @@ specific features and differences that require a deeper knowledge about \CEU.
 
 \textbf{Event-driven programming}
 
-At the lowest abstract level of the synchronous model, event-driven programming 
-is usually employed as a technique in general-purpose languages with no 
-specific support for reactivity.
-Because a single line of execution and stack are available, programmers need to 
-deal with the burden of manual stack management and inversion of 
+%At the lowest abstract level of the synchronous model,
+Event-driven programming is usually employed as a technique in general-purpose 
+languages with no specific support for reactivity.
+Because only a single line of execution and stack are available, programmers 
+need to deal with the burden of manual stack management and inversion of 
 control.~\cite{sync_async.cooperative}
 
 In the context of WSNs, the programming language \nesc~\cite{wsn.nesc} offers 
-event-driven programming for the TinyOS operating system.
-The concurrency model of \nesc is very flexible, supporting the traditional 
-serialization among callbacks (the default and recommended behavior), and also 
-asynchronous callbacks that interrupt others.
-To deal with race conditions, \nesc supports atomic sections with a similar 
-semantics to mutual exclusion in asynchronous languages.
-We use \nesc as the back end of \CEU for TinyOS~\cite{wsn.tos}.
+event-driven programming for the TinyOS operating system~\cite{wsn.tos}.
+The concurrency model of \nesc is very flexible, supporting serialization among 
+callbacks (the default and recommended behavior), and also asynchronous 
+callbacks that interrupt others.
+To deal with race conditions, \nesc supports atomic sections with a semantics 
+similar to mutual exclusion in asynchronous languages.
+We use \nesc as the output of the \CEU compiler to take advantage of the 
+existing ecosystem for WSNs with TinyOS.
 
 \textbf{Cooperative multithreading}
 
@@ -202,8 +204,8 @@ With this approach, there are no possible race conditions on global variables,
 as the points that transfer control in coroutines are explicit (and, 
 supposedly, are never inside critical sections).
 
-In the context of WSNs, Protothreads \cite{wsn.protothreads} offer very 
-lightweight cooperative multithreading for embedded systems.
+In the context of WSNs, Protothreads \cite{wsn.protothreads} offer lightweight 
+cooperative multithreading for embedded systems.
 Its stackless implementation reduces memory consumption but precludes support 
 for local variables.
 Furthermore, Protothreads provide no static safety warranties: programs can 
@@ -227,11 +229,11 @@ A contemporary work~\cite{wsn.osm} targets WSNs and is based on the Statecharts
 formalism \cite{statecharts.visual}.
 
 FSMs have some known limitations.
-For instance, writing purely sequential flow is tedious, requiring to break 
-programs in multiple states with a single transition connecting each of them.  
-Another inherent problem of FSMs is the state explosion phenomenon, which can 
-be alleviated in some designs that support hierarchical FSMs running in 
-parallel \cite{wsn.osm}.
+For instance, writing purely sequential flow is tedious~\cite{wsn.osm}, 
+requiring to break programs in multiple states with a single transition 
+connecting each of them.  Another inherent problem of FSMs is the state 
+explosion phenomenon, which can be alleviated in some designs that support 
+hierarchical FSMs running in parallel \cite{wsn.osm}.
 %However, adopting parallelism precludes the use of shared state, or at least 
 %requires a static analysis such as that of \CEU.
 
@@ -257,18 +259,109 @@ systems \cite{rp.twelve}.
 %
 Two major styles of synchronous languages have evolved:
 in the \emph{control}--\emph{imperative} style (e.g. Esterel 
-\cite{esterel.design}), programs are structured with control flow primitives, 
+\cite{esterel.ieee91}), programs are structured with control flow primitives, 
 such as parallelism, repetition, and preemption;
 in the \emph{dataflow}--\emph{declarative} style (e.g. Lustre 
 \cite{lustre.ieee91}), programs can be seen as graphs of values, in which a 
 change to a value is propagated through its dependencies without explicit 
 programming.
 
-\CEU is strongly influenced by Esterel~\cite{esterel.ieee91} in its support for 
-hierarchical compositions of activities and reactivity to events.
+\CEU is strongly influenced by Esterel in its support for hierarchical 
+compositions of activities and reactivity to events.
 %
 However, some fundamental differences exist, and we discuss them in detail in
 Section~\ref{sec.ceu.esterel}.
+
+\textbf{Esterel}
+
+Boussinot summarizes the motivations behind Esterel with the following 
+equation~\cite{esterel.ieee91}:
+\begin{lstlisting}
+Esterel = reactivity + atomicity of reactions
+        + instantaneous broadcast + determinism
+\end{lstlisting}
+
+Esterel designers usually advocate that Esterel programs are similar to their 
+specification \cite{esterel.foundations,esterel.ieee91}.
+Such claim is exemplified with the specification and implementation that 
+follow:
+
+\begin{quote}
+Emit the output \code{O} as soon as both the inputs \code{A} and \code{B} have 
+been received.
+Reset the behavior whenever the input \code{R} is received.
+\end{quote}
+
+%In Esterel, the implementation for this specification is as follows:
+
+\begin{lstlisting}
+module ABRO:
+    input A, B, R;
+    output O;
+    loop
+        [ await A || await B];
+        emit O
+    each R
+end
+\end{lstlisting}
+
+The program first defines its input and output signals.
+Then, it enters in a loop that is restarted on each \code{R} received.
+The loop body first awaits both \code{A} and \code{B}, and then emits \code{O}.
+
+In Esterel, \code{||} is the parallel operator, while \code{;} is the 
+sequencing operator.
+This way, \code{await A} and \code{await B} run in parallel, and \code{emit O} 
+is only executed after both awaits return.
+The \code{await} primitive suspends the running activity until the given signal 
+is emitted somewhere.
+
+% Communication & signals/broadcast & emit/await/loop-each
+The communication units in Esterel are the \emph{signals}.
+A signal is equivalent to an \emph{event} of event-driven programming, and can 
+be instantly broadcast to the entire application, waking up its listeners.
+Signals are emitted with the \code{emit} primitive and caught with \code{await} 
+and other temporal constructs like \code{loop-each}.
+The \code{emit} command may pass a value along with the signal, as in 
+\code{emit X(1)}.
+The value of a signal may be accessed prefixing it with \code{?}, as in 
+\code{v~:=~v~+~?X}.
+
+% Preemptive constructs
+
+Esterel supports a rich set of preemption constructs, used to structure 
+activities in hierarchies.
+The following example~\cite{esterel.foundations}, uses the \code{every-do-end}, 
+\code{loop-each}, and \code{abort-when} constructs:
+
+\begin{lstlisting}
+module Runner:
+    input Morning, Step, Second, Meter, Lap;
+    every Morning do
+        abort
+            loop
+                abort <RunSlowly> when 15 Second;
+                abort
+                    every Step do
+                        <Jump> || <Breathe>
+                    end
+                when 100 Meter;
+                <FullSpeed>
+            each Lap
+        when 2 Lap
+    end
+end
+\end{lstlisting}
+
+% Conventional variables
+
+Conventional variables are also supported in Esterel, however they cannot be 
+freely shared between concurrent statements.
+In a statement like \code{[~v~:=~1~||~v~:=~2~]}, the value of \code{v} would 
+become non-deterministic, a situation that is not acceptable in Esterel's 
+semantics.
+If a variable is written in any parallel activity, it cannot be read or written 
+elsewhere.
 
 \section{Programming models in WSNs}
 \label{sec.ceu.overview}
@@ -427,7 +520,7 @@ This brings more structure to the solution.
 The main thread also helps a reader to identify the overall sequence of the 
 program, which is not easily identifiable in the event-driven implementation 
 without tracking the dependencies among callbacks.
-However, it still requires much bookkeeping for initializing, scheduling and 
+However, it still requires bookkeeping for initializing, scheduling and 
 rejoining the blinking thread after the timeout (inside the \code{while} 
 condition).
 
@@ -454,3 +547,12 @@ guarantees introduced by \CEU.
 % TODO
 %The challenge is how to provide a design that embraces/xxx safety/determinism, 
 %specially considering pointers
+
+The use of timers in the example of Figure~\ref{lst.all} illustrates 
+\emph{split-phase} control operations typically found in WSN 
+applications~\cite{wsn.tos}, which are require a pair of request and answer 
+to/from the underlying system (e.g. \code{T1.start} and \code{T1.fired}).
+%
+As other examples, requesting sensor readings and forwarding radio packets also 
+require split-phase operations and would be programmed similarly to timers in 
+each of the three models of Figure~\ref{lst.all}.

@@ -1,7 +1,8 @@
 %\begin{document}
 
 \begin{figure*}[t]
-\includegraphics[width=\textwidth,clip=true,trim=55px 320px 45px 0px]{eval}
+%\includegraphics[width=\textwidth,clip=true,trim=55px 320px 45px 0px]{eval}
+\includegraphics{eval}
 \caption{ Comparison between \CEU and \emph{nesC} for the implemented 
 applications. \newline
 {\small %\textmd{
@@ -21,9 +22,9 @@ Our assumption is that when considering \CEU for system-level development,
 programmers would face a tradeoff between code simplicity and efficient 
 resource usage.
 %
-For this reason, we evaluate source code size, memory usage, and event-handling 
-responsiveness for a number of standardized protocols in 
-TinyOS~\cite{wsn.teps}.
+For this reason, we evaluate source code size, memory usage, event-handling 
+responsiveness, and battery consumption for a number of standardized protocols 
+in TinyOS~\cite{wsn.teps}.
 %
 We use code size as a metric for code simplicity, complemented with a 
 qualitative discussion regarding the eradication of explicit state variables 
@@ -32,8 +33,8 @@ for control purposes.
 By responsiveness, we mean how quickly programs react to incoming events (to 
 avoid missing them).
 %
-Memory and responsiveness are important resource-efficiency measures to 
-evaluate the negative impact with the adoption of a higher-level language.
+Memory, responsiveness are important resource-efficiency measures to evaluate 
+the negative impact with the adoption of a higher-level language.
 %
 In particular, responsiveness (instead of total CPU cycles) is a critical 
 aspect in reactive systems, specially those with a synchronous execution 
@@ -122,10 +123,9 @@ We use two metrics to compare code complexity between the implementations in
 in the source code.
 %
 Similarly to comparisons in related work~\cite{wsn.ocram,wsn.protothreads}, we 
-did not consider code shared between the \emph{nesC} and \CEU implementations, 
-as they do not represent control functionality and pose no challenges regarding 
-concurrency aspects (i.e. they are basically predicates, \code{struct} 
-accessors, etc.).
+did not consider code shared between the \emph{nesC} and \CEU implementations 
+(e.g. predicates, \code{struct} accessors, etc.), as they do not represent 
+control functionality and pose no challenges regarding concurrency aspects.
 
 %We chose to use tokens instead of lines of code because code density in \CEU 
 %is considerably lower, given that most lines are composed of a single block 
@@ -233,7 +233,8 @@ cannot be done automatically by the \emph{nesC} compiler.
 However, we analyzed each application and it turned out that we had no gains 
 \emph{at all} from blocks in sequence.
 Our conclusion is that sequential patterns in WSN applications come either from 
-split-phase operations, which always require memory to be preserved;
+split-phase operations, which always require memory to be preserved (between 
+the request and the answer);
 or from loops, which do reuse all memory, but in the same way that event-driven 
 systems do.
 
@@ -296,8 +297,8 @@ unresponsive during that period.
 Figure~\ref{fig.radio1} shows the percentage of handled packets in \CEU and 
 \emph{nesC} for each duration.
 %
-Starting from the duration of 6ms, the responsiveness of \CEU degrades in 
-comparison to \nesc (5\% of packet loss).
+Starting from the duration of 6ms for the lengthy operation, the responsiveness 
+of \CEU degrades in comparison to \nesc (5\% of packet loss).
 %every 140ms, while receiving a new packet every 20ms
 %
 The \emph{nesC} driver starts to become unresponsive with operations that take 
@@ -320,7 +321,9 @@ parameters).
 %a 5\% decrease in performance in comparison with \emph{nesC}.
 
 \begin{figure}[t]
-\includegraphics[width=\linewidth,clip=true,trim=35px 0px 10px 0px]{radio1}
+\includegraphics[width=\linewidth,clip=true,trim=5px 0px 5px 0px]{radio1}
+%\includegraphics[width=\linewidth,clip=true,trim=35px 0px 10px 0px]{radio1}
+%\includegraphics{radio1}
 \caption{ Percentage of received packets depending on the duration of the 
 lengthy operation.  \newline
 {\small %\textmd{
@@ -375,9 +378,8 @@ loads.
 \end{center}
 \end{table}
 
-Although we did not perform specific tests to evaluate CPU usage and battery 
-consumption, the experiment suggests that the overhead of \CEU over \emph{nesC} 
-is very low.
+Although we did not perform specific tests to evaluate CPU usage, the 
+experiment suggests that the overhead of \CEU over \emph{nesC} is very low.
 %
 When the radio driver is the only running activity (column $1ms$, which is the 
 same result for an addition test we did for $0ms$), both implementations loose 
@@ -386,9 +388,9 @@ This difference remains the same up to 4-ms activities, hence, the observed
 degradation for longer operations is only due to the lack of preemption, not 
 execution speed.
 %
-Note that for lengthy operations implemented in $C$, there is no runtime or 
-battery consumption overhead at all, as the generated code is the same for \CEU 
-and \emph{nesC}.
+Note that for lengthy operations implemented in $C$, there is no runtime 
+overhead at all, as the generated code is the same for \CEU and \emph{nesC} 
+(i.e. \CEU and \emph{nesC} just call $C$).
 
 In the second experiment, instead of running a long activity in parallel, we 
 use a 8-ms operation tied in sequence with every packet arrival to simulate an 
@@ -406,7 +408,8 @@ The results show that \CEU is 100\% responsive up to frequency of 33 packets
 per second, while \emph{nesC} up to 50 packets.
 
 \begin{figure}[t]
-\includegraphics[width=\linewidth,clip=true,trim=35px 0px 10px 0px]{radio2}
+\includegraphics[width=\linewidth,clip=true,trim=5px 0px 5px 0px]{radio2}
+%\includegraphics[width=\linewidth,clip=true,trim=35px 0px 10px 0px]{radio2}
 \caption{  Percentage of received packets depending on the sending frequency.  
 \newline
 {\small %\textmd{
@@ -440,6 +443,54 @@ with mechanisms to avoid contention, such as randomized
 timers~\cite{wsn.trickle,wsn.ctp}.
 Furthermore, WSNs are not subject to strict deadlines, being not classified as 
 hard real-time systems~\cite{wsn.decade}.
+
+\section{Battery consumption}
+\label{sec.eval.batt}
+
+Battery consumption is critical in WSNs, given that motes usually have no other 
+source of energy and, in the case of being deployed in remote locations, cannot 
+have the batteries replaced.
+
+In order to evaluate battery consumption in \CEU in comparison to \emph{nesC}, 
+we adapted the experiments of Section~\ref{sec.eval.radio}.
+%
+The parameters were adjusted to make the implementations in the two languages 
+behave the same, i.e., the receiving node should receive the same amount of 
+packets during the same period.
+
+For the first experiment, we made each sending node to transmit 75 messages 
+during 150s, resulting in around 625 received packets (considering the losses) 
+in the receiving mote, which also performs a 1-ms heavy activity every 1.5 
+seconds.
+%
+In this experiment, the CPU is idle most of the time and the battery is 
+consumed by the radio hardware.
+%
+For the second experiment, we included a 2-ms heavy activity after every 
+received packet, making the battery to be also consumed by the CPU.
+%
+Figure~\ref{fig.batt} shows the battery consumption (total and with active and 
+idle CPU) for the two experiments and for both implementations.
+
+\begin{figure*}[t]
+\includegraphics[width=\textwidth,clip=true,trim=120px 415px 210px 90px]{batt}
+\caption{ Battery consumption for \emph{nesC} and \CEU in the two experiments.
+\newline
+{\small %\textmd{
+The consumption line "Active" for the Experiment 1 is negligible, hence, the 
+ratio between \emph{nesC} and \CEU should not be considered.
+}%}
+\label{fig.batt}
+}
+\end{figure*}
+
+We did not expect a noticeable difference in battery usage between \CEU and 
+\emph{nesC}, because, even considering the support for multiple lines of 
+execution in \CEU, the compiler generates simple event-driven code in $C$, not 
+requiring threads or complex runtime apparatus.
+%
+In fact, the results are virtually the same for both I/O and CPU-bound 
+experiments.
 
 \section{Discussion}
 

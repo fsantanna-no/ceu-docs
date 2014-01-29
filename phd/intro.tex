@@ -13,7 +13,7 @@ by Levis~\cite{wsn.decade}.
 
 \end{comment}
 
-Wireless sensor networks (WSNs) are composed of a large number of tiny devices 
+Wireless Sensor Networks (WSNs) are composed of a large number of tiny devices 
 (known as ``motes'') capable of sensing the environment and communicating.
 They are usually employed to continuously monitor physical phenomena in large 
 or unreachable areas, such as wildfire in forests and air temperature in 
@@ -33,7 +33,7 @@ As a consequence, WSN languages either lack functionality or fail to offer a
 small and reliable programming environment.
 
 System-level development for WSNs commonly follows one of three major 
-programming models: \emph{event-driven}, \emph{multi-threaded}, and 
+programming models: \emph{event-driven}, \emph{multi-threaded}, or 
 \emph{synchronous}.
 %
 In event-driven programming \cite{wsn.tos,wsn.contiki}, each external event can 
@@ -101,11 +101,10 @@ In addition, we introduce the following new safety mechanisms:
 \emph{finalization blocks} for local pointers going out of scope;
 and \emph{stack-based communication} that avoids cyclic dependencies.
 %
-Our work focuses on \emph{concurrency safety}, rather than \emph{type 
-safety}~\cite{wsn.safety}.%
+Our work focuses on \emph{concurrency safety}, rather than \emph{type safety}.%
 \footnote{
 We consider both safety aspects to be complimentary and orthogonal, i.e., 
-type-safety techniques could also be applied to \CEU.
+type-safety techniques~\cite{wsn.safety} could also be applied to \CEU.
 }
 
 In order to enable the static analysis, programs in \CEU must suffer some 
@@ -120,9 +119,17 @@ forbidden.
 %
 However, we show that \CEU is sufficiently expressive for the context of WSN 
 applications.
-We successfully implemented the \emph{CC2420} radio driver, and the 
-\emph{DRIP}, \emph{SRP}, and \emph{CTP} network protocols~\cite{wsn.teps} in 
-\CEU.
+We successfully implemented the \emph{CC2420} radio driver~\cite{wsn.teps}, and 
+the \emph{DRIP}, \emph{SRP}, and \emph{CTP} network protocols~\cite{wsn.teps}%
+\footnote{
+\emph{DRIP} is a data dissemination protocol to reliably deliver data to every 
+node in the network.
+\emph{SRP} is a routing protocol to deliver packets from an origin node to a 
+destination node.
+\emph{CTP} is a collectino protocol to deliver packets from any node to a 
+collection roots in a network.
+}
+in \CEU.
 In comparison to \emph{nesC}~\cite{wsn.nesc}, the implementations reduced the 
 number of source code tokens by 25\%, with an increase in ROM and RAM below 
 10\%.

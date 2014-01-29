@@ -55,10 +55,10 @@ a single global time reference (the event itself).
 The fundamental distinction between \CEU and prevailing multi-threaded designs 
 is the way threads are combined in programs.
 \CEU provides Esterel-like syntactic hierarchical compositions, while most 
-multi-threaded systems typically only support top-level definitions for 
-threads.
-Figure~\ref{lst.syntax} shows a compact reference of \CEU, which helps to 
-follow the examples in this chapter.
+multi-threaded systems typically only support top-level definitions for threads 
+(i.e., they cannot be nested).
+Figure~\ref{lst.syntax} shows a compact reference of the syntax of \CEU, which 
+helps to follow the examples in this chapter.
 %\CEU distinguishes itself from Esterel by its tight integration with $C$ and 
 %support for shared memory, which also demands an effective safety analysis 
 %permeating (and affecting) all language features.
@@ -67,7 +67,7 @@ We start the chapter with the fundamental design decisions behind \CEU's
 execution model, namely the uniqueness of external events and deterministic 
 scheduler (Section~\ref{sec.ceu.det}).
 Then, we discuss how they enable safe concurrency support for shared memory and 
-$C$ calls (Sections~\ref{sec.ceu.shared}~and~\ref{sec.ceu.c}).
+native $C$ function calls (Sections~\ref{sec.ceu.shared}~and~\ref{sec.ceu.c}).
 %
 %We follow with discussion about a key characteristic of synchronous languages: 
 %activities in parallel that support nesting and abortion 
@@ -87,13 +87,13 @@ Esterel (Section~\ref{sec.ceu.esterel}).
 
 % TODO: motivate?
 
-\CEU is grounded on a precise definition of time as a discrete sequence of 
-external input events:
+\CEU is grounded on a precise definition of ``logical time'' as a discrete 
+sequence of external input events:
 % \footnote{We use the terms \emph{external input event}, \emph{external event}, 
 %and \emph{input event} interchangeably.}
-a sequence because only a single input event is handled at a time; discrete 
-because reactions to events are guaranteed to execute in bounded time (to be 
-discussed further).
+a sequence because only a single input event is handled at a logical time; 
+discrete because reactions to events are guaranteed to execute in bounded time 
+(here the ``physical'' notion of time, to be discussed further).
 The execution model for \CEU programs is as follows:
 
 \begin{enumerate}
@@ -111,6 +111,8 @@ The execution model for \CEU programs is as follows:
 The synchronous execution model of \CEU is based on the hypothesis that 
 internal reactions run \emph{infinitely faster} in comparison to the rate of 
 external events~\cite{rp.hypothesis}.
+An internal reaction is the set of computations that execute when an external 
+event occurs.
 Conceptually, a program takes no time on step 2 and is always idle on step 3.
 In practice, if a new external input event occurs while a reaction chain is 
 running (step 2), it is enqueued to run in the next reaction.
@@ -118,13 +120,18 @@ running (step 2), it is enqueued to run in the next reaction.
 %
 % TODO: a similar approach is taken in \cite{...}
 %
-When multiple trails are active at a time (i.e. awaking on the same event), 
-\CEU schedules them in the order they appear in the program text.
+When multiple trails are active at a logical time (i.e. awaking on the same 
+event), \CEU schedules them in the order they appear in the program text.
 This policy is somewhat arbitrary, but provides a priority scheme for trails, 
 and also ensures deterministic and reproducible execution for programs, which 
 is important for simulation purposes.
 A reaction chain may also contain emissions and reactions to internal events, 
 which are presented in Section~\ref{sec.ceu.ints}.
+
+The synchronous model is applicable to typical WSN applications, which are most 
+of the time waiting for events (e.g. timers and network packets) to perform a 
+fast reaction (e.g. forwarding a packet or blinking a LED) before going idle 
+again.
 
 \begin{figure}[h]
 \begin{lstlisting}[numbers=left,xleftmargin=2em]
@@ -202,8 +209,8 @@ The program terminates and does not react to the pending event $C$.
 % (the \code{par/and}, to be introduced in the next section, rejoins when its 
 %sub-trails terminate).
 %
-Note that each step in the time line ($t0$, $t1$, etc.) is identified by the 
-event it handles.
+Note that each step in the logical time line ($t0$, $t1$, etc.) is identified 
+by the event it handles.
 Inside a reaction, trails only react to that identifying event (or remain 
 suspended).
 
@@ -252,6 +259,10 @@ applications that require unrestricted loops (e.g., cryptography, image
 processing).
 However, \CEU is designed for control-intensive applications and we believe 
 this is a reasonable price to pay in order to achieve higher reliability.
+%
+We evaluate the responsiveness of the radio driver when this restriction is 
+(intentionally) relaxed and discuss alternatives adopted in other synchronous 
+languages in Section~\ref{sec.eval.radio}.
 
 \subsection{Parallel compositions and abortion}
 \label{sec.ceu.par}
@@ -269,8 +280,8 @@ proceeding to the next statement;
 a \code{par/or} requires that any trail in parallel terminates before 
 proceeding to the next statement, aborting all awaiting sibling trails;
 finally, a \code{par} never rejoins and should be used when trails in parallel 
-are supposed to run forever (if they terminate, the scheduler forcedly halts 
-them forever).
+are supposed to run forever (if all trails in \code{par} terminates, the 
+scheduler forcedly halts them forever).
 %
 To illustrate how trails rejoin, consider the two variations of the following 
 archetype:
@@ -355,12 +366,13 @@ loop (collapsed in line 9) and resets the driver to wait for the next
 
 The \code{par/or} construct of \CEU is regarded as an \emph{orthogonal 
 preemption primitive}~\cite{esterel.preemption} because the two sides in the 
-composition need not to be tweaked with synchronization primitives or state 
+composition need not be tweaked with synchronization primitives or state 
 variables in
 order to affect each other.
 In contrast, it is known that traditional (asynchronous) multi-threaded 
 languages cannot express thread abortion 
 safely~\cite{esterel.preemption,sync_async.threadsstop}.
+For instance, it is not safe to terminate a thread holding a lock.
 
 \subsection{Reasoning about concurrency}
 
@@ -492,6 +504,20 @@ to \code{z} in parallel can only occur in different reactions to \code{A}
 (lines 5 and 9), as the second assignment awaits two occurrences of \code{A}, 
 while the first trail assigns and terminates in the first occurrence.
 
+We also implemented an alternative algorithm that converts a \CEU program into 
+a deterministic finite automata.
+The resulting DFA represents all possible points a program can reach during 
+runtime and, hence, eliminates all false positives.
+However, the algorithm is exponential and may be impractical in some 
+situations.
+%
+For this reason, we opted for the simpler algorithm.
+%
+That being said, the simpler static analysis does not detect false positives in 
+any of the
+implementations to be presented in Section~\ref{sec.eval} and executes in 
+negligible time, suggesting that the algorithm is practical.
+
 \begin{figure}[t]
 \begin{minipage}[t]{0.39\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=2em]
@@ -576,18 +602,6 @@ which are guaranteed to be in sequence).
 Such precious information cannot be inferred when the program relies on state 
 variables to handle control, as typically occurs in event-driven systems.
 
-We also implemented an alternative algorithm that converts a \CEU program into 
-a deterministic finite automata.
-The resulting DFA represents all possible points a program can reach during 
-runtime and, hence, eliminates all false positives.
-However, the algorithm is exponential and may be impractical in some 
-situations.
-%
-That being said, the simpler static analysis does not detect false positives in 
-any of the
-implementations to be presented in Section~\ref{sec.eval} and executes in 
-negligible time, suggesting that the algorithm is practical.
-
 \section{Integration with $C$}
 \label{sec.ceu.c}
 
@@ -635,9 +649,10 @@ $C$ symbols must be prefixed with an underline to be used in \CEU (line 9).
 
 $C$ calls are fully integrated with the static analysis presented in
 Section~\ref{sec.ceu.shared} and cannot appear in concurrent trails segments, 
-because \CEU has no knowledge about their side effects.
-Also, passing variables as parameters counts as read accesses to them, while 
-passing pointers counts as write accesses to those types (because functions may 
+because \CEU has no knowledge about their side effects (e.g. calls that access 
+the same LED).
+Also, passing variables as parameters is regarded as read accesses to them, 
+while passing pointers as write accesses to those types (because functions may 
 dereference and assign to them).
 %
 This policy increases considerably the number of false positives in the 
@@ -727,7 +742,7 @@ programs, increasing the readability and containment of code.
 Another benefit, specially in the context of WSNs, is that blocks in sequence 
 can share the same memory space, as they can never be active at the same time.
 %
-The syntactic compositions of trails allows the \CEU compiler to statically 
+The syntactic compositions of trails allow the \CEU compiler to statically 
 allocate and optimize memory usage:
 %, as also proposed in other systems~\cite{wsn.osm,wsn.ocram}:
 memory for trails in parallel must coexist;
@@ -735,8 +750,8 @@ trails that follow rejoin points reuse all memory.
 
 However, the unrestricted use of locals may introduce subtle bugs when dealing 
 with pointers and $C$ functions interfacing with device drivers.
-Given that hardware components outlive the scope of any local variable, a 
-pointer passed as parameter to a system call may be held by a device driver
+Given that system software outlive the scope of any local variable, a pointer 
+passed as parameter to a system call may be held by a device driver
 for longer than the scope of the referred variable, leading to a dangling 
 pointer.
 
@@ -813,7 +828,7 @@ variable scope, leading to an undefined behavior in the program.
 \emph{$C$ calls that receive pointers require a finalization block to safely 
 handle referred variables going out of scope}.
 This rule prevents the previous example to compile, forcing the relevant parts 
-to be be rewritten as
+to be rewritten as
 
 \noindent
 \begin{minipage}{\linewidth}
@@ -836,7 +851,8 @@ function does not require finalization code because it does not hold references
 (line 1).
 Second, the \code{finalize} construct (lines 5-9) automatically executes the 
 \code{with} clause (line 8) when the variable passed as parameter in the 
-\code{finalize} clause (line 6) goes out of scope.
+\code{finalize} clause (line 6) goes out of scope (i.e., the block the variable 
+is defined terminates).
 Therefore, regardless of how the sending trail is aborted, the finalization 
 code politely requests the OS to cancel the ongoing send operation (line 8).
 
@@ -848,7 +864,8 @@ to the \code{AMSend.send} interface, only $49$ have corresponding
 \code{AMSend.cancel} calls.
 We verified that many of these \emph{sends} should indeed have matching 
 \emph{cancels} because the component provides a \emph{stop} interface for 
-clients.
+clients (i.e., at any time the protocol can receive a request to stop 
+immediately).
 In \emph{nesC}, because message buffers are usually globals, a send that is not 
 properly canceled typically results in an extra packet transmission that 
 wastes battery.
@@ -945,15 +962,15 @@ strange behavior in an application.
 Activities that involve reactions to \emph{wall-clock time}%
 \footnote{
 By wall-clock time we mean the passage of time from the real world, measured in 
-hours, minutes, etc.
+hours, minutes, seconds, milliseconds, etc.
 }
-appear in typical patterns of WSNs, such as timeouts and sensor sampling.
+appear in typical code patterns of WSNs, such as timeouts and sensor sampling.
 However, support for wall-clock time is somewhat low-level in existing 
 languages, usually through timer callbacks or sleep blocking calls.
 %
 In any concrete system implementation, however, a requested timeout does not 
 expire precisely with zero-delay, a fact that is usually ignored in the 
-development process.
+software development process.
 We define the difference between the requested timeout and the actual expiring 
 time as the \emph{residual delta time (delta)}.
 Without explicit manipulation, the recurrent use of timed activities in 
@@ -1013,8 +1030,10 @@ end
 %}
 %\end{figure}
 
-Remember that any non-awaiting sequence is considered to take no time in the 
-synchronous model.
+The time reference for \code{await} statements is always the beginning of the 
+reaction chain: timers starting in parallel share the same reference.
+Also, remember that any non-awaiting sequence is considered to take no time in 
+the synchronous model.
 Hence, the first trail is guaranteed to terminate before the second trail, 
 because $10+1 < 12$.
 A similar program in a language without first-class support for timers, would 
@@ -1058,7 +1077,8 @@ a trail that invokes \code{await~e} can be awoken in the future by a trail that
 invokes \code{emit~e}.
 
 In contrast with external events, which are handled in a queue, internal events 
-follow a stack policy.
+follow a stack policy in order to provide a limited but safe form of 
+subroutines.
 In practical terms, this means that a trail that emits an internal event pauses 
 until all trails awaiting that event completely react to it, continuing to 
 execute afterwards.
@@ -1171,9 +1191,9 @@ executing an $await$ or a $par/or$ inside a function).
 Regardless of the limitations, this form of subroutines is widely adopted in 
 \CEU programs, given that they were designed to work with the other control 
 mechanisms.
-Keep in mind that the typical reactive organization of programs (awaiting an 
-external stimulus, reacting to it, and going back to awaiting) does not demand 
-recursive subroutines.
+One should keep in mind that the typical reactive organization of programs 
+(awaiting an external stimulus, reacting to it, and going back to awaiting) 
+does not demand recursive subroutines.
 
 Internal events also provide means for describing more elaborate control 
 structures, such as \emph{exceptions}.
@@ -1228,8 +1248,8 @@ The \code{emit} continuations are discarded given that the surrounding
 \section{Differences to Esterel}
 \label{sec.ceu.esterel}
 
-A primary goal of \CEU is to support reliable shared-memory and $C$ concurrency 
-on top of a deterministic scheduler and effective safety analysis
+A primary goal of \CEU is to support reliable shared-memory on top of a 
+deterministic scheduler and effective safety analysis
 (Sections~\ref{sec.ceu.det},~\ref{sec.ceu.shared}~and~\ref{sec.ceu.c}).
 %
 Esterel, however, does not support shared-memory concurrency because \emph{``if 
@@ -1253,9 +1273,9 @@ a single event defines a reaction.
 %Figure~\ref{fig.reactions} illustrates this difference.
 %TODO
 %
-The notion of time in Esterel is similar to that of digital circuits, in which 
-multiple wires (signals) can be queried for their status (\emph{present} or 
-\emph{absent}) on each clock tick.
+The notion of logical time in Esterel is similar to that of digital circuits, 
+in which multiple wires (signals) can be queried for their status 
+(\emph{present} or \emph{absent}) on each clock tick.
 %
 \CEU more closely reflects event-driven programming, in which occurring events 
 are sequentially and uninterruptedly handled by the program.
@@ -1272,8 +1292,8 @@ In \CEU, however, internal and external events behave differently:
 \begin{itemize}
 \item External events can be emitted only by the environment, while internal 
 events only by the program.
-\item A single external event can be active at a time, while multiple internal 
-events can coexist within a reaction.
+\item A single external event can be active at a logical time, while multiple 
+internal events can coexist within a reaction.
 \item External events are handled in a queue, while internal events follow a 
 stacked execution policy.
 \end{itemize}

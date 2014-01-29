@@ -60,7 +60,7 @@ occurrences in programs.
 %considered to be atomic and instantaneous
 %
 The special notation $nop$ is used to represent an innocuous $mem$ expression 
-(it can be though as a synonym for $mem(\epsilon)$, where $\epsilon$ is an 
+(it can be thought as a synonym for $mem(\epsilon)$, where $\epsilon$ is an 
 unused identifier).
 %
 Except for the $fin$ and semantic-derived expressions, which are discussed 
@@ -115,7 +115,7 @@ We describe this relation with a set of \emph{small-step} structural semantics
 rules, which are built in such a way that at most one transition is possible at 
 any time, resulting in deterministic reaction chains.
 %
-The transitions rules for the primary expressions are as follows:
+The transition rules for the primary expressions are as follows:
 %
 { \setlength{\jot}{20pt}
 \begin{align*}
@@ -240,7 +240,7 @@ a $nop$.
 The rules for parallel $and$ compositions force transitions on the left branch 
 $p$ to occur before transitions on the right branch $q$ (rules 
 \textbf{and-adv1} and \textbf{and-adv2}).
-Then, if one of the sides terminate, the composition is simply substituted by 
+Then, if one of the sides terminates, the composition is simply substituted by 
 the other side (rules \textbf{and-nop1} and \textbf{and-nop2}):
 
 { \setlength{\jot}{20pt}
@@ -511,7 +511,8 @@ environment before each reaction chain.
 \subsection{First-class timers}
 
 To encompass first-class timers, we need a special \code{TICK} event that 
-should be intercalated with each other event occurrence in an application:
+should be intercalated with each other event occurrence in an application (e.g.  
+\emph{e1, e2}):
 
 \begin{align*}
 \LL [TICK], p \RR

@@ -193,12 +193,13 @@ mote is turned on (line 12).
 It then waits for a \code{retry} emit (line 16) to loop and resend the initial 
 message.
 Remind that event \code{retry} is emitted on network-down every $10$ seconds 
-(line 10 of previous code).
+(line 10 of Figure~\ref{lst.ring.2}).
 
 The static analysis of \CEU correctly warns about concurrent calls to 
 \code{\_Radio\_send} (line 12) \emph{vs.} \code{\_Leds\_set} and 
-\code{\_Leds\_led0Toggle} (lines 13,15 of previous code), which all execute 
-after the program detects 5 seconds of inactivity (line 6 of previous code).
+\code{\_Leds\_led0Toggle} (lines 15,17 of Figure~\ref{lst.ring.2}), which all 
+execute after the program detects 5 seconds of inactivity (line 6 of 
+Figure~\ref{lst.ring.2}).
 However, because these functions affect different devices (i.e. radio 
 \emph{vs.} LEDs), they can be safely executed concurrently.
 The following annotation (to be included in the program) states that these 
@@ -212,7 +213,7 @@ allowing the program to be compiled without warnings:
 
 This example shows how complementary activities in an application can be 
 written in separate and need not to be mixed in the code.
-In particular, error handling (monitoring trail) need not to interfere with 
+In particular, error handling (monitoring trail) need not interfere with 
 regular behavior (communicating trail), and can even be incorporated later.
 To ensure that parallel activities exhibit deterministic behavior, the \CEU 
 compiler rejects harmful concurrent $C$ calls by default.
@@ -261,7 +262,7 @@ Initially, the code behaves as application $1$ (lines 7-9), but is also waiting
 for a \code{SWITCH} request in parallel (line 5).
 Whenever a new request occurs, the \code{par/or} terminates, aborts the running 
 application, and restarts as the requested application.
-The \code{await FOREVER} statement (line 13) ensures that a terminating 
+The statement \code{await FOREVER} (line 13) ensures that a terminating 
 application does not reach the end of the \code{par/or} and restarts itself.
 
 The same idea can be used to \emph{reboot} a mote remotely, in the case of a 
@@ -465,7 +466,7 @@ directions, suggesting that it has hit a meteor.
 The animation is interrupted when the player presses a key (line 3), proceeding 
 to the game restart.
 Note the use of the \code{\_lcd} object, available in a third-party \emph{C++} 
-library shipped with the LCD display, and used unmodified in the example.
+library shipped with the LCD display.%, and used unmodified in the example.
 
 This demo makes extensive use of global variables, relying on the
 deterministic concurrency analysis guaranteed by the \CEU compiler.

@@ -119,7 +119,8 @@ declarations simply reproduce $O=I$, as they do not await;
 \item An \code{await e} statement has $O=\{e\}$.
 %
 \item A \code{break} statement has $O=\{\}$ as it escapes the innermost 
-\code{loop} and never terminate (see also \code{loop} below);
+\code{loop} and never terminate, i.e., never proceeds to the statement 
+immediately following it (see also \code{loop} below);
 %
 \item A \emph{sequence node (;)} modifies each of its children to have 
 $I_n=O_{n-1}$.

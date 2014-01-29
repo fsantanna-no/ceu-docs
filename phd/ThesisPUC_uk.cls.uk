@@ -655,7 +655,7 @@
     \vspace*{\stretch{0.5}}%
     \par%
     \renewcommand{\baselinestretch}{1.0}%
-    \puc@rightmargin{\Large \arial Post--graduate program in \puc@program}%
+    \puc@rightmargin{\Large \arial graduate program in \puc@program}%
     \vspace*{\stretch{9}}%
     \par%
     \puc@rightmargin{\normalsize \arial \puc@city \\ \puc@month\ \puc@year}%
@@ -696,8 +696,12 @@
   \par%
   \puc@leftmargin{\arial%
     \ifthenelse{\boolean{puc@phd}}%
-      {Thesis presented to the Post--graduate Program in \puc@program\ of the \puc@department\ Department, \puc@uni\ as partial fulfillment of the requirements for the degree of Doctor in Philosophy in \puc@program}%
-      {Thesis presented to the Post--graduate Program in \puc@program\ of the \puc@department\ Department, \puc@uni\ as partial fulfillment of the requirements for the degree of Master in \puc@program}%
+      {Thesis presented to the graduate Program in \puc@program\ of the 
+      \puc@department\ Department, \puc@uni\ as partial fulfillment of the 
+requirements for the degree of Doctor in Philosophy in \puc@program}%
+      {Thesis presented to the graduate Program in \puc@program\ of the 
+  \puc@department\ Department, \puc@uni\ as partial fulfillment of the 
+requirements for the degree of Master in \puc@program}%
   }%
   \vspace*{\stretch{1}}%
   \par%
@@ -739,8 +743,12 @@
   \par%
   \puc@leftmargin{\arial%
   \ifthenelse{\boolean{puc@phd}}%
-  {Thesis presented to the Post--graduate Program in \puc@program\ of the \puc@department\ Department, \puc@uni\ as partial fulfillment of the requirements for the degree of Doctor in Philosophy in \puc@program. }%
-  {Thesis presented to the Post--graduate Program in \puc@program\ of the \puc@department\ Department, \puc@uni\ as partial fulfillment of the requirements for the degree of Master in \puc@program. }%
+  {Thesis presented to the graduate Program in \puc@program\ of the 
+  \puc@department\ Department, \puc@uni\ as partial fulfillment of the 
+requirements for the degree of Doctor in Philosophy in \puc@program. }%
+  {Thesis presented to the graduate Program in \puc@program\ of the 
+  \puc@department\ Department, \puc@uni\ as partial fulfillment of the 
+requirements for the degree of Master in \puc@program. }%
   Approved by the following commission:%
   }%
   \vspace*{\stretch{1}}%
