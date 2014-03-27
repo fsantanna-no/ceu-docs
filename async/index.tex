@@ -1,0 +1,590 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[nohead,a4paper,lmargin=1.5cm,rmargin=2.0cm,tmargin=2.0cm,bmargin=2.0cm]{geometry}
+
+\usepackage{verbatim}
+
+\newcommand{\CEU}{\textsc{C\'{e}u}}
+
+\title{Reconciling Synchronous and Asynchronous Execution Models}
+\author{Francisco Sant'Anna}
+
+\begin{document}
+
+\maketitle
+
+\abstract{
+Synchronous programming languages...
+
+... .... ...}
+
+\begin{comment}
+
+- ELM, no event sources in the language itself
+- apenas blocking calls e time-consuming
+- no simul, no ISR, ...
+
+% modelos sincronos "externalizam" as fontes de eventos
+% i.e. nao descreve como os eventos sao gerados
+
+% dicotomia "syncrono" vs "asynchrono":
+
+in high level terms, ...
+
+determinismo
+primitivas (sync/async)
+scheduling
+prioridades
+semantica sequencial?
+
+
+% Ceu unifica os dois modelos
+
+asynchronous execution:
+    - async
+    - async thread
+    - isr
+
+- soft vs real-time scheduling
+
+- difficulty to test w/o external tools
+    - hence difficulty to understand the test (semantics is external)
+
+
+- synchronous kernel with asynchronous primitives
+    - instead of the opposite
+    - we think synchronous by default is better
+    - asynchronous is exception
+
+the same sequence of inputs always produces the same sequence of outputs
+
+
+The body of a loop is not allowed to be able to terminate instantaneously
+when started.
+
+Ao explicar <par>
+Dado a hipotese de sincronismo em que as computacoes sao zero-delay, e as 
+trails estao sempre esperando.
+O par significa esperar em paralelo (ao contrario de executar em paralelo)
+
+Contributions:
+- classification of asynchronous features
+- safety considerations
+- implementation
+
+\end{comment}
+
+\section{Introduction}
+
+Concurrent languages can be classified in two major execution models.
+%
+In the \emph{asynchronous model}, the program activities (e.g. threads and 
+actors) run independently of one another as result of non-deterministic 
+preemptive scheduling.
+In order to coordinate at specific points, these activities require explicit 
+use of synchronization primitives (e.g. mutual exclusion and message passing).
+\emph{C} (the C11 standard~\cite{TODO}) and \emph{erlang}~\cite{TODO} are 
+examples of asynchronous languages (even though they provide antagonistic 
+concurrency primitives~\cite{TODO}).
+%
+In the \emph{synchronous model}, the program activities (e.g. callbacks and 
+coroutines) require explicit control/scheduling primitives (e.g. returning or 
+yielding).
+For this reason, they are inherently synchronized, as the programmer himself 
+specifies how they execute and transfer control.
+%
+Esterel~\cite{TODO}, \CEU~\cite{TODO}, and the emerging Functional Reactive 
+Programming languages~\cite{TODO} (in a much higher level).
+
+The synchronous model has been successfully adopted in the field of reactive 
+and control-dominated software for real-time embedded systems~\cite{rp.twelve}.
+%
+Synchronous programs execute in discrete lock-steps (\emph{ticks}) that 
+continuously compute reactions to the environment (\emph{inputs}) atomically.
+%
+Each tick must execute in negligible time in accordance to the synchronous 
+hypothesis, which states that if TODO~\cite{TODO}.
+is considered to take no time
+TODO: zero-delay / synchronous hypothesis.
+%
+This disciplined and discrete reasoning about time enables compile-time 
+verifications that releases the programmer from most analysis and mitigation 
+efforts related to synchronization, resulting in deterministic and memory safe 
+programs~\cite{TODO}.
+
+However, the synchronous model has some limitations that are inherent to its 
+nature:
+%
+\begin{enumerate}
+\item Programs cannot self generate ticks or input events, because they define 
+        the notion of time and, thus, are external to programs.
+\item Reactions are atomic and cannot be interrupted.
+        To preserve causality between subsequent ticks, each must be completely
+        handled before the next.
+\item Reactions cannot execute time-consuming and/or blocking operations, 
+        otherwise the next reaction would not be handled in real time.
+\item Real parallelism across multiple CPUs is challenging:
+        two ticks cannot be handled at the same time;
+        while intra tick parallelism would break determinism.
+\end{enumerate}
+
+In higher level terms, each enumerated limitation have a negative impact on the 
+expressiveness of synchronous languages:
+%
+\begin{enumerate}
+\item Testing and simulating programs require external tools.
+\item High priority tasks (e.g., with hard real-time requirements) cannot 
+        preempt other tasks.
+\item Performing heavy calculations (e.g. compression and cryptography) XXX
+\item Multi-core platforms ....
+\end{enumerate}
+
+Second, ISRs in the language, hard real time
+Third, heavy calculations, blocking APIs (read())
+Fourth, self-describing
+
+In this paper, we propose a set of asynchronous extensions to the programming 
+language \CEU~\cite{TODO}.
+%
+overcome the limitations in a safe ...
+in a way that...
+
+We propose
+ASYNC primitives add
+- naturesas diferentes
+- cada uma resolve um dos problemas
+
+CONTRIBUTIONS
+- solve limitations of sync
+...
+
+\begin{comment}
+
+Esterel a tick may contain multiple occuring events
+Ceu a single occurring event defines a tick
+
+\subsection{Asynchronous execution}
+\label{sec:ceu:async}
+
+The main limitation of the synchronous execution model is its inability to 
+perform long computations requiring unbounded loops.
+\emph{Asynchronous blocks} fill this gap in \CEU{} and can contain unbounded 
+loops that run asynchronously with the rest of the program (referred to as the 
+\emph{synchronous side}).
+
+The program in Figure~\ref{lst:ceu:async} returns the factorial of $10$.
+The loop (lines 4-11) must be inside the \code{async} (lines 2-12) as it 
+contains no await statements.
+The \code{return} statement (line 6) terminates the asynchronous execution 
+setting the variable \code{ret} (line 2).
+We use a watchdog in the enclosing \code{par/or} to cancel the computation if 
+it takes longer than $10$ms (line 15).
+
+\begin{figure}[h]
+\rule{15cm}{0.37pt}
+{\small
+\begin{verbatim}
+     1:  par/or do
+     2:     int ret = async do
+     3:        int num=10, fat=1;
+     4:        loop do
+     5:           if num == 0 then
+     6:              return fat;
+     7:           else
+     8:              fat = fat * num;
+     9:              num = num - 1;
+    10:           end
+    11:        end
+    12:     end;
+    13:     _printf("fat: %d\n", ret);
+    14:  with
+    15:     await 10ms;
+    16:  end
+\end{verbatim}
+}
+\caption{ A program with a long computation.
+\label{lst:ceu:async}
+}
+\end{figure}
+
+\CEU{} specifies that asynchronous code cannot execute when there are pending 
+input events in the synchronous side, which always has higher priority.
+It gives no warranty that an \code{async} will ever terminate.
+Also, to preserve the disciplined synchronous semantics of \CEU{}, asynchronous 
+blocks cannot use parallel blocks, cannot await input events, cannot manipulate 
+internal events, and cannot assign to variables defined in outer blocks.
+
+From the synchronous perspective, an \code{async} can be thought as an external 
+process that generates an input event back into the program when it terminates.
+The following code express this idea:
+
+{\small
+\begin{verbatim}
+        _start_NNN();    // NNN is an unique identifier
+        ret = await NNN; //   that represents the async
+\end{verbatim}
+}
+
+The call to \code{\_start\_NNN()} requests the asynchronous computation to 
+start, while the subsequent ``\code{await NNN}'' resumes when the computation 
+terminates, yielding its final result.
+
+This equivalence emphasizes that asynchronous blocks have a localized impact on 
+the synchronous side of programs (to be discussed in 
+Section~\ref{sec:ceu:gals}).
+
+\subsection{Simulation in \CEU}
+\label{sec:ceu:simul}
+
+Simulation is an important aspect in cross-compiling platforms, such as 
+embedded systems.
+It is usually employed to test applications before deploying them on the target 
+platform.
+However, simulators are usually inaccurate, may require additional knowledge to 
+operate, and vary among different developing platforms.
+
+\CEU{} can simulate programs in the language itself, not depending on any 
+external tool to test its programs: asynchronous blocks are allowed to emit 
+input events and also events that represent the passage of wall-clock time 
+towards the synchronous side of the program.
+%Input events from asynchronous blocks go through the same queue for ``real'' 
+%events---once in the input queue, there is no distinction among them.
+This way, it is easy to simulate and test the execution of programs with total 
+control and accuracy with regard to the order of input events---all is done 
+with the same language and inside the programs themselves.
+
+Note that in a reactive language, a program execution depends solely on the 
+events it receives from the environment.
+Also, in a deterministic program, the exact timings for the incoming events are 
+irrelevant to the application outcome, only the order they arrive.
+
+Suppose we want to simulate the execution of the program in 
+Figure~\ref{lst:ceu:simul:1}, which initially awaits the input event $Start$ 
+and then increments $v$ every $10$ minutes during $1$ hour and $35$ minutes.
+
+\begin{figure}[h]
+\rule{15cm}{0.37pt}
+{\small
+\begin{verbatim}
+     1:   input int Start;
+     2:   int v = await Start;
+     3:   par/or do
+     4:      loop do
+     5:         await 10min;
+     6:         v = v + 1;
+     7:      end
+     8:   with
+     9:      await 1h35min;
+    10:   end
+\end{verbatim}
+}
+\caption{ The program to be simulated.
+\label{lst:ceu:simul:1}
+}
+\end{figure}
+
+To test this code, we simulate the occurrence of the event $Start$ and the 
+passage of \code{1h35min} in a parallel trail, as shown in 
+Figure~\ref{lst:ceu:simul:2}.
+
+\begin{figure}[h]
+\rule{15cm}{0.37pt}
+{\small
+\begin{verbatim}
+     0:   par/or do
+    (1-10):  // ORIGINAL CODE
+    11:      _assert(v == 19);
+    12:   with
+    13:      async do
+    14:         emit Start = 10;
+    15:         emit 1h35min;
+    16:      end
+    17:      _assert(0);
+    18:   end
+\end{verbatim}
+}
+\caption{ A program that embeds the code in Figure~\ref{lst:ceu:simul:1} and 
+simulates it.
+\label{lst:ceu:simul:2}
+}
+\end{figure}
+
+\newpage
+The sequence of execution for the simulation will be as follows:
+
+{\small
+\begin{enumerate}
+\setlength{\itemsep}{0pt}
+\item The original code (lines 1-10) executes before the \code{async} and 
+initially awaits the event \code{Start} (line 2).
+\item The \code{async} (lines 13-17) begins, emits \code{Start=10} (line 14) 
+and is suspended (the original code takes the priority again).
+\item The original code resumes and awaits \code{10min} and \code{1h35min} in 
+parallel trails (lines 5 and 9).
+\item The \code{async} resumes and signals that \code{1h35min} have elapsed 
+(line 15).
+\item The original code completely reacts to all time: the loop iterates 
+exactly $9$ times (lines 4-7) before the trail awaiting \code{1h35min} resumes 
+(line 9) and terminates the innermost \code{par/or}.
+The assertion test on line 11 executes before the one on line 17 (which never 
+executes due to the outermost \code{par/or}) and terminates the program 
+successfully.
+\end{enumerate}
+}
+
+The original code remains unmodified and is simply pasted into the template 
+that runs the simulation in parallel.
+With the proper tools, this integration can be made even simpler (e.g. we 
+developed a framework to run tests for the implementation of \CEU{} with 
+hundreds of programs and test cases defined in separate).
+
+It should be clear from the example that simulation does not test true I/O, 
+only the program behavior given an arbitrary input sequence.
+For instance, the simulation does not take $1$ hour to complete, but actually a 
+negligible time.
+Also, simulation can be employed---with the exact same behavior---in the 
+developing platform (given \CEU{} is available) or in the target platform.
+
+\subsection{GALS execution}
+\label{sec:ceu:gals}
+
+\CEU{} complies with the GALS (\emph{globally asynchronous, locally 
+synchronous}) model of computation, which states that local activities run 
+synchronized with a common clock, while global activities run with independent 
+clocks.
+The \emph{globally asynchronous} part of \CEU{} is restricted to external input 
+events, $C$ code, and asynchronous blocks, while the \emph{locally synchronous} 
+part of \CEU{} extends to all other primitives, such as parallel compositions, 
+variable manipulation, and internal events.
+
+The temporal analysis of \CEU{} discussed in Section~\ref{sec:ceu:det} ensures 
+that only the locally synchronous part of programs is deterministic.
+Therefore, \CEU{} is not an absolutely deterministic language, that is, the 
+behavior of programs may vary from execution to execution.
+
+However, nondeterminism in \CEU{} is exclusively a consequence of globally 
+asynchronous execution.
+For instance, the program in Figure~\ref{lst:ceu:gals} is nondeterministic, 
+given that the \code{async} runs for an undetermined time, and may terminate 
+before or after the statement \code{await~1s}.
+Even so, the \CEU{} compiler does not complain about nondeterminism, because 
+the assignments cannot run concurrently.
+
+\begin{figure}[h]
+\rule{15cm}{0.37pt}
+{\small
+\begin{verbatim}
+        int ret;
+        par/or do
+            async do
+                ...     // a long computation
+            end
+            ret = 1;
+        with
+            await 1s;
+            ret = 2;
+        end
+        return ret;
+\end{verbatim}
+}
+\caption{ The assignments never run concurrently.
+\label{lst:ceu:gals}
+}
+\end{figure}
+
+Note that for simulation purposes, the asynchronous execution can be entirely 
+guided by synchronous code, making programs fully deterministic.
+For instance, the simulation example of Figure~\ref{lst:ceu:simul:2} can be 
+repeated many times, with the exact same behavior.
+
+\section{Related work}
+\label{sec:related}
+
+\subsection{Synchronous model}
+
+In this section, we present a review of some synchronous languages and 
+techniques that relate to \CEU.
+
+\textbf{Event-driven programming}
+
+At the lowest abstract level of the synchronous model, event-driven programming 
+is usually employed as a technique in general-purpose languages with no 
+specific support for reactivity.
+Because a single line of execution and stack are available, programmers need to 
+deal with the burden of manual stack management and inversion of 
+control.~\cite{sync_async.cooperative}
+
+In the context of embedded systems, the programming language 
+\nesc{}~\cite{wsn.nesc} offers event-driven programming for the TinyOS 
+operating system.
+The concurrency model of \nesc{} is very flexible, supporting the traditional 
+serialization among callbacks, and also asynchronous callbacks that interrupt 
+others.
+To deal with race conditions, \nesc{} supports atomic sections with a similar 
+semantics to mutual exclusion in asynchronous languages.
+We use \nesc{} as the back end of \CEU{} for TinyOS.
+
+\textbf{Cooperative multithreading}
+
+Cooperative multithreading is an alternative approach to preemptive 
+multithreading where the programmer is responsible for scheduling activities in 
+the program (known as \emph{coroutines}~\cite{lua.coroutines} in this context).
+With this approach, there are no possible race conditions on global variables, 
+as the points that transfer control in coroutines are explicit (and, 
+supposedly, are never inside critical sections).
+
+Protothreads \cite{wsn.protothreads} offer very lightweight cooperative 
+multithreading for embedded systems.
+Its stackless implementation reduces memory consumption but precludes support 
+for local variables.
+Furthermore, Protothreads provide no safety warranties besides being race-free: 
+a program can loop indefinitely, and access to globals is unrestricted.
+
+Coroutines are similar to \CEU{} trails, as they both offer multiple sequential 
+lines of execution to handle concurrent activities.
+However, \CEU{}'s \code{par/and} and \code{par/or} composition statements offer 
+a powerful abstraction to avoid manual bookkeeping of activities, such as 
+creating, starting, rejoining, and destroying them.
+Also, the semantics for rejoins in parallel compositions is fundamental for the 
+temporal analysis of \CEU{}, which cannot be done effectively with coroutines.
+
+\textbf{Finite state machines}
+
+The use of finite state machines (FSMs) is a classic technique to implement
+reactive applications, such as network protocols and graphical user interfaces.
+A contemporary work~\cite{wsn.osm}, based on the Statecharts formalism 
+\cite{statecharts.visual}, provides a textual FSM language targeting Wireless 
+Sensor Networks.
+
+FSMs have some known limitations.
+For instance, writing purely sequential flow is tedious, requiring to break 
+programs in multiple states with a single transition connecting each of them.  
+Another inherent problem of FSMs is the state explosion phenomenon.
+To alleviate this problem, some designs support hierarchical FSMs running in 
+parallel \cite{wsn.osm}.
+However, adopting parallelism precludes the use of shared state, or at least 
+requires a static analysis such as that of \CEU{}.
+
+%- mostrar a saida de quantos dfa tem cada um dos exemplos
+%- ship tem que tirar o async
+%- dizer que um programa equivalente teria esse mesmo numero de estados
+%e seria impossivel de programar
+
+%- possibly graphical languages (fosters visual) (inherent)
+
+\textbf{Dataflow}
+
+Dataflow programming \cite{lustre.ieee91,lucid} differs from the traditional 
+``Von Neumann'' imperative style, where programs are defined as sequences of 
+steps.
+With a declarative style, dataflow programs define high-level dependency 
+relationships among data.
+The language is responsible for scheduling activities that propagate external 
+changes into the dependency graph that represents a program.
+
+The \emph{Functional Reactive Programming (FRP)} paradigm brings dataflow 
+behavior to functional languages \cite{frp.principles}.
+\CEU{} borrows some ideas from a FRP implementation \cite{frtime.embedding}, 
+such as a push-driven evaluation and glitch prevention.
+Dataflow in \CEU{} is limited to static relationships, and the way dataflow 
+programs are expressed is less abstract than in FRP.
+
+However, embedded systems are typically characterized by control-intensive 
+applications, where programs have to deal with low-level I/O and handle 
+explicit state.
+In this context, dataflow programming does not provide proper abstractions, 
+being more suitable for data-intensive applications.
+
+\textbf{Esterel}
+
+Our work is strongly influenced by the Esterel language \cite{esterel.design}, 
+which also provides an imperative reactive style with a similar set of parallel 
+compositions.
+
+However, a fundamental distinction exists: in Esterel, the semantics for time 
+is similar to that of digital circuits, where an external clock defines 
+discrete steps in which multiple signals (events in \CEU{}) can be queried for 
+their presence status.
+% TODO: internal events
+
+With such semantics in \CEU{}, multiple input events could be active at the 
+same time, making its temporal analysis impossible.
+As a consequence, access to shared state would be nondeterministic, also 
+breaking dataflow support in \CEU{}.
+In Esterel, ``if a variable is written in a thread, then it can be neither read 
+nor written in any concurrent thread''.~\cite{esterel.primer}
+
+Regarding features that are orthogonal to the distinction regarding events, 
+\CEU{} supports ``wall-clock'' time and simulation from asynchronous blocks, 
+while Esterel provides a \code{suspend} statement that cannot be easily 
+implemented on top of the existing primitives (and which we are considering to 
+incorporate into \CEU).
+%\begin{omment}
+% TODO
+Esterel also supports output events, which are not available in \CEU{}.
+Also, \CEU{} has no support for output events, and relies on $C$ calls to 
+interface with the environment for output.
+If multiple processes in \CEU{} needed to communicate, the adoption of output; 
+however, in the context of embedded systems, only a single process executes at 
+a time.
+%\end{omment}
+
+\subsection{Asynchronous model}
+
+The asynchronous model of computation can be sub-divided in how independent 
+activities coordinate.
+In \emph{shared memory} concurrency, communication is via global state, while 
+synchronization is via mutual exclusion.
+%Examples following this style are \emph{pthreads} and other multithreading 
+%libraries.
+In \emph{message passing}, both communication and synchronization happen via 
+exchanging messages.
+
+The default behavior of activities being independent hinders the development of 
+highly synchronized applications.
+As a practical evidence, we developed a simple application that blinks two LEDs 
+in parallel with different frequencies%
+\footnote{The complete source code and a video demos for the application can be 
+%found at \url{http://www.ceu-lang.org/TR/\#blink}.}.
+We implemented it in \CEU{} and also in the two asynchronous styles.
+For \emph{shared memory} concurrency, we used a multithreaded RTOS%
+%\footnote{\url{http://www.chibios.org/dokuwiki/doku.php?id=start}}, while for 
+message passing, we used an \emph{occam} for Arduino~\cite{arduino.occam}.
+
+The LEDs should blink together at a specific rate, depending on the chosen 
+blinking frequencies.
+We tested several combinations of frequencies looking for asynchronism on the 
+implementations.%
+\footnote{We settled at $400$ms and $1000$ms, but any combination of two 
+non-divisor numbers behaved the same way in our tests.}
+As expected, the LEDs in the two asynchronous implementations lost synchronism 
+after some time of execution.
+The \CEU{} implementation remained synchronized for all tests that we have 
+performed.
+
+The implementations are intentionally naive: they just spawn the activities 
+that blink the LEDs in parallel.
+The behavior for the asynchronous implementations of the blinking application 
+is perfectly valid, as the preemptive execution model does not ensure implicit 
+synchronization among activities.
+We used timers in the application, but any kind of high frequency input would 
+also behave nondeterministically in asynchronous systems.
+
+TODO: "bare metal" to avoid any layers of XXX.
+
+Although this application can be implemented correctly with an asynchronous 
+execution model, it circumvents the language style, as timers need to be 
+synchronized in a single thread.
+Furthermore, it is common to see similar naive blinking examples in official 
+examples of asynchronous systems%
+\footnote{
+Example 1 in the RTOS \emph{DuinOS v0.3}:
+%\url{http://multiplo.org/duinos/wiki}.\\
+Example 3 in the occam-based \emph{Concurrency for Arduino v20110201.1855}:
+%\url{http://concurrency.cc/download}.
+}, suggesting that LEDs are supposed to blink synchronized.
+
+% TODO: Live programming
+% aqui refs, no exemplo bret
+
+\end{comment}
+\end{document}

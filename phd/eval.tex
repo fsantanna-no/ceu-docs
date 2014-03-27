@@ -1,8 +1,8 @@
 %\begin{document}
 
 \begin{figure*}[t]
-%\includegraphics[width=\textwidth,clip=true,trim=55px 320px 45px 0px]{eval}
-\includegraphics{eval}
+\includegraphics[width=\textwidth]{eval}
+%\includegraphics{eval}
 \caption{ Comparison between \CEU and \emph{nesC} for the implemented 
 applications. \newline
 {\small %\textmd{
@@ -458,10 +458,10 @@ The parameters were adjusted to make the implementations in the two languages
 behave the same, i.e., the receiving node should receive the same amount of 
 packets during the same period.
 
-For the first experiment, we made each sending node to transmit 75 messages 
-during 150s, resulting in around 625 received packets (considering the losses) 
-in the receiving mote, which also performs a 1-ms heavy activity every 1.5 
-seconds.
+For the first experiment, we made each sending node transmit 75 messages 
+during 150s, resulting in around 625 received packets (considering the 
+losses) in the receiving mote, which also performs a 1-ms heavy activity 
+every 1.5 seconds.
 %
 In this experiment, the CPU is idle most of the time and the battery is 
 consumed by the radio hardware.

@@ -3,9 +3,6 @@
 - BUG 2: glitches across emits
 - BUG 3: o reaction graph nao deveria fazer rejoin no fim de STs
 
--- TODO: Block -> Scope
--- TODO: tirar BlockI
-
 --[=[
 Test { [[
 type tree = void Leaf

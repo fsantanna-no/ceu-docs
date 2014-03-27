@@ -1,6 +1,9 @@
 % PT
 %\documentclass[phd,twoside,brazil]{ThesisPUC}
 \documentclass[phd,twoside,british]{ThesisPUC_uk}
+\usepackage{ucs}
+\let\xcleardoublepage\cleardoublepage
+\let\cleardoublepage\clearpage
 
 \usepackage{verbatim}
 \usepackage{xspace}
@@ -126,8 +129,8 @@ mathescape=true,
 
 \city{Rio de Janeiro}
 \CDD{004}
-\department{Inform\'atica}
-\program{Computer Science}
+\department{Departamento de Inform\'atica}
+\program{Programa de P\'os-Gradua\c{c}\~ao em Inform\'atica}
 \school{Centro T\'{e}cnico Cient\'{i}fico}
 \university{Pontif\'{i}cia Universidade Cat\'{o}lica do Rio de Janeiro}
 \uni{PUC--Rio}
@@ -135,31 +138,35 @@ mathescape=true,
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \jury {
-    %\jurymember{Edward Hermann Haeusler}
-                %{Departamento de Inform\'{a}tica --- PUC-Rio}
-    %\jurymember{Renato Fontoura de Gusm\~{a}o Cerqueira}
-                %{Departamento de Inform\'{a}tica --- PUC-Rio}
-    %\schoolhead{Jos\'{e} Eugenio Leal}
+    \jurymember{Renato Fontoura de Gusm\~{a}o Cerqueira}
+                {Departamento de Inform\'{a}tica --- PUC-Rio}
+    \jurymember{Markus Endler}
+                {Departamento de Inform\'{a}tica --- PUC-Rio}
+    \jurymember{Silvana Rossetto}
+                {UFRJ}
+    \jurymember{Roberto da Silva Bigonha}
+                {UFMG}
+    \schoolhead{Jos\'{e} Eugenio Leal}
 }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \resume {
+He completed his undergraduate studies in Computer Engeneering at the
+the Pontifical Catholic University of Rio de Janeiro (PUC--Rio) in 2003.
+He received his Master degree in Computer Science from PUC--Rio in 2009.
 }
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \acknowledgment{
-Thank you Roberto and Noemi for your time and knowledge, and above of all, for 
-letting me free to make hits and misses for the last 6 years.
-  
-Thank you Phillippas and Olaf for kindly receiving me in Chalmers, Sweden.
-
-Thank you Luiz Fernando and Cerqueira for my period in the Telem\'idia Lab, 
-where I started as a researcher.
-
-Thank you to all my teachers in CAp-UERJ, responsible for my education before 
+I would like to thank Roberto and Noemi for giving me freedom to make hits 
+and misses for the last six years.
+Also, Phillippas and Olaf for kindly receiving me in Chalmers, Sweden.
+Luiz Fernando and Cerqueira for my period in the Telem\'idia Lab, where I 
+started as a researcher.
+Finally, all my teachers in CAp-UERJ, responsible for my education before 
 college.
 
 My studies were funded by CNPq and SAAB.
@@ -169,17 +176,17 @@ My studies were funded by CNPq and SAAB.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % PT
-\begin{comment}
-\keywords {
-    \key{Concorr\^encia}
-    \key{Determinismo}
-    \key{Sistemas Embarcados}
-    \key{Esterel}
-    \key{S\'incrono}
-    \key{Reativo}
-    \key{Redes de Sensores sem Fio}
+%\begin{comment}
+\chaves {
+    \chave{Concorr\^encia}
+    \chave{Determinismo}
+    \chave{Sistemas Embarcados}
+    \chave{Esterel}
+    \chave{S\'incrono}
+    \chave{Reativo}
+    \chave{Redes de Sensores sem Fio}
 }
-\end{comment}
+%\end{comment}
 
 %\begin{comment}
 \keywords{
@@ -194,6 +201,32 @@ My studies were funded by CNPq and SAAB.
 %\end{comment}
 
 % TODO muito corrido
+
+%\begin{comment}
+\resumo{
+Apesar da pesquisa cont\'inua para facilitar a programa\c{c}\~ao de redes de 
+sensores sem fio, a an\'alise de perigos de concorr\^encia ainda \'e de 
+responsabilidade do programador, que deve tratar manualmente de quest\~oes como 
+sincroniza\c{c}\~ao e mem\'oria compartilhada.
+N\'os apresentamos uma linguagem de sistema que garante concorr\^encia segura 
+tratando amea\c{c}as em tempo de compila\c{c}\~ao.
+A fundamenta\c{c}\~ao est\'atica e s\'incrona da nossa abordagem permite um 
+racioc\'inio mais simples sobre quest\~oes de concorr\^encia, permitindo uma 
+an\'alise em tempo de compila\c{c}\~ao que garante programas determin\'isticos.
+Como contra-partida, nosso modelo imp\~oe em termos da expressividade da 
+linguagem, tais como para efetuar c\'alculos demorados, ou atender prazos 
+estritos em tempo real.
+N\'os implementamos diversos protocolos de rede conhecidos e o driver para o 
+r\'adio CC2420 para mostrar que a expressividade e responsividade obtida com a 
+linguagem \'e suficiente para uma gama consider\'avel de aplica\c{c}\~oes para 
+redes de sensores.
+As implementa\c{c}\~es mostram uma redu\c{c}\~ao de tamanho de c\'odigo, com um 
+aumento de mem\'oria abaixo de 10\% em compara\c{c}\~ao com nesC.
+O uso da linguagem proposta implica em diversas propriedades de seguran\c{c}a 
+que se baseiam em abstra\c{c}\~oes de controle de alto n\'ivel, tamb\'em 
+resultando em c\'odigo mais conciso e leg\'ivel.
+}
+%\end{comment}
 
 %\begin{comment}
 \abstract {
@@ -232,32 +265,6 @@ abstractions that also lead to concise and readable code.
 
 % PT
 
-\begin{comment}
-\resumo{
-Apesar da pesquisa cont\'inua para facilitar a programa\c{c}\~ao de redes de 
-sensores sem fio, a an\'alise de perigos de concorr\^encia ainda \'e de 
-responsabilidade do programador, que deve tratar manualmente de quest\~oes como 
-sincroniza\c{c}\~ao e mem\'oria compartilhada.
-N\'os apresentamos uma linguagem de sistema que garante concorr\^encia segura 
-tratando amea\c{c}as em tempo de compila\c{c}\~ao.
-A fundamenta\c{c}\~ao est\'atica e s\'incrona da nossa abordagem permite um 
-racioc\'inio mais simples sobre quest\~oes de concorr\^encia, permitindo uma 
-an\'alise em tempo de compila\c{c}\~ao que garante programas determin\'isticos.
-Como contra-partida, nosso modelo imp\~oe em termos da expressividade da 
-linguagem, tais como para efetuar c\'alculos demorados, ou atender prazos 
-estritos em tempo real.
-N\'os implementamos diversos protocolos de rede conhecidos e o driver para o 
-r\'adio CC2420 para mostrar que a expressividade e responsividade obtida com a 
-linguagem \'e suficiente para uma gama consider\'avel de aplica\c{c}\~oes para 
-redes de sensores.
-As implementa\c{c}\~es mostram uma redu\c{c}\~ao de tamanho de c\'odigo, com um 
-aumento de mem\'oria abaixo de 10\% em compara\c{c}\~ao com nesC.
-O uso da linguagem proposta implica em diversas propriedades de seguran\c{c}a 
-que se baseiam em abstra\c{c}\~oes de controle de alto n\'ivel, tamb\'em 
-resultando em c\'odigo mais conciso e leg\'ivel.
-}
-\end{comment}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \tablesmode{fig} % none, fig, tab ou figtab
@@ -266,6 +273,7 @@ resultando em c\'odigo mais conciso e leg\'ivel.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
+\let\cleardoublepage\xcleardoublepage
 
 % PT
 %\chapter{oi}

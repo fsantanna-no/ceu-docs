@@ -1,1 +1,1 @@
-ThesisPUC_uk.cls.uk
+ThesisPUC_uk.cls.new

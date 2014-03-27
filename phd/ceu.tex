@@ -750,8 +750,9 @@ trails that follow rejoin points reuse all memory.
 
 However, the unrestricted use of locals may introduce subtle bugs when dealing 
 with pointers and $C$ functions interfacing with device drivers.
-Given that system software outlive the scope of any local variable, a pointer 
-passed as parameter to a system call may be held by a device driver
+Given that the execution of system software outlives the scope of any local 
+variable, a pointer passed as parameter to a system call may be held by a 
+device driver
 for longer than the scope of the referred variable, leading to a dangling 
 pointer.
 

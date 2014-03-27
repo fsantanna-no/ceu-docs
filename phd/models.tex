@@ -230,10 +230,10 @@ formalism \cite{statecharts.visual}.
 
 FSMs have some known limitations.
 For instance, writing purely sequential flow is tedious~\cite{wsn.osm}, 
-requiring to break programs in multiple states with a single transition 
-connecting each of them.  Another inherent problem of FSMs is the state 
-explosion phenomenon, which can be alleviated in some designs that support 
-hierarchical FSMs running in parallel \cite{wsn.osm}.
+requiring programmers to break programs up in multiple states with a single 
+transition connecting each of them.  Another inherent problem of FSMs is the 
+state explosion phenomenon, which can be alleviated in some designs that 
+support hierarchical FSMs running in parallel \cite{wsn.osm}.
 %However, adopting parallelism precludes the use of shared state, or at least 
 %requires a static analysis such as that of \CEU.
 
@@ -550,7 +550,7 @@ guarantees introduced by \CEU.
 
 The use of timers in the example of Figure~\ref{lst.all} illustrates 
 \emph{split-phase} control operations typically found in WSN 
-applications~\cite{wsn.tos}, which are require a pair of request and answer 
+applications~\cite{wsn.tos}, which require a pair of request and answer 
 to/from the underlying system (e.g. \code{T1.start} and \code{T1.fired}).
 %
 As other examples, requesting sensor readings and forwarding radio packets also 

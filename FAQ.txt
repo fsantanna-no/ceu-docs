@@ -1,0 +1,49 @@
+# What is Céu?
+
+Céu is a concurrent and reactive programming language that offers a safer 
+and higher-level alternative to C.
+
+# What is Céu based on?
+
+Céu is based on Esterel.
+
+# Where should I used Céu?
+
+Any kind of reactive application, i.e., an application that interacts 
+continuously with the environment.
+The environment is an external actor that provides input to the application 
+and expects output from it.
+Examples: GUIs, games, network protocols.
+
+# Is Céu yet another Functional Reactive Programming (FRP) variant?
+
+No. Céu is quite imperative, actually.
+It would be more accurate to call it a Imperative Reactive Programming (IRP) 
+variant.
+
+# How is Céu (IRP) different from FRP?
+
+FRP is good to specify declarative/data dependency.
+Céu is good to specify imperative/control dependency.
+
+Blinking a LED is control-based: we have two states that we...
+
+Two examples:
+
+loop do
+    await 1s;
+    _led_toggle(1);
+end
+
+loop do
+    var int dt = await DT;
+    s = ;
+end
+
+# Are IRP and FRP equivalent?
+
+Probably. They both rely on the synchronous concurrency models.
+That being said, they xxx different programming styles
+
+
+
