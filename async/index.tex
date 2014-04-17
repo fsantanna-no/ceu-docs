@@ -1,9 +1,14 @@
+Natalia
+
+nataliacbruno@gmail.com
+
 \documentclass[11pt,a4paper]{article}
 \usepackage[nohead,a4paper,lmargin=1.5cm,rmargin=2.0cm,tmargin=2.0cm,bmargin=2.0cm]{geometry}
 
 \usepackage{verbatim}
 
 \newcommand{\CEU}{\textsc{C\'{e}u}}
+\newcommand{\code}[1] {{\small{\texttt{#1}}}}
 
 \title{Reconciling Synchronous and Asynchronous Execution Models}
 \author{Francisco Sant'Anna}
@@ -22,6 +27,11 @@ Synchronous programming languages...
 - ELM, no event sources in the language itself
 - apenas blocking calls e time-consuming
 - no simul, no ISR, ...
+
+- nesc, apesar de nao se auto declarar sincrona possui
+sync tasks e
+async events que requerem o mesmo "atomic" complementar, com a mesma deteccao
+- ele gera evento pra si? post task? (como ele faz ISR?)
 
 % modelos sincronos "externalizam" as fontes de eventos
 % i.e. nao descreve como os eventos sao gerados
@@ -49,12 +59,6 @@ asynchronous execution:
 - difficulty to test w/o external tools
     - hence difficulty to understand the test (semantics is external)
 
-
-- synchronous kernel with asynchronous primitives
-    - instead of the opposite
-    - we think synchronous by default is better
-    - asynchronous is exception
-
 the same sequence of inputs always produces the same sequence of outputs
 
 
@@ -65,11 +69,6 @@ Ao explicar <par>
 Dado a hipotese de sincronismo em que as computacoes sao zero-delay, e as 
 trails estao sempre esperando.
 O par significa esperar em paralelo (ao contrario de executar em paralelo)
-
-Contributions:
-- classification of asynchronous features
-- safety considerations
-- implementation
 
 \end{comment}
 
@@ -83,7 +82,7 @@ preemptive scheduling.
 In order to coordinate at specific points, these activities require explicit 
 use of synchronization primitives (e.g. mutual exclusion and message passing).
 \emph{C} (the C11 standard~\cite{TODO}) and \emph{erlang}~\cite{TODO} are 
-examples of asynchronous languages (even though they provide antagonistic 
+examples of asynchronous languages (although they provide antagonistic 
 concurrency primitives~\cite{TODO}).
 %
 In the \emph{synchronous model}, the program activities (e.g. callbacks and 
@@ -92,8 +91,8 @@ yielding).
 For this reason, they are inherently synchronized, as the programmer himself 
 specifies how they execute and transfer control.
 %
-Esterel~\cite{TODO}, \CEU~\cite{TODO}, and the emerging Functional Reactive 
-Programming languages~\cite{TODO} (in a much higher level).
+Esterel~\cite{TODO}, \CEU~\cite{TODO}, and Functional Reactive Programming 
+languages~\cite{TODO,A,B} (in a much higher level) are examples of TODO.
 
 The synchronous model has been successfully adopted in the field of reactive 
 and control-dominated software for real-time embedded systems~\cite{rp.twelve}.
@@ -116,46 +115,67 @@ nature:
 %
 \begin{enumerate}
 \item Programs cannot self generate ticks or input events, because they define 
-        the notion of time and, thus, are external to programs.
+        the notion of time and, therefore, are external to programs.
 \item Reactions are atomic and cannot be interrupted.
-        To preserve causality between subsequent ticks, each must be completely
+        In order to preserve temporal order, each tick must be completely 
         handled before the next.
-\item Reactions cannot execute time-consuming and/or blocking operations, 
-        otherwise the next reaction would not be handled in real time.
-\item Real parallelism across multiple CPUs is challenging:
+\item Reactions cannot execute time-consuming and blocking operations, 
+        otherwise subsequent reactions would not be handled in real time.
+\item Real parallelism in multi-core CPUs is challenging:
         two ticks cannot be handled at the same time;
-        while intra tick parallelism would break determinism.
+        while intra tick parallelism breaks determinism.
 \end{enumerate}
 
-In higher level terms, each enumerated limitation have a negative impact on the 
+In higher level terms, each enumerated limitation has a negative impact on the 
 expressiveness of synchronous languages:
 %
-\begin{enumerate}
-\item Testing and simulating programs require external tools.
-\item High priority tasks (e.g., with hard real-time requirements) cannot 
-        preempt other tasks.
-\item Performing heavy calculations (e.g. compression and cryptography) XXX
-\item Multi-core platforms ....
-\end{enumerate}
+(1) testing and simulating programs require external tools;
+(2) high priority tasks with hard real-time requirements cannot preempt other 
+        tasks;
+(3) tasks cannot performing heavy calculations (e.g. compression and
+        cryptography);
+(4) parallelizing programs is not straightforward.
 
-Second, ISRs in the language, hard real time
-Third, heavy calculations, blocking APIs (read())
-Fourth, self-describing
-
-In this paper, we propose a set of asynchronous extensions to the programming 
-language \CEU~\cite{TODO}.
+We argue that each of these functionalities represents a type of asynchrony in 
+programs and should addressed by different primitives.
 %
-overcome the limitations in a safe ...
-in a way that...
+By doing so, each primitive can have a more clear semantics and restricted side 
+effects, leading to a better integration with the language that minimizes the 
+safety threats of asynchronous execution.
+%
+We propose three asynchronous extensions to \CEU~\cite{TODO}, a Esterel-based 
+synchronous language:
+%
+\begin{itemize}
+\item Asynchronous Blocks (\code{async}) to deal with input generation
+preserve determinism.
+\item Interrupt Service Routines (\code{isr}) to deal with
+memory sharing is restricted and enforced by the compiler
+\item Thread Blocks (\code{thread}) to deal with
+again memory sharing is restricted and enforced by the compiler.
+\end{itemize}
 
-We propose
-ASYNC primitives add
-- naturesas diferentes
-- cada uma resolve um dos problemas
+\CEU is safety-oriented system language for constrained embedded systems.
+TODO
 
-CONTRIBUTIONS
-- solve limitations of sync
-...
+- synchronous kernel with asynchronous primitives
+    - instead of the opposite
+    - we think synchronous by default is better
+    - asynchronous is exception
+
+Ortoghonal to the synchronous model
+each can be disabled without impacting the overall utility of the language.
+
+composable with the synchronous side
+except for \code{isr}
+
+Contributions:
+\begin{itemize}
+\item Classification of typical asynchronous functionality required in 
+programs.
+\item Considerations about safety aspects in asynchronous execution.
+\item Implementation of these ideas in an existing synchronous language.
+\end{itemize}
 
 \begin{comment}
 
