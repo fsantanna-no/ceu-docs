@@ -123,6 +123,20 @@ mathescape=true,
 \maketitle
 
 \begin{abstract}
+.......... ........... ........... ........... ........... ...........
+.......... ........... ........... ........... ........... ...........
+.......... ........... ........... ........... ........... ...........
+.......... ........... ........... ........... ........... ...........
+.......... ........... ........... ........... ........... ...........
+.......... ........... ........... ........... ........... ...........
+.......... ........... ........... ........... ........... ...........
+.......... ........... ........... ........... ........... ...........
+.......... ........... ........... ........... ........... ...........
+.......... ........... ........... ........... ........... ...........
+\end{abstract}
+
+\section{Synchronous Reactive Model}
+\label{sec.overview}
 Reactive applications interact in real time and continuously with external 
 stimuli from the surrounding environment.
 They represent a wide range of software areas and platforms: from games in 
@@ -242,9 +256,9 @@ observer pattern
 The rest of the paper is organized as follows:
 Section~\ref{sec.overview} reviews the synchronous execution model, which is 
 suitable for reactive programming, and is the base of \CEU.
-Section~\ref{sec.reactive}
+Section~\ref{sec.ceu}
 
-\section{The Synchronous Reactive Model}
+\section{Synchronous Reactive Model}
 \label{sec.overview}
 
 ``Reactive systems'' are not a new class of problem and have been described by 
@@ -279,6 +293,8 @@ Overall, \emph{synchronous languages} deal with reactive systems better, while
 Both mentioned authors propose synchronous languages for designing reactive 
 systems (Statecharts~\cite{statecharts.visual} and 
 Esterel~\cite{esterel.ieee91}).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 The synchronous execution model is based on the hypothesis that internal 
 computations (\emph{reactions} in this context) run infinitely faster than the 
@@ -319,58 +335,55 @@ In order to coordinate at specific points, they require explicit
 synchronization primitives (e.g., mutual exclusion or message passing).
 % ADA, thread-based concurrency, CSP
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The synchronous model can handle two desired features considering concurrency: 
+\emph{deterministic execution} and \emph{orthogonal abortion}.
+%
+These features are the reason
+which we explore in the sections that follow.
+For these
 For structured reactive programming, we argue that the synchronous model is 
 more appropriate.
+
+The way each side is implemented does not affect the behavior,
+only the way you compose them (which is external to each implementation)
+
 %
-Below, we show how the synchronous model can handle two desired properties 
-considering concurrent activities: \emph{deterministic execution} and 
-\emph{orthogonal abortion}.
-
+DET and ABRT
 both yield to better reasoning
-behave the same with or without
+behave the same with or without concurrency
 
-to show that
-We focus on the composition of concurrent activities, given
-
-In our work we use the synchronous model.
-for concurrency
-most difficult is composing activities
-
-focus on synchronous vs asynchronous compositions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Figure~\ref{lst.leds} shows three implementations for an application that 
 blinks two LEDs in parallel with different frequencies.
-We implemented it in two asynchronous languages 
-(actor-based~\cite{arduino.occam} and thread-based~\cite{arduino.chibios}, and 
-also in a synchronous language with \CEU.
+We use two asynchronous languages (actor-based~\cite{arduino.occam} and 
+thread-based~\cite{arduino.chibios}, and also the synchronous language \CEU.
 %
-The intent and syntactic structure of the implementations is very similar:
-composing in parallel the two blinking activities.
+The intent and syntactic structure of the implementations are similar:
+composing the two blinking activities%
+\footnote{We use the term activity to generically refer to a language's unit of 
+execution (e.g., \emph{thread}, \emph{actor}, \emph{process}, etc.).}
+in parallel.
 %
-The LEDs should blink together every 3 seconds (\emph{least common denominator} 
-between 600ms and 1s).
+The LEDs should blink together every 3 seconds (i.e., it is the least common 
+denominator between 600ms and 1s).
 %
 As we expected, the LEDs in the two asynchronous implementations loose 
 synchronism after some time of execution, while \CEU implementation remains 
 synchronized forever.
 %
 The example highlights how the inherent non-determinism in the asynchronous 
-model makes hard to compose activities supposedly synchronized:
-in the first example, unpredictable latency in message passing;
-in the second example, unpredictable scheduling.
+model makes hard to (blindly) compose activities supposedly synchronized: 
+unpredictable scheduling as wall as latency in message passing causes 
+asynchronism.
 %
-In \CEU, \code{await} is the only primitive that takes time and is XXX with the 
-problem specification: the internal timings for communication and computation 
-is neglected in accordance to the synchronous hypothesis.
-
-
-Although this application can be implemented correctly with an asynchronous 
-execution model, it circumvents the language style, as timers need to be 
-synchronized in a single thread.
-
-, each blinking a different LED in a loop (simulates a loop with .
-
-but not the semantics
+In \CEU, \code{await} is the only primitive that takes time, which the 
+programmer uses explicitly to conform with the problem specification.
+However, the internal timings for communication and computation, which the 
+programmer cannot control, are neglected in accordance to the synchronous 
+hypothesis.
 
 \begin{figure}[t]
 \begin{minipage}[t]{0.34\linewidth}
@@ -405,7 +418,6 @@ void thread2 () {
     toggle(12);
   }
 }
-
 void setup () {
   create(thread1);
   create(thread2);
@@ -434,16 +446,138 @@ end
 \rule{14cm}{0.37pt}
 \caption{ Two blinking LEDs in OCCAM-PI, ChibiOS and \CEU.\newline
 {\small %\textmd{
-Each line of execution in parallel blinks a LED with a fixed (but different) 
-frequency.
-(The LEDs are connected to I/O ports 11 and 12.)
-Every 3 seconds both LEDs should light on together.
-After a couple of minutes of execution, only the implementation in \CEU remains 
-synchronized.
+The lines of execution in parallel blink two LEDs (connected to ports 11 and 
+12) with different frequencies.
+Every 3 seconds the LEDs should light on together.
 }%}
 \label{lst.releds}
 }
 \end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{figure}[t]
+\begin{lstlisting}
+par/or do
+    // activity A
+    <local-variables>
+    <body>
+with
+    // activity B
+    <local-variables>
+    <body>
+end
+<local-variables>
+\end{lstlisting}
+\caption{ TODO.\newline
+{\small %\textmd{
+TODO
+}%}
+\label{lst.abortion}
+}
+\end{figure}
+
+Consider now the problem of aborting an \emph{activity A} as soon as an
+\emph{activity B} terminates and vice versa.
+%
+Figure~\ref{lst.abortion} shows a hypothetical construct \code{par/or} that 
+composes concurrent activities and rejoins when either of them terminates, 
+properly aborting the other.
+%
+In the example, each activity has a set of local variables and an execution 
+body that lasts for an arbitrary time.
+After the \code{par/or} terminates, a new set of local variables goes alive, 
+supposedly reusing the space from the locals going out of scope.
+
+Abortion of activities in asynchronous languages is 
+challenging~\cite{esterel.preemption}.
+For instance, when an activity terminates, the other activity to be aborted 
+might be on a inconsistent state (e.g., suspended but holding a lock, or 
+actually executing in another core).
+%
+Assuming that the language runtime awaits the activity to be consistent before 
+aborting it, the semantics for a \code{par/or} can either wait to rejoin 
+(delayed termination), or rejoin immediately and wait in the background 
+(immediate termination).
+Both options have problems:
+\begin{itemize}
+\item \textbf{delayed}:
+    The program becomes unresponsive in the meantime.
+\item \textbf{immediate}:
+    The programmer may assume that both activities have terminated but one is 
+still terminating.
+    Also, local variables need to coexist in memory for some time, moving the 
+    language allocation strategy to the heap (which is discouraged in the 
+context of embedded systems).
+\end{itemize}
+
+As matter of fact, asynchronous languages do not provide effective abortion:
+CSP supports a single composition operator that ``terminates when all of the 
+combined processes terminate''~\cite{async.csp};
+Java's \code{Thread.stop} primitive has been officially 
+deprecated~\cite{sync_async.threadstop};
+and pthread's \code{pthread\_cancel} API does not guarantee immediate 
+cancellation~\cite{snync_async.pthreadstop}.
+%
+Instead, activities must agree a on common protocol to abort each other (e.g., 
+through shared state variables or message passing).
+%
+As happens with determinism, time independence among processes and
+require explicit synchronization mechanisms. Therefore, to
+achieve the desired specification, processes <P> and <Q> must
+be tweaked with synchronization commands, breaking the
+orthogonality assumption. [4]
+
+Synchronous languages, however, provide accurate control over the life cycle of 
+concurrent activities~\cite{esterel.preemption}, because in between every 
+reaction, the whole system is idle and consistent.
+%
+Therefore, the language can wait to abort the activity and rejoin the 
+composition, taking at most the time of a complete reaction, which the model 
+guarantees to be bounded.
+%
+\CEU provides the \code{par/or} construct with the synchronous termination 
+semantics (described above).
+%
+We show in Section~\ref{sec.ceu} how to integrate abortion with activities that 
+use stateful resources from the environment, such as file handling and network 
+transmissions.
+
+
+, which is regarded as an orthogonal preemp-
+tion primitive [4], because composition <P> does not know
+when and why it gets aborted by event E.
+
+
+deterministic execution and abortion
+are possible
+but require tweaking each other
+changing the implementation with synchronization concerns
+that the language could solve
+the non-concurrent version is different from the concurrent version
+
+because a reactive core only deal with input/output
+
+
+For synchronous languages, this is possible.
+In \CEU we have exactly this primitive
+
+
+all to the heap
+
+When to terminate the other / start the continuation
+When to deallocate / reallocate memory
+Again, latency (locks, middle of transmission, middle of assignment, which 
+granularity)
+which granularity? what if inside a lock?
+
+
+Even though these examples can be properly implemented in asynchronous 
+languages, they require tweaking the actor/threads with synchronization 
+primitives.
+I.e., the non-concurrent version is different and requires coupling between 
+them.
+Increase reasoning
 
 On the one hand, xxx
 determinism
@@ -566,7 +700,7 @@ in terms of communication
 - p2p (loose simultaneity when simulating broadcast
 
 \section{Structured Reactive Programming}
-\label{sec.reactive}
+\label{sec.ceu}
 
 - await, sequence, vars
 - parallel, patterns, ortoghonal
@@ -683,7 +817,6 @@ control and dataflow reactive styles in a single language.
 %We present a formal description of \CEU and show how its synchronous and 
 %static nature enables a compile-time analysis to ensure that reactions to the 
 %environment are deterministic and execute with bounded memory and CPU time.
-\end{abstract}
 
 %\category{CR-number}{subcategory}{third-level}
 \category{D.3.1}{Programming Languages}{Formal Definitions and Theory}
