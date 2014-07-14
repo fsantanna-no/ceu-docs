@@ -1,0 +1,176 @@
+% SAC
+
+The \code{par/or} statement is regarded as an \emph{orthogonal preemption 
+primitive}~\cite{esterel.preemption}, because composition \code{<P>} does not 
+know when and why it gets aborted by event \code{E}.
+
+In a similar (hypothetical) construct for an asynchronous language, the 
+occurrence of event \code{E} would not imply the immediate termination of 
+\code{<P>}, which could continue to execute for an arbitrary amount of time.
+Asynchronous formalisms assume time independence among processes and require 
+explicit synchronization mechanisms.
+Therefore, to achieve the desired specification, processes \code{<P>} and 
+\code{<Q>} must be tweaked with synchronization commands, breaking the
+orthogonality assumption.~\cite{esterel.preemption}
+
+% SENSYS
+
+The \code{par/or} construct is regarded as an \emph{orthogonal preemption 
+primitive}~\cite{esterel.preemption} because the two sides in the composition 
+need not to be tweaked with synchronization primitives or state variables in
+order to affect each other.
+In contrast, it is known that traditional (asynchronous) multi-threaded 
+languages cannot express thread abortion 
+safely~\cite{esterel.preemption,sync_async.threadsstop}.
+
+% TR
+
+The main limitation of the synchronous execution model is its inability to 
+perform long computations requiring unbounded loops.
+\emph{Asynchronous blocks} fill this gap in \CEU{} and can contain unbounded 
+loops that run asynchronously with the rest of the program (referred to as the 
+\emph{synchronous side}).
+
+The program in Figure~\ref{lst:ceu:async} returns the factorial of $10$.
+The loop (lines 4-11) must be inside the \code{async} (lines 2-12) as it 
+contains no await statements.
+The \code{return} statement (line 6) terminates the asynchronous execution 
+setting the variable \code{ret} (line 2).
+We use a watchdog in the enclosing \code{par/or} to cancel the computation if 
+it takes longer than $10$ms (line 15).
+
+Programming languages can be generically classified in two major execution 
+models.
+
+In the \emph{asynchronous model}, the program activities (e.g. threads and 
+processes) run independently of one another as result of nondeterministic 
+preemptive scheduling.
+In order to coordinate at specific points, these activities require explicit 
+use of synchronization primitives (e.g. mutual exclusion and message passing).
+
+In the \emph{synchronous model}, the program activities (e.g. coroutines and 
+\CEU{} trails) require explicit scheduling primitives (e.g. yield and \CEU{} 
+await).
+For this reason, they are inherently synchronized, as the programmer himself 
+specifies when they should execute.
+
+We use this classification to give an abstract overview of related works in 
+this section, although we also comment about specific languages and systems in 
+our discussion.
+
+Note that the terms synchronous and asynchronous are somewhat ambiguous, as 
+they may be used in different contexts.
+The reason is that \emph{synchronous languages} require \emph{asynchronous 
+primitives} (i.e. nonblocking calls), while \emph{asynchronous languages} 
+require \emph{synchronous primitives} (e.g. locks and semaphores).
+We use the definition of synchronous languages as found in 
+\cite{rp.twelve,rp.hypothesis}.
+
+The asynchronous model of computation can be sub-divided in how independent 
+activities coordinate.
+In \emph{shared memory} concurrency, communication is via global state, while 
+synchronization is via mutual exclusion.
+%Examples following this style are \emph{pthreads} and other multithreading 
+%libraries.
+In \emph{message passing}, both communication and synchronization happen via 
+exchanging messages.
+
+The default behavior of activities being independent hinders the development of 
+highly synchronized applications.
+As a practical evidence, we developed a simple application that blinks two LEDs 
+in parallel with different frequencies%
+\footnote{The complete source code and a video demos for the application can be 
+found at \url{http://www.ceu-lang.org/TR/\#blink}.}.
+We implemented it in \CEU{} and also in the two asynchronous styles.
+For \emph{shared memory} concurrency, we used a multithreaded RTOS%
+\footnote{\url{http://www.chibios.org/dokuwiki/doku.php?id=start}}, while for 
+message passing, we used an \emph{occam} for Arduino~\cite{arduino.occam}.
+
+The implementations are intentionally naive: they just spawn the activities 
+that blink the LEDs in parallel.
+The behavior for the asynchronous implementations of the blinking application 
+is perfectly valid, as the preemptive execution model does not ensure implicit 
+synchronization among activities.
+We used timers in the application, but any kind of high frequency input would 
+also behave nondeterministically in asynchronous systems.
+
+Although this application can be implemented correctly with an asynchronous 
+execution model, it circumvents the language style, as timers need to be 
+synchronized in a single thread.
+Furthermore, it is common to see similar naive blinking examples in official 
+examples of asynchronous systems%
+\footnote{
+Example 1 in the RTOS \emph{DuinOS v0.3}:
+\url{http://multiplo.org/duinos/wiki}.\\
+Example 3 in the occam-based \emph{Concurrency for Arduino v20110201.1855}:
+\url{http://concurrency.cc/download}.
+}, suggesting that LEDs are supposed to blink synchronized.
+
+% ONWARD
+
+The main limitation of the synchronous execution model is its inability to 
+perform long computations requiring unbounded loops.
+\emph{Asynchronous blocks} fill this gap in \CEU{} and can contain unbounded 
+loops that run asynchronously with the rest of the program (referred to as the 
+\emph{synchronous side}).
+
+% PLDI
+
+On the opposite side of the spectrum of concurrency models, asynchronous 
+languages for embedded systems~\cite{wsn.mantisos,arduino.occam}
+assume time independence among processes and are more appropriate for 
+applications with a low synchronization rate or for those involving
+algorithmic-intensive problems.
+
+Asynchronous models are also employed in real-time operating systems to provide 
+response predictability, typically through prioritized 
+schedulers~\cite{wsn.mantisos,wsn.oses,freertos}.
+Even though \CEU ensures bounded execution for reactions, it cannot provide 
+hard real-time warranties.
+For instance, assigning different priorities for trails would break lock-free 
+concurrency (i.e., breaking correctness is worse than breaking timeliness).
+%synchronous model and
+%the static analysis, which are required for
+
+%That said, some embedded systems do require prioritized scheduling to meet 
+%deadlines for critical tasks, even if it involves extra complexity to deal 
+%%with synchronization issues.
+Fortunately, \CEU and RTOSes are not mutually exclusive, and we can foresee a 
+scenario in which multiple \CEU programs run in different RTOS threads and 
+communicate asynchronously via external events, an architecture known as GALS 
+(\emph{globally asynchronous--locally synchronous})~\cite{rp.gals}.
+
+Concerning the described control-flow mechanisms, they heavily rely on 
+\code{par/or} compositions, which cannot be precisely defined in asynchronous 
+languages without tweaking processes with synchronization 
+mechanisms~\cite{esterel.preemption}.
+
+---
+http://chplib.wordpress.com/2009/11/16/an-introduction-to-communicating-sequential-processes/
+
+CSP allows for parallel composition of processes. Two processes composed in 
+parallel run in parallel, and “a parallel combination terminates when all of 
+the combined processes terminate… the best way of thinking about [this] is that 
+all of the processes are allowed to terminate when they want to, and that the 
+overall combination terminates when the last one does.”(R143). These semantics 
+also apply to CHP’s parallel composition. CSP’s notation for composing P and Q 
+in parallel: P || Q is near-identical to the CHP version: P <||> Q (they only 
+differ because || is already used in the Prelude).
+
+% CSP Hoare
+
+specifies concurrent execution of its constituent se-
+quential commands (processes). All the processes start
+simultaneously, and the parallel command ends only
+when they are all finished. They may not communicate
+with each other by updating global variables.
+
+% http://en.wikipedia.org/wiki/Actor_model_and_process_calculi_history
+
+The processes were hierarchically structured using parallel composition whereas 
+Actors allowed the creation of non-hierarchical execution using futures [Baker 
+and Hewitt 1977]. Hierarchical parallel composition is problematical because it 
+precludes the ability to create a process that outlives its creator.  Also 
+message passing is the fundamental mechanism for generating parallelism in the 
+Actor model; sending more messages generates the possibility of more 
+parallelism.

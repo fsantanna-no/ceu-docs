@@ -1,0 +1,182 @@
+We propose a new abstraction mechanism for a synchronous reactive 
+programming language: Organisms reconcile objects and threads into a single 
+concept.
+We enforce lexical scope for dynamic instances and also restrict the use of 
+explicit references to organisms.
+This way, we can eliminate typical issues in dynamic allocation, such as 
+memory leaks, danging pointers, and garbage collection.
+
+\documentclass[11pt,a4paper]{article}
+\usepackage[nohead,a4paper,lmargin=1.5cm,rmargin=2.0cm,tmargin=2.0cm,bmargin=2.0cm]{geometry}
+
+\usepackage{verbatim}
+\usepackage{xspace}
+\usepackage{url}
+
+\newcommand{\CEU}{\textsc{C\'{e}u}\xspace}
+\newcommand{\code}[1] {{\small{\texttt{#1}}}}
+
+\title{
+    Imperative Reactive Programming with \CEU
+}
+%\author{Francisco Sant'Anna}
+
+\begin{document}
+
+\maketitle
+
+% wc = 19 19 394
+
+%\abstract{
+\section{Abstract}
+The origins of reactive programming date back to the early 80's with the 
+co-development of two styles of synchronous languages:
+%
+The imperative style of Esterel organizes programs with control flow 
+primitives, such as sequences, repetitions, and also parallelism.
+%
+The dataflow style of Lustre represents programs as graphs of values, in which 
+a change to a node updates its dependencies automatically.
+
+In recent years, Functional Reactive Programming modernized the dataflow style 
+and became mainstream, producing a number of languages and libraries, such as
+Flapjax, Rx (from Microsoft), React (from Facebook), and Elm.
+%
+In contrast, the imperative style did not follow this trend and is now confined 
+to the domain of real-time embedded control systems.
+% such as flight control on avionics and anti-collision equipment on automobiles.
+
+We present the programming language \CEU, a contemporary outlook of imperative 
+reactivity that aims to expand the application domain of this family with new 
+abstraction mechanisms.
+%which supports a rich set of control abstractions and static safety 
+%guarantees.
+%
+\CEU has its roots on Esterel and relies on a similar synchronous and 
+deterministic execution model that simplifies the reasoning about concurrency 
+aspects.
+%
+%In particular, the disciplined stepwise synchronous execution of programs 
+%allows for concurrent lines to safely share variables.
+%
+The example below in \CEU prints the ``Hello World!'' message every second, 
+terminating with a key press:
+
+\begin{verbatim}
+    par/or do
+       every 1s do
+          print("Hello World!");
+       end
+    with
+       await KEY;
+    end
+\end{verbatim}
+
+The use of control primitives, such as \code{await}, \code{every}, and 
+\code{par/or}, hides most complexity related to flows of execution and their 
+life cycles (e.g., starting, aborting, and resuming them).
+%
+In particular, the \code{await} statement is the most representative of \CEU, 
+capturing the imperative and reactive nature of the language at the same time.
+%
+Awaiting multiple events in parallel releases programmers from the infamous 
+\emph{callback hell}, which is often a concern in general purpose imperative 
+languages.
+
+The new abstraction mechanisms of \CEU to be presented expands classical object 
+orientation with instances that are reactive to the environment.
+%
+They make imperative reactivity suitable for applications outside the embedded 
+domain.
+%
+As an example, we implemented in \CEU a game of moderate complexity for 
+Android.
+%(approximately 5,000 lines of code).
+%
+The imperative reactive style of \CEU is an effective alternative to Functional 
+Reactive Programming that complements the realm of synchronous programming.
+
+\begin{comment}
+programs close to specification
+
+adv: convenience of imperative w/o the burden
+also solves the callback hell
+- big gap for imperative reactivity
+
+React (vs FRP)
+http://www.debjitbiswas.com/genuinely-functional-user-interfaces-and-react/
+
+ 170   541  6207 controllers.ceu
+  20    51   518 fnts.ceu
+ 476  1765 18627 main.ceu
+ 575  1828 17676 objs.ceu
+  33    94   918 points.ceu
+  45   120  1351 snds.ceu
+  94   254  2971 texs.ceu
+1413  4653 48268 total
+\end{comment}
+
+%}
+
+\newpage
+
+\section{Comments}
+
+\begin{itemize}
+    \item Presentation Outline:
+        \begin{itemize}
+        \item Reactive applications: characteristics, challenges
+        \item Reactive models: Declarative/Dataflow/FRP vs Control/Imperative
+        \item Overview of \CEU
+        \item Reactive ``Hello World!''
+        \item Reactive abstractions in \CEU
+        \item Demos: aprox. 10 incremental live demonstrations
+        \end{itemize}
+
+    \item Intended audience:
+        \begin{itemize}
+        \item Programmers interested in real-time and reactive concurrency 
+      (embedded systems, games, and multimedia).
+        \item Requires knowledge  of C or C++.
+        \end{itemize}
+
+    \item Previous StrangeLoops?
+        \begin{itemize}
+        \item No, it would my first time.
+        \end{itemize}
+
+    \item Speaking Experience:
+        \begin{itemize}
+        \item Talks related to \CEU:
+            \begin{itemize}
+            \item 2014 - Arduino Day - Presentation
+               \url{(http://thesynchronousblog.wordpress.com/2014/03/31/ceu-on-arduino-day/)}
+            \item 2013 - SenSys Conference - Full Paper
+               \url{(http://sensys.acm.org/2013/index.html)}
+            \item 2013 - REM Workshop (inside OOPSLA) - Full Paper
+               \url{(http://soft.vub.ac.be/REM13/)}
+            \item 2011 - SenSys Conference - Doctoral Colloquium
+               \url{(http://www.cse.ust.hk/~lingu/SenSys11DC/)}
+            \end{itemize}
+        \item I'm also a CS teacher and we've been using \CEU in Distributed 
+System classes.
+        \end{itemize}
+
+    \item Maturity of \CEU:
+        \begin{itemize}
+        \item Developed over the past 6 years in a PhD thesis (mine).
+                  \url{(http://www.ceu-lang.org/)}
+        \item Open sourced last year.
+                  \url{(http://github.com/fsantanna/ceu/)}
+        \item Participating this year with one project in the ``Google Summer 
+              of Code'' (under the umbrella of the LabLua at PUC-Rio).
+                  \url{(http://www.lua.inf.puc-rio.br/gsoc/ideas2014.html)}
+        \item Evaluated in the context of Wireless Sensor Networks together 
+          with the DCS group at Chalmers University (Sweden).
+                  \url{(http://www.cse.chalmers.se/research/group/dcs/)}
+        \item Used by other graduate and undergraduate students.
+        \item No sensible uses outside of our domains (as far as we know).
+        \end{itemize}
+\end{itemize}
+
+\end{document}

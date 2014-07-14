@@ -1,7 +1,3 @@
-Natalia
-
-nataliacbruno@gmail.com
-
 \documentclass[11pt,a4paper]{article}
 \usepackage[nohead,a4paper,lmargin=1.5cm,rmargin=2.0cm,tmargin=2.0cm,bmargin=2.0cm]{geometry}
 
@@ -97,63 +93,79 @@ languages~\cite{TODO,A,B} (in a much higher level) are examples of TODO.
 The synchronous model has been successfully adopted in the field of reactive 
 and control-dominated software for real-time embedded systems~\cite{rp.twelve}.
 %
-Synchronous programs execute in discrete lock-steps (\emph{ticks}) that 
-continuously compute reactions to the environment (\emph{inputs}) atomically.
+Synchronous programs execute under a discrete logical time unit (a \emph{tick}) 
+and continuously compute atomic reactions to the environment (\emph{input 
+events}).
 %
-Each tick must execute in negligible time in accordance to the synchronous 
-hypothesis, which states that if TODO~\cite{TODO}.
+Each tick must execute in negligible time so that...
+%
+This is the synchronous hypothesis, which states that if TODO~\cite{TODO}.
 is considered to take no time
 TODO: zero-delay / synchronous hypothesis.
 %
-This disciplined and discrete reasoning about time enables compile-time 
-verifications that releases the programmer from most analysis and mitigation 
-efforts related to synchronization, resulting in deterministic and memory safe 
+This disciplined model simplifies the reasoning about concurrency aspects and 
+enables compile-time verifications that ensure deterministic execution for 
 programs~\cite{TODO}.
 
-However, the synchronous model has some limitations that are inherent to its 
-nature:
+However, the strict temporal order and atomicity between subsequent ticks 
+restrict the expressiveness of synchronous languages:
+%In higher level terms, each enumerated limitation has a negative impact on the 
+%expressiveness of synchronous languages:
+%synchronous model has some limitations that are inherent to its nature:
 %
 \begin{enumerate}
-\item Programs cannot self generate ticks or input events, because they define 
-        the notion of time and, therefore, are external to programs.
-\item Reactions are atomic and cannot be interrupted.
-        In order to preserve temporal order, each tick must be completely 
-        handled before the next.
-\item Reactions cannot execute time-consuming and blocking operations, 
-        otherwise subsequent reactions would not be handled in real time.
+%
+\item Testing and simulating programs require external tools.
+Fundamentally, a self generated tick would create a temporal paradox in which 
+the current and future ticks execute concurrently.
+%
+\item High priority tasks with hard real-time requirements cannot preempt other 
+tasks.
+Even if a critical hardware interrupt jumps the external queue, the current 
+reaction still needs to complete in order to preserve atomicity.
+%
+\item Reactions cannot performing heavy calculations or blocking operationg 
+(e.g. compression or reading from a socket), otherwise subsequent reactions 
+would not be handled in real time.
+%
 \item Real parallelism in multi-core CPUs is challenging:
-        two ticks cannot be handled at the same time;
-        while intra tick parallelism breaks determinism.
+Given that ticks represent logical time units, two ticks cannot be handled at 
+the same time.
+Also, executing operations in the same tick in parallel would break 
+determinism.
 \end{enumerate}
 
-In higher level terms, each enumerated limitation has a negative impact on the 
-expressiveness of synchronous languages:
+These limitations are inherent to synchronous languages which require 
+asynchronous extensions to address them effectively.
 %
-(1) testing and simulating programs require external tools;
-(2) high priority tasks with hard real-time requirements cannot preempt other 
-        tasks;
-(3) tasks cannot performing heavy calculations (e.g. compression and
-        cryptography);
-(4) parallelizing programs is not straightforward.
+Furthermore, each of these limitations represents a type of asynchrony and 
+should be addressed by different primitives.
+%
+For instance, determinism is highly desired for testing purposes and we should 
+not use preemptive threads for them.
+%
+However,
 
-We argue that each of these functionalities represents a type of asynchrony in 
-programs and should addressed by different primitives.
+In this work, we propose three asynchronous extensions to \CEU~\cite{TODO}, a 
+Esterel-based synchronous language:
+%
+PARA CADA PROBLEMA, DIZER O QUE MANTEMOS E O QUE ABRIMOS MAO
+\begin{itemize}
+\item Asynchronous Blocks (\code{async}) to deal with input generation
+preserve determinism.
+(input generation can preserve determinism, actually is desirable)
+\item Interrupt Service Routines (\code{isr}) to deal with
+memory sharing is restricted and enforced by the compiler
+\item Thread Blocks (\code{thread}) to deal with
+again memory sharing is restricted and enforced by the compiler.
+- no determinism is possible
+\end{itemize}
+
 %
 By doing so, each primitive can have a more clear semantics and restricted side 
 effects, leading to a better integration with the language that minimizes the 
 safety threats of asynchronous execution.
 %
-We propose three asynchronous extensions to \CEU~\cite{TODO}, a Esterel-based 
-synchronous language:
-%
-\begin{itemize}
-\item Asynchronous Blocks (\code{async}) to deal with input generation
-preserve determinism.
-\item Interrupt Service Routines (\code{isr}) to deal with
-memory sharing is restricted and enforced by the compiler
-\item Thread Blocks (\code{thread}) to deal with
-again memory sharing is restricted and enforced by the compiler.
-\end{itemize}
 
 \CEU is safety-oriented system language for constrained embedded systems.
 TODO
