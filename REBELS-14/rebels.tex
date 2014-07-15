@@ -103,15 +103,6 @@ mathescape=true,
 }
 %\subtitle{Accepted paper in REM'13 (preprint version)}
 
-- rely on the synchronous execution model
-- compositions
-- than abstracting over it
-- finalization, safety
-- ortoghonal preemption
-- simple reasoning
-
-- OS/drivers are stateful
-
 \numberofauthors{1}
 \author{
     \alignauthor
@@ -135,27 +126,38 @@ mathescape=true,
 .......... ........... ........... ........... ........... ...........
 \end{abstract}
 
-\section{Synchronous Reactive Model}
-\label{sec.overview}
+%\category{CR-number}{subcategory}{third-level}
+\category{D.3.1}{Programming Languages}{Formal Definitions and Theory}
+\category{D.3.3}{Programming Languages}{Language Constructs and Features}
+
+\terms{Design, Languages}
+
+\keywords{Concurrency, Dataflow, Determinism, Embedded Systems, Esterel, 
+Synchronous, Reactivity}
+
+\section{Introduction}
+\label{sec.intro}
+
 Reactive applications interact in real time and continuously with external 
-stimuli from the surrounding environment.
+stimuli from the environment.
 They represent a wide range of software areas and platforms: from games in 
-powerful desktops, \emph{"apps"} in capable smart phones, to the emerging 
-internet of things in constrained embedded systems.
+powerful desktops, ``apps'' in capable smart phones, to the emerging internet 
+of things in constrained embedded systems.
 
 Research on special-purpose reactive languages dates back to the early 80's 
 with the co-development of two complementary styles~\cite{rp.twelve}:
 %
-The imperative style of Esterel~\cite{TODO} organizes programs with control 
-flow primitives, such as sequences, repetitions, and also parallelism.
+The imperative style of Esterel~\cite{esterel.ieee91} organizes programs with 
+structured control flow primitives, such as sequences, repetitions, and also 
+parallelism.
 %
-The dataflow style of Lustre~\cite{TODO} represents programs as graphs of 
-values, in which a change to a node updates its dependencies automatically.
+The dataflow style of Lustre~\cite{lustre.ieee91} represents programs as graphs 
+of values, in which a change to a node updates its dependencies automatically.
 
-In recent years, Functional Reactive Programming~\cite{TODO} modernized the 
-dataflow style and became mainstream, deriving a number of languages and 
-libraries, such as Flapjax~\cite{TODO}, Rx (from Microsoft), React (from 
-Facebook), and Elm~\cite{TODO}.
+In recent years, Functional Reactive Programming~\cite{frp.principles} 
+modernized the dataflow style and became mainstream, deriving a number of 
+languages and libraries, such as Flapjax~\cite{frp.flapjax}, Rx (from 
+Microsoft), React (from Facebook), and Elm~\cite{frp.elm}.
 %
 In contrast, the imperative style did not follow this trend and is now confined 
 to the domain of real-time embedded control systems.
@@ -163,17 +165,15 @@ to the domain of real-time embedded control systems.
 
 As a matter of fact, imperative reactivity is now often associated to the 
 \emph{observer pattern} of object oriented languages, because it heavily relies 
-on side effects over shared data among objects~\cite{TODO:deprecating,TODO2}.
+on side effects over shared data among objects~\cite{rp.deprecating,TODO}.
 %
-However, short-lived callbacks (the observers) eliminate any vestige of 
-structured programming, such as loops and automatic variables~\cite{TODO:adya}, 
-which are an elementary capability of imperative languages.
+However, short-lived callbacks (i.e., the observers) eliminate any vestige of 
+structured programming, such as support for loops and automatic 
+variables~\cite{sync_async.cooperative}, which are an elementary capability of 
+imperative languages.
 %
 In this sense, the observer pattern actually disrupts imperative reactivity, 
-becoming "our generation's \code{goto}"~\cite{TODO:miguel,TODO:elm, 
-TODO:dijkstra/goto}.
-
-% http://tirania.org/blog/archive/2013/Aug-15.html
+becoming "our generation's \code{goto}"~\cite{goto,rp.goto,elm.goto}.
 
 In this work, we present a comprehensive set of imperative abstractions for 
 developing structured reactive applications through the programming language 
@@ -183,14 +183,14 @@ developing structured reactive applications through the programming language
 execution model that simplifies the reasoning about concurrency aspects.
 %
 \CEU provides a contemporary outlook of imperative reactivity that aims to 
-expand the application domain of this family with a new abstraction mechanism.
+expand its application domain.
 %
 In comparison to standard structured programming, \CEU provides three 
 fundamental extensions:
 
 \begin{itemize}
 \item An \code{await <evt>} statement to suspend a line of execution until the 
-referred event occurs.
+referred event occurs, keeping the whole data and control context.
 \item Parallel constructs (\code{par}, \code{par/or}, and \code{par/and}) to 
 compose multiple lines of execution.
 \item An abstraction mechanism, named as \emph{organisms}, to reconcile data 
@@ -201,17 +201,38 @@ The \code{await} statement captures the imperative and reactive nature of the
 language, recovering from the inversion of control inherent to the observer 
 pattern, and thus restoring sequential execution and support for automatic 
 variables.
-Parallel compositions allows for multiple \code{await} statements to coexist, 
-which is fundamental to handle events concurrently (which reactive applications 
-often require).
+Parallel compositions allow for multiple \code{await} statements to coexist, 
+which is fundamental to handle concurrent events common in reactive 
+applications.
 An organism abstracts parallel and \code{await} statements and offer an 
 object-like interface that other parts of the program can manipulate.
 
-Permeating all aspects of the programming style, the synchronous execution 
-model
-restricts
-but makes possible
-an underlying model that makes it all reasonable
+Our general contribution is a language design to develop reactive systems 
+through structured control primitives.
+The language relies on a well-founded synchronous concurrency model that 
+generates deterministic
+%
+We introduce a new abstraction mechanism
+
+TODO
+
+\begin{comment}
+
+await/parallel not contributions
+
+- rely on the synchronous execution model
+- compositions
+- than abstracting over it
+- finalization, safety
+- ortoghonal preemption
+- simple reasoning
+
+- OS/drivers are stateful
+
+Our general contribution is
+synchronous execution model that permeates all aspects
+concurrent systems that behave deterministically and their parts can be 
+composed with structured constructs.
 
 CONTRIBUTIONS:
 
@@ -253,24 +274,30 @@ sequentiality
 composibility
 observer pattern
 
+\end{comment}
+
 The rest of the paper is organized as follows:
-Section~\ref{sec.overview} reviews the synchronous execution model, which is 
-suitable for reactive programming, and is the base of \CEU.
-Section~\ref{sec.ceu}
+Section~\ref{sec.synchronous} reviews the synchronous and asynchronous 
+execution model, justifying the former as a better choice for structured 
+reactive programming.
+Section~\ref{sec.ceu} presents.
+
+TODO
 
 \section{Synchronous Reactive Model}
-\label{sec.overview}
+\label{sec.synchronous}
 
-``Reactive systems'' are not a new class of problem and have been described by 
-Harel as being ``repeatedly prompted by the outside world and their role is to 
-continuously respond to external inputs''~cite{TODO.harel}.
+``Reactive systems'' are not a new class of software and have been first 
+described by Harel as being ``repeatedly prompted by the outside world and 
+their role is to continuously respond to external 
+inputs''~\cite{statecharts.reactive}.
 In comparison to traditional ``transformational systems'', he recognises 
 reactive systems as ``particularly problematic when it comes to finding 
 satisfactory methods for behavioral description''.
 %
-Berry makes a subtle distinction between ``interactive'' and ``reactive'' 
-systems~\cite{TODO:RR-1445}:
-
+Berry goes further and makes a subtle distinction between ``interactive'' and 
+``reactive'' systems~\cite{rp.synchronous}:
+%
 \begin{itemize}
 \item Interactive programs interact at their own speed with users or with other 
 programs; from a user point of view a time-sharing system is interactive.
@@ -283,9 +310,9 @@ program itself.
 %with communications, while reactive programs only work in response to external 
 %demands and mostly deal with accurate interrupt handling.''
 
-This distinction is fundamental because the different characteristics (i.e., 
-\emph{at the speed of the program} vs \emph{at the speed of the environment}) 
-implies the use of different underlying concurrency models.
+This distinction is fundamental because the different control perspectives 
+(i.e., \emph{at the speed of the program} vs \emph{at the speed of the 
+environment}) implies the use of different underlying concurrency models.
 %
 Overall, \emph{synchronous languages} deal with reactive systems better, while 
 \emph{asynchronous languages}, with interactive systems~\cite{esterel.crp}.
@@ -297,16 +324,16 @@ Esterel~\cite{esterel.ieee91}).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 The synchronous execution model is based on the hypothesis that internal 
-computations (\emph{reactions} in this context) run infinitely faster than the 
+computations (\emph{reactions}, in this context) run infinitely faster than the 
 rate of events that trigger them.
-In other words, the input and corresponded output are simultaneous in the 
-synchronous model, because reactions takes no time.
+In other words, the input and corresponded output are simultaneous, because 
+reactions takes no time.
 
 \begin{figure}
 \centering
 \includegraphics[width=3.0in]{sync_impl.eps}
 \caption{Schedulers for synchronous systems}
-\label{fig:concurrency.sync.impl}
+\label{fig.impl}
 \end{figure}
 
 Figure \ref{fig.impl} shows two common implementation schemes for synchronous 
@@ -320,15 +347,20 @@ each clock tick.
 %
 In both cases, each loop iteration represents a logical instant in which the 
 system as a whole reacts synchronously before going to next instant.
-During a reaction, the environment is invariant, possibly buffering incoming 
-input events to be processed further.
+%
+During a reaction, the environment is invariant and does not affect the running 
+iteration%
+\footnote{
+An actual implementation enqueues incoming input events to process them in the 
+next iterations.
+}.
 %
 Both schemes are compliant with the synchronous hypothesis, in which input and 
-resulting output happen at the same time (in this notion of time as a sequence 
-of discrete events or clock ticks).
+resulting output happen at the same time, considering this notion of time as a 
+sequence of discrete events or clock ticks.
 
 The asynchronous execution model is more general and does not make assumptions 
-of implicit synchronization.
+about implicit synchronization.
 Each entity in the system (e.g., a thread or actor) is independent from one 
 another and executes at its own speed.
 In order to coordinate at specific points, they require explicit 
@@ -337,14 +369,19 @@ synchronization primitives (e.g., mutual exclusion or message passing).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-The synchronous model can handle two desired features considering concurrency: 
-\emph{deterministic execution} and \emph{orthogonal abortion}.
-%
-These features are the reason
-which we explore in the sections that follow.
-For these
-For structured reactive programming, we argue that the synchronous model is 
-more appropriate.
+In this work, we emphasize two desired features that the synchronous model 
+makes possible for concurrent systems and that strengthen structured reactive 
+programming: \emph{deterministic execution} and \emph{orthogonal abortion}.
+
+TODO
+
+\begin{comment}
+deterministic,
+    reproducible
+abortion
+    structured programming
+    no coupling
+    just like
 
 The way each side is implemented does not affect the behavior,
 only the way you compose them (which is external to each implementation)
@@ -353,13 +390,15 @@ only the way you compose them (which is external to each implementation)
 DET and ABRT
 both yield to better reasoning
 behave the same with or without concurrency
+\end{comment}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Figure~\ref{lst.leds} shows three implementations for an application that 
 blinks two LEDs in parallel with different frequencies.
-We use two asynchronous languages (actor-based~\cite{arduino.occam} and 
-thread-based~\cite{arduino.chibios}, and also the synchronous language \CEU.
+We use two asynchronous languages (an actor-based~\cite{arduino.occam} and a 
+thread-based~\cite{arduino.chibios} language), and also the synchronous 
+language \CEU.
 %
 The intent and syntactic structure of the implementations are similar:
 composing the two blinking activities%
@@ -367,23 +406,24 @@ composing the two blinking activities%
 execution (e.g., \emph{thread}, \emph{actor}, \emph{process}, etc.).}
 in parallel.
 %
-The LEDs should blink together every 3 seconds (i.e., it is the least common 
-denominator between 600ms and 1s).
+The LEDs should blink together every 3 seconds (the least common denominator 
+between 600ms and 1s).
 %
 As we expected, the LEDs in the two asynchronous implementations loose 
-synchronism after some time of execution, while \CEU implementation remains 
-synchronized forever.
+synchronism after some time of execution, while the implementation in \CEU 
+remains synchronized forever.
 %
 The example highlights how the inherent non-determinism in the asynchronous 
 model makes hard to (blindly) compose activities supposedly synchronized: 
-unpredictable scheduling as wall as latency in message passing causes 
-asynchronism.
+unpredictable scheduling as wall as latency in message-passing eventually cause 
+observable asynchronism.
 %
-In \CEU, \code{await} is the only primitive that takes time, which the 
-programmer uses explicitly to conform with the problem specification.
-However, the internal timings for communication and computation, which the 
-programmer cannot control, are neglected in accordance to the synchronous 
-hypothesis.
+In \CEU, the \code{await} is the only primitive that takes time, but which the 
+programmer uses explicitly according with the problem specification.
+The internal timings for communication and computation, which the programmer 
+cannot control, are neglected in accordance to the synchronous hypothesis.
+The language runtime itself compensates them in the subsequent reaction in 
+order to conform with the model and remain synchronized~\cite{ceu.sensys13}.
 
 \begin{figure}[t]
 \begin{minipage}[t]{0.34\linewidth}
@@ -443,14 +483,14 @@ end
 \end{lstlisting}
 \end{minipage}
 %
-\rule{14cm}{0.37pt}
+\rule{8.5cm}{0.37pt}
 \caption{ Two blinking LEDs in OCCAM-PI, ChibiOS and \CEU.\newline
 {\small %\textmd{
 The lines of execution in parallel blink two LEDs (connected to ports 11 and 
 12) with different frequencies.
 Every 3 seconds the LEDs should light on together.
 }%}
-\label{lst.releds}
+\label{lst.leds}
 }
 \end{figure}
 
@@ -478,27 +518,32 @@ TODO
 \end{figure}
 
 Consider now the problem of aborting an \emph{activity A} as soon as an
-\emph{activity B} terminates and vice versa.
+\emph{activity B} terminates, and vice versa.
 %
 Figure~\ref{lst.abortion} shows a hypothetical construct \code{par/or} that 
 composes concurrent activities and rejoins when either of them terminates, 
 properly aborting the other.
 %
+The \code{par/or} is regarded as an orthogonal abortion construct, because the 
+composed activities do not know when and how they are aborted (i.e., abortion 
+is external to them).
+%
 In the example, each activity has a set of local variables and an execution 
 body that lasts for an arbitrary time.
-After the \code{par/or} terminates, a new set of local variables goes alive, 
-supposedly reusing the space from the locals going out of scope.
+After the \code{par/or} rejoins, a new set of local variables goes alive, 
+supposedly reusing the space from the activities' locals going out of scope.
 
-Abortion of activities in asynchronous languages is 
+Orthogonal abortion of activities in asynchronous languages is 
 challenging~\cite{esterel.preemption}.
+%
 For instance, when an activity terminates, the other activity to be aborted 
 might be on a inconsistent state (e.g., suspended but holding a lock, or 
 actually executing in another core).
 %
-Assuming that the language runtime awaits the activity to be consistent before 
-aborting it, the semantics for a \code{par/or} can either wait to rejoin 
-(delayed termination), or rejoin immediately and wait in the background 
-(immediate termination).
+In order to abort the activity on a consistent state, the language runtime has 
+two possible semantics for the \code{par/or}:
+either wait to rejoin (delayed termination);
+or rejoin immediately and wait in the background (immediate termination).
 Both options have problems:
 \begin{itemize}
 \item \textbf{delayed}:
@@ -512,83 +557,47 @@ context of embedded systems).
 \end{itemize}
 
 As matter of fact, asynchronous languages do not provide effective abortion:
-CSP supports a single composition operator that ``terminates when all of the 
+CSP only supports a composition operator that ``terminates when all of the 
 combined processes terminate''~\cite{async.csp};
 Java's \code{Thread.stop} primitive has been officially 
-deprecated~\cite{sync_async.threadstop};
-and pthread's \code{pthread\_cancel} API does not guarantee immediate 
-cancellation~\cite{snync_async.pthreadstop}.
+deprecated~\cite{sync_async.threadsstop};
+and pthread's \code{pthread\_cancel} does not guarantee immediate 
+cancellation~\cite{sync_async.pthreadsstop}.
 %
 Instead, activities must agree a on common protocol to abort each other (e.g., 
 through shared state variables or message passing).
-%
-As happens with determinism, time independence among processes and
-require explicit synchronization mechanisms. Therefore, to
-achieve the desired specification, processes <P> and <Q> must
-be tweaked with synchronization commands, breaking the
-orthogonality assumption. [4]
 
 Synchronous languages, however, provide accurate control over the life cycle of 
-concurrent activities~\cite{esterel.preemption}, because in between every 
-reaction, the whole system is idle and consistent.
+concurrent activities, because in between every reaction, the whole system is 
+idle and consistent~\cite{esterel.preemption}.
 %
-Therefore, the language can wait to abort the activity and rejoin the 
-composition, taking at most the time of a complete reaction, which the model 
-guarantees to be bounded.
+\CEU provides the presented \code{par/or} composition, which is equivalent to 
+Esterel's \code{trap} orthogonal abortion construct.
+Both abort activities immediately, which are always in a consistent state.
 %
-\CEU provides the \code{par/or} construct with the synchronous termination 
-semantics (described above).
+We show in Section~\ref{sec.ceu} how abortion integrates safely with activities 
+that use stateful resources from the environment, such as file handling and 
+network transmissions.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Even tough the deterministic and abortion examples can be properly implemented 
+in asynchronous languages, they require to tweak the activities with mutual
+synchronization primitives.
 %
-We show in Section~\ref{sec.ceu} how to integrate abortion with activities that 
-use stateful resources from the environment, such as file handling and network 
-transmissions.
+This increases the coupling degree between activities with concerns that are 
+not directly related to the problem specification.
 
+TODO
 
-, which is regarded as an orthogonal preemp-
-tion primitive [4], because composition <P> does not know
-when and why it gets aborted by event E.
+\begin{comment}
 
-
-deterministic execution and abortion
-are possible
-but require tweaking each other
-changing the implementation with synchronization concerns
-that the language could solve
-the non-concurrent version is different from the concurrent version
-
-because a reactive core only deal with input/output
-
-
-For synchronous languages, this is possible.
-In \CEU we have exactly this primitive
-
-
-all to the heap
-
-When to terminate the other / start the continuation
-When to deallocate / reallocate memory
-Again, latency (locks, middle of transmission, middle of assignment, which 
-granularity)
-which granularity? what if inside a lock?
-
-
-Even though these examples can be properly implemented in asynchronous 
-languages, they require tweaking the actor/threads with synchronization 
-primitives.
-I.e., the non-concurrent version is different and requires coupling between 
-them.
-Increase reasoning
-
-On the one hand, xxx
-determinism
-reasoning
-%
 On the other hand, the synchronous hypothesis does not hold for reactions that 
 have latency (e.g., network communication or algorithm-intensive computations),
-
-On the other hand, execution depends on the order
- reactions
-because reaction to events do not interleave in complex
+however, does not apply when the computation involves latency:
+problem communication takes time
+either communication or time consuming operations
+because now, at the speed of the program
 
 parallelism
 latency
@@ -602,19 +611,6 @@ Illustrate with two examples:
 that explore the advantages of synchronous:
 reasoning in concurrency
 seamless composition
-    abortion takes *at most* one tick
-    alternatives strong/weak, but *at most* one tick
-    async may take time (unresponsive in the meantime!)
-    even if you simulate with communication, it will take time
-
-CSP has only syntactic support for the *and* semantics
-p-threads discourages exit
-Java threads deprecated Exit
-
-                 .: determinism and
-
-1-determinism/synchronism
-2-composition
 
 communitacions is directed and takes time (because the receiver may not be 
 waiting)
@@ -634,78 +630,34 @@ information all the time.
 These two characteristics make global data consensus another property of 
 synchronous systems.
 
-
-hypothesis fail on
-however, does not apply when the computation involves latency:
-problem communication takes time
-either communication or time consuming operations
-because now, at the speed of the program
-
-Termination and abortion:
-the real problem with the asynchronous model
-implies
-heap-based objects
-
-Two examples:
-termination / memory / no composition
-time elapse / non-determinism / analogia do elevador
-
 conclusion:
 no blind/free/orthogonal composition
 no deterministic/reproducible execution
 parallelism / no-forced synch
 time-consuming / independent
 
-
-Both seminal works propose synchronous languages
-statecharts and Esterel
-so we call the
-synchrnous reactive model
-
-to contrast with interactive or the new asynchronous reactive model
-
-A recent
-
-important distinction from interactive is only the "environment speed"
-a huge difference as it implies...
-
-This definition is not the same as today:
-
-The meaning of Reactive
-
+A recent Reactive Manifesto
 
 synchronous reactive
 vs
 asynchronous reactive
 
-berry classification
-bash asynchronous
-compositions
-PAR/OR
-not really parallel
-
-diagrama com as duas formas de implementacao
-mostrar que em ambas, apenas um evento eh tratado
-"of course that reactions can trigger time-consuming operation that last 
-multiple reactions, but it is important to recognize that the programmer is 
-consious about that..."
-
-Berry classified reactive applications as...
-From this, he denied threads (ada, now threads) and also CSP-like languages 
-where communication is point-wise and takes time (csp, now erlang)
-asynchronous execution or asynchronous communication (with latency)
-
-in terms of communication
-- broadcast (single global vision of an event)
-- p2p (loose simultaneity when simulating broadcast
+\end{comment}
 
 \section{Structured Reactive Programming}
 \label{sec.ceu}
+
+- besides standard strucutred (loops, conditionals, sequences)
+- add compositions
 
 - await, sequence, vars
 - parallel, patterns, ortoghonal
 - finalize for C integration and keep orthogonality
 - organisms, static, dynamic. do T;
+
+same implementation for an activity w/o concurrency
+previously written
+no changes
 
 \section{Related work}
 
@@ -817,15 +769,6 @@ control and dataflow reactive styles in a single language.
 %We present a formal description of \CEU and show how its synchronous and 
 %static nature enables a compile-time analysis to ensure that reactions to the 
 %environment are deterministic and execute with bounded memory and CPU time.
-
-%\category{CR-number}{subcategory}{third-level}
-\category{D.3.1}{Programming Languages}{Formal Definitions and Theory}
-\category{D.3.3}{Programming Languages}{Language Constructs and Features}
-
-\terms{Design, Languages}
-
-\keywords{Concurrency, Dataflow, Determinism, Embedded Systems, Esterel, 
-Synchronous, Reactivity}
 
 \bibliographystyle{abbrv}
 \bibliography{other,my}
