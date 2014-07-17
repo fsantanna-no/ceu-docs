@@ -99,7 +99,7 @@ mathescape=true,
 
 \title {
     %Imperative and Synchronous Abstractions for Reactive Applications
-    Structured Reactive Programming
+    Abstracting Structured Reactive Programming
 }
 %\subtitle{Accepted paper in REM'13 (preprint version)}
 
@@ -138,17 +138,18 @@ Synchronous, Reactivity}
 \section{Introduction}
 \label{sec.intro}
 
-Reactive applications interact in real time and continuously with external 
+Reactive applications interact continuously and in real time with external 
 stimuli from the environment.
 They represent a wide range of software areas and platforms: from games in 
 powerful desktops, ``apps'' in capable smart phones, to the emerging internet 
 of things in constrained embedded systems.
 
 Research on special-purpose reactive languages dates back to the early 80's 
-with the co-development of two complementary styles~\cite{rp.twelve}:
+with the co-development of two complementary 
+styles~\cite{rp.twelve,rp.hypothesis}:
 %
 The imperative style of Esterel~\cite{esterel.ieee91} organizes programs with 
-structured control flow primitives, such as sequences, repetitions, and also 
+structured control flow primitives, such as sequences, repetitions, and 
 parallelism.
 %
 The dataflow style of Lustre~\cite{lustre.ieee91} represents programs as graphs 
@@ -164,125 +165,99 @@ to the domain of real-time embedded control systems.
 % such as flight control on avionics and anti-collision equipment on automobiles.
 
 As a matter of fact, imperative reactivity is now often associated to the 
-\emph{observer pattern} of object oriented languages, because it heavily relies 
-on side effects over shared data among objects~\cite{rp.deprecating,TODO}.
+\emph{observer pattern} typical in object oriented systems, because it heavily 
+relies on side effects over objects~\cite{rp.deprecating,rp.rescala}.
 %
 However, short-lived callbacks (i.e., the observers) eliminate any vestige of 
 structured programming, such as support for loops and automatic 
-variables~\cite{sync_async.cooperative}, which are an elementary capability of 
+variables~\cite{sync_async.cooperative}, which are elementary capabilities of 
 imperative languages.
 %
 In this sense, the observer pattern actually disrupts imperative reactivity, 
-becoming "our generation's \code{goto}"~\cite{goto,rp.goto,elm.goto}.
+becoming "our generation's \code{goto}"~\cite{dij.goto,rp.goto,elm.goto}.
 
-In this work, we present a comprehensive set of imperative abstractions for 
-developing structured reactive applications through the programming language 
-\CEU~\cite{ceu.sensys13}.
+In this work, we revive the synchronous imperative programming style of 
+Esterel, which we now refer as \emph{Structured Reactive Programming (SRP)}.
+%
+SRP extends classical structured programming (SP)~\cite{dij.notes} to support 
+continuous interaction with the environment through hierarchical flow 
+constructs: \emph{concatenation}, \emph{selection}, \emph{repetition}, and also 
+\emph{parallelism}.
+%
+Concretely, we consider that SRP must provide at least two fundamental 
+extensions to SP:
+%
+\begin{itemize}
+\item An \code{await <evt>} statement that suspends a line of execution until 
+the referred event occurs, keeping the whole data and control context alive.
+\item Parallel constructs that compose multiple lines of execution and make 
+them concurrent.
+\end{itemize}
+%
+The \code{await} statement captures the imperative and reactive nature of SRP, 
+recovering from the inversion of control inherent to the observer pattern, and 
+thus restoring sequential execution and support for automatic variables.
+Parallel compositions allow for multiple \code{await} statements to coexist, 
+which is necessary to handle concurrent events common in reactive applications.
+
+Our main contribution is a new mechanism for SRP, named as \emph{organisms}, 
+that abstracts parallel and \code{await} statements and offer an object-like 
+interface that other parts of the program can manipulate.
+%
+In brief, organisms are to SRP like procedures are to SP, i.e., one can 
+abstract a portion of code with a name and ``call'' that name from multiple 
+places.
+%
+There are, however, some semantic challenges that apply to organisms:
+%
+\begin{itemize}
+\item An organism is part of a concurrent program that can manipulate it and 
+affect its data and execution state.
+\item An organism is itself alive and concurrent, essentially forking the 
+calling line of execution to also accommodate it.
+\item An organism can be static or dynamic. Dynamic instances require a memory 
+management model.
+\end{itemize}
+
+We support organisms in the programming language \CEU~\cite{ceu.sensys13}.
 %
 \CEU is based on Esterel and relies on a similar synchronous and deterministic 
 execution model that simplifies the reasoning about concurrency aspects.
 %
-\CEU provides a contemporary outlook of imperative reactivity that aims to 
-expand its application domain.
+We propose a memory model for organisms that eliminates known issues in dynamic 
+allocation: \emph{memory leaks}, \emph{dangling pointers}, and the need for 
+\emph{garbage collection}.
 %
-In comparison to standard structured programming, \CEU provides three 
-fundamental extensions:
-
-\begin{itemize}
-\item An \code{await <evt>} statement to suspend a line of execution until the 
-referred event occurs, keeping the whole data and control context.
-\item Parallel constructs (\code{par}, \code{par/or}, and \code{par/and}) to 
-compose multiple lines of execution.
-\item An abstraction mechanism, named as \emph{organisms}, to reconcile data 
-and control state in a single concept.
-\end{itemize}
-
-The \code{await} statement captures the imperative and reactive nature of the 
-language, recovering from the inversion of control inherent to the observer 
-pattern, and thus restoring sequential execution and support for automatic 
-variables.
-Parallel compositions allow for multiple \code{await} statements to coexist, 
-which is fundamental to handle concurrent events common in reactive 
-applications.
-An organism abstracts parallel and \code{await} statements and offer an 
-object-like interface that other parts of the program can manipulate.
-
-Our general contribution is a language design to develop reactive systems 
-through structured control primitives.
-The language relies on a well-founded synchronous concurrency model that 
-generates deterministic
-%
-We introduce a new abstraction mechanism
-
-TODO
+The model is similar to stack-living local variables of procedures, providing 
+lexical scope and automatic allocation for organisms.
+We also restrict explicit references to organisms to avoid indirect 
+manipulation.
 
 \begin{comment}
 
-await/parallel not contributions
+TODO
 
-- rely on the synchronous execution model
-- compositions
-- than abstracting over it
-- finalization, safety
-- ortoghonal preemption
-- simple reasoning
-
-- OS/drivers are stateful
-
-Our general contribution is
-synchronous execution model that permeates all aspects
-concurrent systems that behave deterministically and their parts can be 
-composed with structured constructs.
-
-CONTRIBUTIONS:
-
-determinism
-
-distribution
-
-parallelism
-
-The major contribution of this work
-
-- dynamic synchronous
-- getting rid of .
-memory leaks, danging pointers, and garbage collection
-
-sintaxe (separar section 1 / 2)
-
-DATA+CONTROL and can be dynamically created.
-
-Given concurrency
-the synchronous model
-
-await inside a sequence or loop
-form to have multiple sequence allowing for handling multiple events at the 
-same time
-
-%
-\CEU has its roots on Esterel and relies on a similar synchronous and 
-deterministic execution model that simplifies the reasoning about concurrency 
-aspects.
-
+= CONCLUSION
+Overall, organisms reconcile data and control state in a single concept.
+\CEU provides a contemporary outlook of SRP that aims to expand its application 
+domain.
 these languages shows that imperative can be safe with a reasonable concurrency 
 model and static analysis
 
-SYNCHRONOUS
-DYNAMIC
-
-sequentiality
-composibility
-observer pattern
+= CEU
+sintaxe (separar section 1 / 2)
 
 \end{comment}
 
 The rest of the paper is organized as follows:
 Section~\ref{sec.synchronous} reviews the synchronous and asynchronous 
-execution model, justifying the former as a better choice for structured 
-reactive programming.
-Section~\ref{sec.ceu} presents.
-
-TODO
+execution model, justifying the former as a better choice for SRP.
+Section~\ref{sec.ceu} presents SRP through \CEU, with its basic control 
+mechanisms and the organisms abstraction.
+Section~\ref{sec.demo} demonstrates a complete video game for Android 
+implemented in \CEU.
+Section~\ref{sec.related} discusses related work.
+Section~\ref{sec.conclusion} concludes the paper and makes final remarks.
 
 \section{Synchronous Reactive Model}
 \label{sec.synchronous}
@@ -335,6 +310,7 @@ reactions takes no time.
 \caption{Schedulers for synchronous systems}
 \label{fig.impl}
 \end{figure}
+% Esterel, HW, \CEU, observers
 
 Figure \ref{fig.impl} shows two common implementation schemes for synchronous 
 schedulers~\cite{rp.twelve}.
@@ -367,13 +343,25 @@ In order to coordinate at specific points, they require explicit
 synchronization primitives (e.g., mutual exclusion or message passing).
 % ADA, thread-based concurrency, CSP
 
+TODO: parallelism, lasting computations
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 In this work, we emphasize two desired features that the synchronous model 
-makes possible for concurrent systems and that strengthen structured reactive 
-programming: \emph{deterministic execution} and \emph{orthogonal abortion}.
+makes possible for concurrent systems: \emph{deterministic execution} and 
+\emph{orthogonal abortion}.
+%
+In the context of reactive applications, we interpret determinism as 
+\emph{reproducible execution given the same sequence of stimuli}, i.e., the 
+outcome depends exclusively of an external input timeline, not internal timings 
+related to scheduling and communication.
+%
+Orthogonal abortion is the ability to abort
+%
+The language solves
 
-TODO
+decoupling =>
+structured programming
 
 \begin{comment}
 deterministic,
