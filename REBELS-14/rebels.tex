@@ -85,6 +85,7 @@ mathescape=true,
     numbersep=2em,
     emph={par,or,hor,do,end,loop,await,emit,input,event,call,with,command,%
           var,and,then,else,C,return,pure,deterministic,nohold,finalize,%
+          class, every, FOREVER, this,
           each, abort, when, signal, PROC, CHAN, SIGNAL, PAR},
     emphstyle={\bfseries},
     commentstyle=\color{dark}\scriptsize,
@@ -99,7 +100,7 @@ mathescape=true,
 
 \title {
     %Imperative and Synchronous Abstractions for Reactive Applications
-    Abstracting Structured Reactive Programming
+    Abstract and Structured Reactive Programming
 }
 %\subtitle{Accepted paper in REM'13 (preprint version)}
 
@@ -127,13 +128,14 @@ mathescape=true,
 \end{abstract}
 
 %\category{CR-number}{subcategory}{third-level}
-\category{D.3.1}{Programming Languages}{Formal Definitions and Theory}
+%\category{D.3.1}{Programming Languages}{Formal Definitions and Theory}
+%\category{D.3}{Programming Languages}{General}
 \category{D.3.3}{Programming Languages}{Language Constructs and Features}
 
 \terms{Design, Languages}
 
-\keywords{Concurrency, Dataflow, Determinism, Embedded Systems, Esterel, 
-Synchronous, Reactivity}
+\keywords{Concurrency, Determinism, Esterel, Imperative, Structured 
+Programming, Synchronous, Reactivity}
 
 \section{Introduction}
 \label{sec.intro}
@@ -165,7 +167,7 @@ to the domain of real-time embedded control systems.
 % such as flight control on avionics and anti-collision equipment on automobiles.
 
 As a matter of fact, imperative reactivity is now often associated to the 
-\emph{observer pattern} typical in object oriented systems, because it heavily 
+\emph{observer pattern}, typical in object oriented systems, because it heavily 
 relies on side effects over objects~\cite{rp.deprecating,rp.rescala}.
 %
 However, short-lived callbacks (i.e., the observers) eliminate any vestige of 
@@ -174,7 +176,7 @@ variables~\cite{sync_async.cooperative}, which are elementary capabilities of
 imperative languages.
 %
 In this sense, the observer pattern actually disrupts imperative reactivity, 
-becoming "our generation's \code{goto}"~\cite{dij.goto,rp.goto,elm.goto}.
+becoming ``our generation's \code{goto}''~\cite{dij.goto,rp.goto,elm.goto}.
 
 In this work, we revive the synchronous imperative programming style of 
 Esterel, which we now refer as \emph{Structured Reactive Programming (SRP)}.
@@ -229,7 +231,7 @@ allocation: \emph{memory leaks}, \emph{dangling pointers}, and the need for
 \emph{garbage collection}.
 %
 The model is similar to stack-living local variables of procedures, providing 
-lexical scope and automatic allocation for organisms.
+lexical scope and automatic bookkeeping of organisms.
 We also restrict explicit references to organisms to avoid indirect 
 manipulation.
 
@@ -259,7 +261,7 @@ implemented in \CEU.
 Section~\ref{sec.related} discusses related work.
 Section~\ref{sec.conclusion} concludes the paper and makes final remarks.
 
-\section{Synchronous Reactive Model}
+\section{The Synchronous Concurrency Model}
 \label{sec.synchronous}
 
 ``Reactive systems'' are not a new class of software and have been first 
@@ -318,11 +320,11 @@ schedulers~\cite{rp.twelve}.
 In the event-driven scheme, a loop iteration computes outputs for each event 
 occurrence.
 %
-In the sampling scheme, a loop iteration computes the inputs and outputs for 
-each clock tick.
+In the sampling scheme, a loop iteration computes the inputs and outputs on 
+every clock tick.
 %
 In both cases, each loop iteration represents a logical instant in which the 
-system as a whole reacts synchronously before going to next instant.
+system as a whole reacts synchronously before going to the next instant.
 %
 During a reaction, the environment is invariant and does not affect the running 
 iteration%
@@ -337,33 +339,57 @@ sequence of discrete events or clock ticks.
 
 The asynchronous execution model is more general and does not make assumptions 
 about implicit synchronization.
-Each entity in the system (e.g., a thread or actor) is independent from one 
-another and executes at its own speed.
-In order to coordinate at specific points, they require explicit 
-synchronization primitives (e.g., mutual exclusion or message passing).
+Each activity in the system%
+\footnote{We use the term activity to generically refer to a language's unit of 
+execution (e.g., \emph{thread}, \emph{actor}, \emph{process}, etc.).}
+is independent from one another and executes at its own pace.
+%
+For instance, an activity can perform time-consuming operations (e.g., 
+compression, cryptography) without affecting the overall progress of the 
+system.
+%
+This separation also makes many-core parallelism straightforward.
+%
+However, in order to coordinate at specific points, the activities require 
+explicit synchronization primitives (e.g., mutual exclusion or message 
+passing).
 % ADA, thread-based concurrency, CSP
-
-TODO: parallelism, lasting computations
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-In this work, we emphasize two desired features that the synchronous model 
-makes possible for concurrent systems: \emph{deterministic execution} and 
+In this work, we emphasize two desired features in concurrent systems that the 
+synchronous model makes possible: \emph{deterministic execution} and 
 \emph{orthogonal abortion}.
 %
 In the context of reactive applications, we interpret determinism as 
 \emph{reproducible execution given the same sequence of stimuli}, i.e., the 
-outcome depends exclusively of an external input timeline, not internal timings 
-related to scheduling and communication.
+outcome depends exclusively of an external input timeline, in contrast with 
+internal scheduling and communication timings.
 %
-Orthogonal abortion is the ability to abort
+Orthogonal abortion is the ability to abort an activity (from outside it) 
+without affecting the overall consistency of the system (e.g., properly 
+releasing global resources).
+
+\begin{comment}
 %
-The language solves
+Having the language to deal automatically with these features strengthen 
+structured programming, because we can compose activities together.
+%
+For instance, although adding a new activity implies extra computational 
+overhead, it does not affect the behavior of the other activities, which still 
+depend only on the input timeline.
+%
+Furthermore, if we want to abort an existing activity given a new requirement, 
+we can do it externally, without changing
+
+ determinism and abortion with these issues is interesting allows to
+compose activities while keeping them decoupled, because they need not to be 
+NOtweaked to accommodate these requirements.
+
 
 decoupling =>
 structured programming
 
-\begin{comment}
 deterministic,
     reproducible
 abortion
@@ -384,15 +410,12 @@ behave the same with or without concurrency
 
 Figure~\ref{lst.leds} shows three implementations for an application that 
 blinks two LEDs in parallel with different frequencies.
-We use two asynchronous languages (an actor-based~\cite{arduino.occam} and a 
+We use two asynchronous languages (a CSP-based~\cite{arduino.occam} and a 
 thread-based~\cite{arduino.chibios} language), and also the synchronous 
 language \CEU.
 %
 The intent and syntactic structure of the implementations are similar:
-composing the two blinking activities%
-\footnote{We use the term activity to generically refer to a language's unit of 
-execution (e.g., \emph{thread}, \emph{actor}, \emph{process}, etc.).}
-in parallel.
+composing the two blinking activities in parallel.
 %
 The LEDs should blink together every 3 seconds (the least common denominator 
 between 600ms and 1s).
@@ -407,11 +430,14 @@ unpredictable scheduling as wall as latency in message-passing eventually cause
 observable asynchronism.
 %
 In \CEU, the \code{await} is the only primitive that takes time, but which the 
-programmer uses explicitly according with the problem specification.
+programmer uses explicitly to conform with the problem specification.
 The internal timings for communication and computation, which the programmer 
 cannot control, are neglected in accordance to the synchronous hypothesis.
-The language runtime itself compensates them in the subsequent reaction in 
-order to conform with the model and remain synchronized~\cite{ceu.sensys13}.
+The language runtime compensates them in the subsequent reaction in order to 
+conform with the model and remain synchronized~\cite{ceu.sensys13}.
+%
+Arguably, reasoning over \code{await} statements is simpler than also having to 
+consider all statements of the language.
 
 \begin{figure}[t]
 \begin{minipage}[t]{0.34\linewidth}
@@ -497,9 +523,10 @@ with
 end
 <local-variables>
 \end{lstlisting}
-\caption{ TODO.\newline
+\caption{ A \code{par/or} composes two concurrent activities and rejoins when 
+one terminates, aborting the other.\newline
 {\small %\textmd{
-TODO
+%TODO
 }%}
 \label{lst.abortion}
 }
@@ -508,7 +535,7 @@ TODO
 Consider now the problem of aborting an \emph{activity A} as soon as an
 \emph{activity B} terminates, and vice versa.
 %
-Figure~\ref{lst.abortion} shows a hypothetical construct \code{par/or} that 
+Figure~\ref{lst.abortion} shows the hypothetical construct \code{par/or} that 
 composes concurrent activities and rejoins when either of them terminates, 
 properly aborting the other.
 %
@@ -521,15 +548,15 @@ body that lasts for an arbitrary time.
 After the \code{par/or} rejoins, a new set of local variables goes alive, 
 supposedly reusing the space from the activities' locals going out of scope.
 
-Orthogonal abortion of activities in asynchronous languages is 
+Orthogonal abortion in asynchronous languages is 
 challenging~\cite{esterel.preemption}.
 %
 For instance, when an activity terminates, the other activity to be aborted 
 might be on a inconsistent state (e.g., suspended but holding a lock, or 
 actually executing in another core).
 %
-In order to abort the activity on a consistent state, the language runtime has 
-two possible semantics for the \code{par/or}:
+In order to properly abort an activity, the language runtime has two possible 
+semantics for the \code{par/or}:
 either wait to rejoin (delayed termination);
 or rejoin immediately and wait in the background (immediate termination).
 Both options have problems:
@@ -537,8 +564,7 @@ Both options have problems:
 \item \textbf{delayed}:
     The program becomes unresponsive in the meantime.
 \item \textbf{immediate}:
-    The programmer may assume that both activities have terminated but one is 
-still terminating.
+    The programmer may assume that both activities have terminated.
     Also, local variables need to coexist in memory for some time, moving the 
     language allocation strategy to the heap (which is discouraged in the 
 context of embedded systems).
@@ -552,8 +578,8 @@ deprecated~\cite{sync_async.threadsstop};
 and pthread's \code{pthread\_cancel} does not guarantee immediate 
 cancellation~\cite{sync_async.pthreadsstop}.
 %
-Instead, activities must agree a on common protocol to abort each other (e.g., 
-through shared state variables or message passing).
+Instead, asynchronous activities typically agree a on common protocol to abort 
+each other (e.g., through shared state variables or message passing).
 
 Synchronous languages, however, provide accurate control over the life cycle of 
 concurrent activities, because in between every reaction, the whole system is 
@@ -561,7 +587,6 @@ idle and consistent~\cite{esterel.preemption}.
 %
 \CEU provides the presented \code{par/or} composition, which is equivalent to 
 Esterel's \code{trap} orthogonal abortion construct.
-Both abort activities immediately, which are always in a consistent state.
 %
 We show in Section~\ref{sec.ceu} how abortion integrates safely with activities 
 that use stateful resources from the environment, such as file handling and 
@@ -573,10 +598,14 @@ Even tough the deterministic and abortion examples can be properly implemented
 in asynchronous languages, they require to tweak the activities with mutual
 synchronization primitives.
 %
-This increases the coupling degree between activities with concerns that are 
-not directly related to the problem specification.
+This increases the coupling degree among activities with concerns that are not 
+directly related to the problem specification.
 
-TODO
+The two models suggest a tradeoff between unrestricted execution with real 
+parallelism versus structural composability with deterministic behavior.
+%
+For reactive applications with continuous and real-time concurrency, we believe 
+that the synchronous execution model is more appropriate.
 
 \begin{comment}
 
@@ -632,20 +661,189 @@ asynchronous reactive
 
 \end{comment}
 
-\section{Structured Reactive Programming}
+\section{Structured Reactive Programming with C\'eu}
 \label{sec.ceu}
+
+- intro
+- example
+- model
+
+\subsection{Compositions}
 
 - besides standard strucutred (loops, conditionals, sequences)
 - add compositions
-
 - await, sequence, vars
 - parallel, patterns, ortoghonal
-- finalize for C integration and keep orthogonality
-- organisms, static, dynamic. do T;
 
-same implementation for an activity w/o concurrency
-previously written
-no changes
+\subsubsection{Finalization}
+
+- finalize for C integration and keep orthogonality
+- no await inside it
+
+\subsection{Organisms}
+
+So far, no abstractions
+
+Organisms are an abstraction mechanism that reconciles data and control state 
+into the single concept.
+Organisms provide an object-like interface (data state) as well as multiple 
+lines of execution (control state).
+The syntax xxx
+
+A class of organisms is composed of an interface and a single execution body.  
+The interface exposes public variables, methods, and internal events, like in 
+object oriented programming.
+The body can contain any valid code in Céu (including parallel compositions) 
+and starts on organism instantiation, executing in parallel with the program.  
+Organism instantiation can be either static or dynamic.
+
+The example of Figure~\ref{lst.orgs} introduces static organisms through three 
+code chunks:
+%
+\begin{itemize}
+\item The leftmost code is a modified version of the two blinking LEDs of 
+Figure~\ref{lst.leds} that terminates after 1 minute.
+%
+\item The code in the middle abstracts the blinking LEDs in an organism class 
+and uses two instances to reproduce the same behavior.
+%
+\item The rightmost code is the equivalent expansion that removes organisms, 
+which should resemble the original leftmost code.
+\end{itemize}
+%
+The Blink class (lines 1-11) exposes the led and freq fields, which correspond 
+to the LED port and blinking frequency to be configured for each instance. The 
+application creates two instances, specifying the fields in the constructors 
+(lines 13-16 and 18-21). A constructor starts the instance body to execute in 
+parallel with the application. When reaching the await 1min (line 23), each 
+instance already has its body switching between \_on() and \_off() every freq 
+milliseconds (lines 5-10).
+
+The code in the left is semantically equivalent to the one in the right, which 
+expands the organisms bodies (lines 13-18 and 22-27) in a par/or with the rest 
+of the application (await 1min, in line 30). Note the await FOREVER statements 
+(lines 19 and 28) that avoid the organisms bodies to terminate the par/or. The 
+\_Blink type corresponds to a simple datatype without execution body (i.e., 
+conventional structs or records or objects).
+
+\begin{figure*}[t]
+\begin{minipage}[t]{0.28\linewidth}
+\begin{lstlisting}
+par/or do
+    every 600ms do
+        _toggle(11);
+    end
+with
+    every 1s do
+        _toggle(12);
+    end
+with
+    await 1min;
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  /* Original blink */
+\end{lstlisting}
+\end{minipage}
+%
+\begin{minipage}[t]{0.30\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=1.0em]
+class Blink with
+    var int port;
+    var int dt;
+do
+    every (dt)ms do
+        _toggle(port);
+    end
+end
+
+do
+    var Blink b1 with
+        this.port = 11;
+        this.dt   = 600;
+    end;
+
+    var Blink b2 with
+        this.port = 12;
+        this.dt   = 1000;
+    end;
+
+    await 1min;
+end
+
+
+
+
+
+
+
+  /* Blink organism */
+\end{lstlisting}
+\end{minipage}
+%
+\begin{minipage}[t]{0.32\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=1.0em]
+struct _Blink with
+    var int port;
+    var int dt;
+end;
+
+do
+    var _Blink b1, b2;
+
+    par/or do
+        // body of b1
+        b1.port = 0;
+        b1.dt   = 2;
+        every (b1.dt)ms do
+            _toggle(b1.port);
+        end
+        await FOREVER;
+    with
+        // body of b2
+        b2.port = 1;
+        b2.dt   = 4;
+        every (b2.dt)ms do
+            _toggle(b2.port);
+        end
+        await FOREVER;
+    with
+        await 1min;
+    end
+end
+
+  /* Organism expansion */
+\end{lstlisting}
+\end{minipage}
+%
+\rule{17.5cm}{0.37pt}
+\caption{ Two blink LEDs using organisms.\newline
+{\small %\textmd{
+In a realistic example, the textual overhead of a class should payoff.
+}%}
+\label{lst.orgs}
+}
+\end{figure*}
+
+\subsubsection{Dynamic Organisms}
+
+- organisms, static, dynamic. do T;
 
 \section{Related work}
 
