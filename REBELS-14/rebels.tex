@@ -759,26 +759,6 @@ Note that the equivalent expansion of \emph{CODE-3} relies on a \code{par/or}
 Furthermore, the \code{par/or} termination trigger all active finalization 
 clauses inside the organisms.
 
-- interaction
-    - events
-    - data
-    - exemplo do Ship?
-
-- procedure equivalence
-    do T with
-        ...
-    end
-
-    do
-        var T t;
-        await t.ok;
-    end
-
-    class T with
-        event void ok;
-    do
-    end
-
 \begin{figure*}[t]
 \begin{minipage}[t]{0.28\linewidth}
 \begin{lstlisting}
@@ -893,6 +873,59 @@ In a realistic example, the textual overhead of a class should payoff.
 \label{lst.orgs}
 }
 \end{figure*}
+
+An organism can be explicitly manipulated through its interface variables and 
+events.
+
+\begin{figure}[t]
+\begin{lstlisting}[numbers=left,xleftmargin=3em]
+class Unit with
+    event int move;
+do
+    var int pos = 0;
+    var int dst = 0;
+    loop do
+        par/or do
+            <code-to-move-pos-to-dst>
+            await FOREVER;
+        with
+            dst = await this.move;
+        end
+    end
+end
+var Unit u1, u2;
+emit u1.move => 100;
+await 1s;
+emit u2.move => 200;
+\end{lstlisting}
+\rule{8.5cm}{0.37pt}
+\caption{ TODO }
+\end{figure}
+
+\subsubsection{References}
+
+scopes
+    - solve the problem of lapsed listener
+
+- interaction
+    - events
+    - data
+    - exemplo do Ship?
+
+- procedure equivalence
+    do T with
+        ...
+    end
+
+    do
+        var T t;
+        await t.ok;
+    end
+
+    class T with
+        event void ok;
+    do
+    end
 
 \subsubsection{Dynamic Organisms}
 
