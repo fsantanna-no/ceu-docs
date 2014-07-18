@@ -685,35 +685,35 @@ asynchronous reactive
 % TODO: So far, no abstractions
 
 Organisms are an abstraction mechanism that reconciles data and control state 
-into the single concept.
-Organisms provide an object-like interface (data state) as well as multiple 
-lines of execution (control state).
+into a single concept.
+They provide an object-like interface (data state) as well as multiple lines of 
+execution (control state).
 % TODO: The syntax xxx
 
 A class of organisms is composed of an interface and a single execution body.  
 The interface exposes public variables, methods, and internal events, like in 
 object oriented programming.
-The body can contain any valid code in Céu (including parallel compositions) 
-and starts on organism instantiation, executing in parallel with the program.  
+The body can contain any valid code in \CEU (including parallel compositions) 
+and starts on instantiation, executing in parallel with the program.
 Organism instantiation can be either static or dynamic.
 
 The example of Figure~\ref{lst.orgs} introduces static organisms through three 
 code chunks:
 %
 \begin{itemize}
-\item The leftmost code is a modified version of the two blinking LEDs of 
-Figure~\ref{lst.leds} that terminates after 1 minute.
+\item The leftmost code (\emph{CODE-1}) is a modified version of the two 
+blinking LEDs of Figure~\ref{lst.leds} that terminates after 1 minute.
 %
-\item The code in the middle abstracts the blinking LEDs in an organism class 
-and uses two instances to reproduce the same behavior.
+\item The code in the middle (\emph{CODE-2}) abstracts the blinking LEDs in an 
+organism class and uses two instances to reproduce the same behavior.
 %
-\item The rightmost code is the equivalent expansion that removes organisms, 
-which should resemble the original leftmost code.
+\item The rightmost code (\emph{CODE-3}) is the equivalent expansion without 
+organisms, which should resemble the original leftmost code.
 \end{itemize}
 %
-In the code in the middle, the Blink class (lines 1-8) exposes the \code{port} 
-and \code{dt} fields, which correspond to the LED port and blinking period to 
-be configured for each instance.
+In \emph{CODE-2}, the Blink class (lines 1-8) exposes the \code{port} and 
+\code{dt} fields, which correspond to the LED port and blinking period to be 
+configured for each instance.
 The application creates two instances, specifying the fields in the 
 constructors (lines 11-14 and 16-19).
 A constructor starts the instance body to execute in parallel with the 
@@ -721,21 +721,43 @@ application.
 When reaching the \code{await 1min} (line 21), each instance already started 
 its body (lines 5-7).
 
-The rightmost code is semantically equivalent to the one in the middle, with 
-the organisms constructors and bodies expanded (lines 11-15 and 19-23) in a 
+\emph{CODE-3} is semantically equivalent to the one in the middle, with the 
+organisms constructors and bodies expanded (lines 11-15 and 19-23) in a 
 \code{par/or} with the rest of the application (\code{await 1min}, in line 26).  
 Note the \code{await FOREVER} statements (lines 16 and 24) that avoid the 
 organisms bodies to terminate the \code{par/or}.
 The \code{\_Blink} type (lines 1-4) corresponds to a simple datatype without 
 execution body.
 
-The expansion shows that
-From the expansion, i
+The main characteristic of organisms is that, unlike objects, they react to the 
+environment by themselves, i.e., they become alive once instantiated (hence the 
+name \emph{organisms}).
+%
+For instance, they need not be included in an global observer list, or rely on 
+the main program to feed their methods with input from the environment.
+%
+Even tough the organisms run independent from the main program, they are still 
+subject to the disciplined synchronous model, which keeps the whole system 
+deterministic.
+%
+\emph{CODE-3} shows that the equivalent expansion results in plain static \CEU, 
+as presented in Section~\ref{TODO}.
 
-- survive reactions
-- memory static
-- relies on par/or
-    - all finalization will also properly clean an organism going out of scope
+Another positive aspect of organisms regards to lexical scope and automatic 
+memory management.
+%
+\emph{CODE-2} uses a \code{do-end} block (lines 10-22) that limits the scope of 
+the organisms for 1 minute (line 21).
+%
+During that period, the organisms are accessible (through \code{b1} and 
+\code{b2}) and reactive to the environment.
+%
+Note that the equivalent expansion of \emph{CODE-3} relies on a \code{par/or} 
+(lines 9-27) that properly aborts all organisms bodies after that period (line 
+26), but before they go out of scope (line 28).
+%
+Furthermore, the \code{par/or} termination trigger all active finalization 
+clauses inside the organisms.
 
 - interaction
     - events
@@ -789,7 +811,7 @@ end
 
 
 
-  /* Original blink */
+  /* CODE-1: original blinking */
 \end{lstlisting}
 \end{minipage}
 %
@@ -824,7 +846,7 @@ end
 
 
 
-  /* Blink organism */
+  /* CODE-2: blinking organisms */
 \end{lstlisting}
 \end{minipage}
 %
@@ -859,7 +881,7 @@ do
     end
 end
 
-  /* Organism expansion */
+  /* CODE-3: organisms expansion */
 \end{lstlisting}
 \end{minipage}
 %
@@ -875,6 +897,11 @@ In a realistic example, the textual overhead of a class should payoff.
 \subsubsection{Dynamic Organisms}
 
 - organisms, static, dynamic. do T;
+- pools
+- iterators
+- weak/strong references (also for static)
+
+- ORGS relies on par/or for bodies and track refs
 
 \section{Related work}
 
