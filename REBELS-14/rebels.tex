@@ -100,7 +100,7 @@ mathescape=true,
 
 \title {
     %Imperative and Synchronous Abstractions for Reactive Applications
-    Structured Reactive Programming with Abstractions
+    Structured Programming with Reactive Abstractions
 }
 %\subtitle{Accepted paper in REM'13 (preprint version)}
 
@@ -171,7 +171,7 @@ As a matter of fact, imperative reactivity is now often associated to the
 relies on side effects~\cite{rp.deprecating,rp.rescala}.
 %
 However, short-lived callbacks (i.e., the observers) eliminate any vestige of 
-structured programming, such as support for loops and automatic 
+structured programming, such as support for endless loops and automatic 
 variables~\cite{sync_async.cooperative}, which are elementary capabilities of 
 imperative languages.
 %
@@ -186,7 +186,7 @@ continuous interaction with the environment through hierarchical control
 constructs: \emph{concatenation}, \emph{selection}, \emph{repetition}, and also 
 \emph{parallelism}.
 %
-Concretely, we consider that SRP must provide at least two fundamental 
+In practical terms, we consider that SRP must provide at least two fundamental 
 extensions to SP:
 %
 \begin{itemize}
@@ -222,7 +222,7 @@ subprograms with enduring data and control state.
 \item Organisms are part of a concurrent program that can manipulate and affect 
 their data and execution state.
 \item Organisms can be dynamically allocated, requiring a memory management 
-model that also applies to embedded systems.
+model that also must apply to embedded systems.
 \end{itemize}
 %
 We provide organisms in the Esterel-based programming language 
@@ -234,8 +234,8 @@ We provide organisms in the Esterel-based programming language
 The rest of the paper is organized as follows:
 Section~\ref{sec.synchronous} reviews the synchronous and asynchronous 
 execution model, justifying the former as a better choice for SRP.
-Section~\ref{sec.ceu} presents SRP through \CEU, with its basic control 
-mechanisms and the organisms abstraction.
+Section~\ref{sec.ceu} presents SRP in \CEU, with its basic control mechanisms 
+and the organisms abstraction.
 %Section~\ref{sec.demo} demonstrates a complete video game for Android 
 %implemented in \CEU.
 Section~\ref{sec.related} discusses related work.
@@ -268,8 +268,8 @@ program itself.
 %demands and mostly deal with accurate interrupt handling.''
 
 This distinction is fundamental because the different control perspectives 
-(i.e., \emph{at the speed of the program} vs \emph{at the speed of the 
-environment}) implies the use of different underlying concurrency models.
+(i.e., ``at the speed of the program'' vs ``at the speed of the environment'') 
+implies the use of different underlying concurrency models.
 %
 Overall, \emph{synchronous languages} deal with reactive systems better, while 
 \emph{asynchronous languages}, with interactive systems~\cite{esterel.crp}.
@@ -282,7 +282,7 @@ Esterel~\cite{esterel.ieee91}).
 
 The synchronous execution model is based on the hypothesis that internal 
 computations (\emph{reactions}, in this context) run infinitely faster than the 
-rate of events that trigger them.
+rate of events that trigger them~\cite{rp.hypothesis}.
 In other words, the input and corresponded output are simultaneous, because 
 reactions takes no time.
 
@@ -297,10 +297,10 @@ reactions takes no time.
 Figure \ref{fig.impl} shows two common implementation schemes for synchronous 
 schedulers~\cite{rp.twelve}.
 %
-In the event-driven scheme, a loop iteration computes outputs for each event 
-occurrence.
+in the event-driven scheme, a loop iteration computes outputs for each event 
+occurrence;
 %
-In the sampling scheme, a loop iteration computes the inputs and outputs on 
+in the sampling scheme, a loop iteration computes the inputs and outputs on 
 every clock tick.
 %
 In both cases, each loop iteration represents a logical instant in which the 
@@ -319,36 +319,26 @@ sequence of discrete events or clock ticks.
 
 The asynchronous execution model is more general and does not make assumptions 
 about implicit synchronization.
-Each activity in the system%
+Each activity%
 \footnote{We use the term activity to generically refer to a language's unit of 
 execution (e.g., \emph{thread}, \emph{actor}, \emph{process}, etc.).}
-is independent from one another and executes at its own pace.
+in the system is independent from one another and executes at its own pace.
 %
 For instance, an activity can perform time-consuming operations (e.g., 
-compression, cryptography) without affecting the overall progress of the 
-system.
+compression, cryptography) without obstructing other activities.
 %
-This separation also makes many-core parallelism straightforward.
+Independence of activities also makes many-core parallelism straightforward.
 %
-However, in order to coordinate at specific points, the activities require 
-explicit synchronization primitives (e.g., mutual exclusion or message 
-passing).
+However, in order to coordinate activities at specific points, the programmer 
+has to use explicit synchronization primitives (e.g., mutual exclusion or 
+message passing).
 % ADA, thread-based concurrency, CSP
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-In this work, we emphasize two desired features in concurrent systems that the 
-synchronous model makes possible: \emph{deterministic execution} and 
+In this work, we emphasize two desired features in concurrent systems that 
+implicit synchronization makes more natural: \emph{deterministic execution} and 
 \emph{orthogonal abortion}.
-%
-In the context of reactive applications, we interpret determinism as 
-\emph{reproducible execution given the same sequence of stimuli}, i.e., the 
-outcome depends exclusively of an external input timeline, in contrast with 
-internal scheduling and communication timings.
-%
-Orthogonal abortion is the ability to abort an activity (from outside it) 
-without affecting the overall consistency of the system (e.g., properly 
-releasing global resources).
 
 \begin{comment}
 %
@@ -388,6 +378,11 @@ behave the same with or without concurrency
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+In the context of reactive applications, we interpret determinism as 
+reproducible execution given the same sequence of stimuli, i.e., the outcome 
+depends exclusively of an external input timeline, in contrast with internal 
+scheduling and communication timings.
+%
 Figure~\ref{lst.leds} shows three implementations for an application that 
 blinks two LEDs in parallel with different frequencies.
 We use two asynchronous languages (a CSP-based~\cite{arduino.occam} and a 
@@ -411,13 +406,12 @@ observable asynchronism.
 %
 In \CEU, the \code{await} is the only primitive that takes time, but which the 
 programmer uses explicitly to conform with the problem specification.
-The internal timings for communication and computation, which the programmer 
-cannot control, are neglected in accordance to the synchronous hypothesis.
-The language runtime compensates them in the subsequent reaction in order to 
-conform with the model and remain synchronized~\cite{ceu.sensys13}.
+The language runtime compensates the internal timings for communication and 
+computation (which the programmer cannot control) to conform with the model and 
+remain synchronized~\cite{ceu.sensys13}.
 %
 Arguably, reasoning over \code{await} statements is simpler than also having to 
-consider all statements of the language.
+consider all other statements of the language.
 
 \begin{figure}[t]
 \begin{minipage}[t]{0.34\linewidth}
@@ -509,6 +503,10 @@ one terminates, aborting the other.
 }
 \end{figure}
 
+Orthogonal abortion is the ability to abort an activity from outside it,
+without affecting the overall consistency of the system (e.g., properly 
+releasing global resources).
+%
 Consider now the problem of aborting an \emph{activity A} as soon as an
 \emph{activity B} terminates, and vice versa.
 %
@@ -529,23 +527,18 @@ Orthogonal abortion in asynchronous languages is
 challenging~\cite{esterel.preemption}.
 %
 For instance, when an activity terminates, the other activity to be aborted 
-might be on a inconsistent state (e.g., suspended but holding a lock, or 
-actually executing in another core).
+might be on a inconsistent state (e.g., holding a lock or pending messages).
 %
-In order to properly abort an activity, the language runtime has two possible 
-semantics for the \code{par/or}:
-either wait to rejoin (delayed termination);
-or rejoin immediately and wait in the background (immediate termination).
-Both options have problems:
-\begin{itemize}
-\item \textbf{delayed}:
-    The program becomes unresponsive in the meantime.
-\item \textbf{immediate}:
-    The programmer may assume that both activities have terminated.
-    Also, local variables need to coexist in memory for some time, moving the 
-    language allocation strategy to the heap (which is discouraged in the 
-context of embedded systems).
-\end{itemize}
+In order to properly abort an activity, the language runtime has to await it to 
+be in a consistent state, resulting in two unsatisfactory semantics for the 
+\code{par/or}:
+either wait to rejoin, making the program unresponsive in the meantime;
+or rejoin immediately and wait in the background, which may confuse the 
+programmer (which may assume both activities have terminated) and also cause 
+race conditions with the \code{par/or} continuation.
+Another problem is that local variables need to coexist in memory for some 
+time, moving the language allocation strategy to the heap (which is discouraged 
+in the context of embedded systems).
 
 As matter of fact, asynchronous languages do not provide effective abortion:
 CSP only supports a composition operator that ``terminates when all of the 
@@ -641,13 +634,10 @@ asynchronous reactive
 \section{Structured Reactive Programming with C\'eu}
 \label{sec.ceu}
 
-TODO
-
-\begin{comment}
-- intro
-- example
-- model
-\end{comment}
+\CEU is a Esterel-based synchronous language, in which its lines of execution, 
+known as \emph{trails}, react continuously to external stimuli.
+%
+Figure~\ref{lst.syntax} shows a compact reference of the syntax of \CEU.
 
 \begin{figure}[t]
 \begin{lstlisting}%[backgroundcolor=\color{white}]
@@ -687,10 +677,64 @@ do
 end
 \end{lstlisting}
 %\rule{8.5cm}{0.37pt}
-\caption{ Syntax of \CEU.\newline
-{\small %\textmd{
-}%}
+\caption{ Syntax of \CEU.
 \label{lst.syntax}
+}
+\end{figure}
+
+The introductory example of Figure~\ref{lst.intro} starts two trails with the 
+\code{par} statement: the first increments variable \code{v} on every second 
+and prints it on screen; the second resets \code{v} on every \code{RESET} 
+external request.
+%
+The input event \code{RESET} (line 1) represents the interface of the program 
+with external requests.
+The loop in the first trail (lines 4-7) continuously waits for 1 second, 
+increments variable \code{v}, and prints its current value.
+The loop in the second trail (lines 9-11) resets \code{v} on every occurrence 
+of \code{RESET}.
+%
+Programs in \CEU can access $C$ libraries available in the underlying platform 
+by prefixing symbols with an underscore (e.g., \code{\_printf(<...>)}).
+
+In the synchronous execution model of \CEU, the program must react completely 
+to the occurring event before handling the next.
+%
+In case multiple trails react to the same event, the scheduler employs lexical 
+order to preserve determinism.
+%
+The language also ensures that all loops have \code{await} statements on their 
+bodies to avoid infinite execution.
+\cite{ceu.sensys13}.
+
+In the example, accesses to variable \code{v} are always atomic because 
+reactions to \code{1s} and \code{RESET} can never interleave.
+%
+In contrast, in a model with nondeterministic scheduling, the occurrence of 
+\code{RESET} could preempt the first trail during an increment to \code{v} 
+(line 5) and reset it (line 10) before printing it (line 5), characterizing a 
+race condition on the variable.
+%
+The example illustrates the (simpler) reasoning about concurrency aspects under 
+the synchronous execution model.
+
+\begin{figure}[t]
+\begin{lstlisting}[numbers=left,xleftmargin=3em]
+input void RESET;  // declares an external event
+var int v = 0;
+par do
+    every 1s do    // 1st trail
+        v = v + 1;
+        _printf("v = %d\n", v);
+    end
+with
+    every RESET do // 2nd trail
+        v = 0;
+    end
+end
+\end{lstlisting}
+\caption{ Introductory example in \CEU.
+\label{lst.intro}
 }
 \end{figure}
 
@@ -831,8 +875,8 @@ purpose~\cite{ceu.sensys13}.
 
 %\subsubsection{Finalization}
 
-Programs in \CEU can access $C$ libraries available in the underlying platform 
-by prefixing symbols with an underscore (e.g., \code{\_printf(<...>)}).
+%Programs in \CEU can access $C$ libraries available in the underlying platform 
+%by prefixing symbols with an underscore (e.g., \code{\_printf(<...>)}).
 %
 However, the interaction of stateful $C$ functions with \code{par/or} 
 compositions and automatic variables of \CEU demands attention.
