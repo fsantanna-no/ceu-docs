@@ -30,6 +30,7 @@ Programa detalhado
     - Sistemas reativos
 
 * Modelos de Concorrência
+    - Concorrência e Paralelismo
     - Modelo assíncrono
         - Sincronismo explícito
         - *Threads* (memória compartilhada)
@@ -64,7 +65,7 @@ Programa detalhado
     - Mini testes baseados em leitura de artigos científicos
     - Pequenos projetos
     - Projeto final
-    <!--- Escolher uma outra ferramenta e discutir o modelo de execução.-->
+    <!-- - Escolher uma outra ferramenta e discutir o modelo de execução. -->
 
 Aulas
 -----
