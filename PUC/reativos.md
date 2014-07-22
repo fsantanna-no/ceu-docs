@@ -13,11 +13,13 @@ Eles representam um campo amplo de aplicações e plataformas de hardware:
 de jogos eletrônicos em *desktops*, passando por *apps* em celulares 
 inteligentes, até a emergente internet das coisas em sistemas embarcados.
 
-Neste curso iremos abordar os sistemas reativos sob diversos aspectos: os 
-modelos de concorrência e linguagens
-- plataformas e ferramentas diferentes
+Neste curso iremos abordar os sistemas reativos sob diversos aspectos de 
+software: modelos de concorrência, linguagens, técnicas de programação, e 
+aplicações em diversas plataformas.
 
-plataformas
+Ementa: Sistemas Reativos, Modelos de Concorrência Síncrono e Assíncrono, 
+Padrão *Observer*, Máquinas de Estado, Corrotinas, Programação Reativa 
+Funcional, Jogos, Arduino, Redes de Sensores sem Fio, Projeto.
 
 Programa detalhado
 ------------------
@@ -82,6 +84,7 @@ Aulas
 <tr><th>2</th><td>
 <ul>
     <li> Modelos de Concorrência
+    <li> Concorrência e Paralelismo
     <li> Padrão Observer
 </ul>
 <!--
