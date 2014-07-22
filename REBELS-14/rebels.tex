@@ -656,7 +656,6 @@ emit  <id> => <exp>;      // emits  event
 if <...> then <...>       // conditional
          else <...> end
 loop do <...> end         // repetition
-every <id> do <...> end   // repetition
     break                 //   (escape repetition)
 finalize <...>            // finalization
     with <...> end
@@ -689,9 +688,9 @@ external request.
 %
 The input event \code{RESET} (line 1) represents the interface of the program 
 with external requests.
-The loop in the first trail (lines 4-7) continuously waits for 1 second, 
+The loop in the first trail (lines 4-8) continuously waits for 1 second, 
 increments variable \code{v}, and prints its current value.
-The loop in the second trail (lines 9-11) resets \code{v} on every occurrence 
+The loop in the second trail (lines 10-13) resets \code{v} on every occurrence 
 of \code{RESET}.
 %
 Programs in \CEU can access $C$ libraries available in the underlying platform 
@@ -712,7 +711,7 @@ reactions to \code{1s} and \code{RESET} can never interleave.
 %
 In contrast, in a model with nondeterministic scheduling, the occurrence of 
 \code{RESET} could preempt the first trail during an increment to \code{v} 
-(line 5) and reset it (line 10) before printing it (line 5), characterizing a 
+(line 6) and reset it (line 12) before printing it (line 7), characterizing a 
 race condition on the variable.
 %
 The example illustrates the (simpler) reasoning about concurrency aspects under 
@@ -720,15 +719,17 @@ the synchronous execution model.
 
 \begin{figure}[t]
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
-input void RESET;  // declares an external event
+input void RESET;   // declares an external event
 var int v = 0;
 par do
-    every 1s do    // 1st trail
+    loop do         // 1st trail
+        await 1s;
         v = v + 1;
         _printf("v = %d\n", v);
     end
 with
-    every RESET do // 2nd trail
+    loop do         // 2nd trail
+        await RESET;
         v = 0;
     end
 end
@@ -821,7 +822,7 @@ and one with the remaining functionality of the protocol (collapsed in line
 20).
 %
 As compositions can be nested, the periodic transmission is another loop that 
-starts two other trails (lines 7-18):
+starts two other trails (lines 8-17):
 one to handle an immediate retransmission request (line 9);
 and one to await a small random amount of time and transmit the status packet.
 %
@@ -988,20 +989,20 @@ organism class and uses two instances to reproduce the same behavior.
 organisms, which should resemble the original leftmost code.
 \end{itemize}
 %
-In \emph{CODE-2}, the Blink class (lines 1-8) exposes the \code{port} and 
+In \emph{CODE-2}, the Blink class (lines 1-9) exposes the \code{port} and 
 \code{dt} fields, which correspond to the LED port and blinking period to be 
 configured for each instance.
 The application creates two instances, specifying the fields in the 
-constructors (lines 11-14 and 16-19).
+constructors (lines 12-15 and 17-20).
 A constructor starts the instance body to execute in parallel with the 
 application.
-When reaching the \code{await 1min} (line 21), each instance already started 
-its body (lines 5-7).
+When reaching the \code{await 1min} (line 22), each instance already started 
+its body (lines 5-8).
 
 \emph{CODE-3} is semantically equivalent to the one in the middle, with the 
-organisms constructors and bodies expanded (lines 11-15 and 19-23) in a 
-\code{par/or} with the rest of the application (\code{await 1min}, in line 26).  
-Note the \code{await FOREVER} statements (lines 16 and 24) that avoid the 
+organisms constructors and bodies expanded (lines 11-16 and 20-25) in a 
+\code{par/or} with the rest of the application (\code{await 1min}, in line 28).  
+Note the \code{await FOREVER} statements (lines 17 and 26) that avoid the 
 organisms bodies to terminate the \code{par/or}.
 The \code{\_Blink} type (lines 1-4) corresponds to a simple datatype without 
 execution body.
@@ -1022,15 +1023,15 @@ deterministic.
 Another positive aspect of organisms regards to lexical scope and automatic 
 memory management.
 %
-\emph{CODE-2} uses a \code{do-end} block (lines 10-22) that limits the scope of 
-the organisms for 1 minute (line 21).
+\emph{CODE-2} uses a \code{do-end} block (lines 11-23) that limits the scope of 
+the organisms for 1 minute (line 22).
 %
 During that period, the organisms are accessible (through \code{b1} and 
 \code{b2}) and reactive to the environment.
 %
 Note that the equivalent expansion of \emph{CODE-3} relies on a \code{par/or} 
-(lines 9-27) that properly aborts all organisms bodies after that period (line 
-26), but before they go out of scope (line 28).
+(lines 9-29) that properly aborts all organisms bodies after that period (line 
+28), but before they go out of scope (line 30).
 %
 Furthermore, the \code{par/or} termination trigger all active finalization 
 clauses inside the organisms.
@@ -1039,11 +1040,13 @@ clauses inside the organisms.
 \begin{minipage}[t]{0.28\linewidth}
 \begin{lstlisting}
 par/or do
-    every 600ms do
+    loop do
+        await 600ms;
         _toggle(11);
     end
 with
-    every 1s do
+    loop do
+        await 1s;
         _toggle(12);
     end
 with
@@ -1067,17 +1070,18 @@ end
 
 
 
-  /* CODE-1: original blinking */
+/* CODE-1: original blinking */
 \end{lstlisting}
 \end{minipage}
 %
-\begin{minipage}[t]{0.30\linewidth}
-\begin{lstlisting}[numbers=left,xleftmargin=1.0em]
+\begin{minipage}[t]{0.32\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=3.5em]
 class Blink with
     var int port;
     var int dt;
 do
-    every (dt)ms do
+    loop do
+        await (dt)ms;
         _toggle(port);
     end
 end
@@ -1102,12 +1106,13 @@ end
 
 
 
-  /* CODE-2: blinking organisms */
+
+/* CODE-2: blinking organisms */
 \end{lstlisting}
 \end{minipage}
 %
-\begin{minipage}[t]{0.32\linewidth}
-\begin{lstlisting}[numbers=left,xleftmargin=1.0em]
+\begin{minipage}[t]{0.34\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=3.5em]
 struct _Blink with
     var int port;
     var int dt;
@@ -1120,7 +1125,8 @@ do
         // body of b1
         b1.port = 0;
         b1.dt   = 2;
-        every (b1.dt)ms do
+        loop do
+            await (b1.dt)ms;
             _toggle(b1.port);
         end
         await FOREVER;
@@ -1128,7 +1134,8 @@ do
         // body of b2
         b2.port = 1;
         b2.dt   = 4;
-        every (b2.dt)ms do
+        loop do
+            await (b2.dt)ms;
             _toggle(b2.port);
         end
         await FOREVER;
@@ -1137,7 +1144,7 @@ do
     end
 end
 
-  /* CODE-3: organisms expansion */
+/* CODE-3: organisms expansion */
 \end{lstlisting}
 \end{minipage}
 %
