@@ -65,7 +65,8 @@ Programa detalhado
     - Mini testes baseados em leitura de artigos científicos
     - Pequenos projetos
     - Projeto final
-    <!-- - Escolher uma outra ferramenta e discutir o modelo de execução. -->
+
+<!-- - Escolher uma outra ferramenta e discutir o modelo de execução. -->
 
 Aulas
 -----
