@@ -100,7 +100,8 @@ mathescape=true,
 
 \title {
     %Imperative and Synchronous Abstractions for Reactive Applications
-    Structured Programming with Reactive Abstractions
+    %Structured Programming with Reactive Abstractions
+    Structured Reactive Programming
 }
 %\subtitle{Accepted paper in REM'13 (preprint version)}
 
@@ -178,30 +179,35 @@ imperative languages.
 In this sense, the observer pattern actually disrupts imperative reactivity, 
 becoming ``our generation's \code{goto}''~\cite{dij.goto,rp.goto,elm.goto}.
 
-In this work, we revive the synchronous imperative programming style of 
-Esterel, which we now refer as \emph{Structured Reactive Programming (SRP)}.
+In this work, we revive the imperative style of Esterel, which we now refer as 
+\emph{Structured Reactive Programming (SRP)}.
 %
 SRP extends classical structured programming (SP)~\cite{dij.notes} to support 
 continuous interaction with the environment through hierarchical control 
 constructs: \emph{concatenation}, \emph{selection}, \emph{repetition}, and also 
 \emph{parallelism}.
-%
+
 In practical terms, we consider that SRP must provide at least two fundamental 
 extensions to SP:
-%
-\begin{itemize}
-\item An \code{await <evt>} statement that suspends a line of execution until 
-the referred event occurs, keeping the whole data and control context alive.
-\item Parallel constructs that compose multiple lines of execution and make 
-them concurrent.
-\end{itemize}
+an ``\code{await <event>}'' statement that suspends a line of execution until 
+the referred event occurs, keeping the whole data and control context alive;
+and parallel constructs that compose multiple lines of execution and make them 
+concurrent.
 %
 The \code{await} statement captures the imperative and reactive nature of SRP, 
-recovering from the inversion of control inherent to the observer pattern, and 
-thus restoring sequential execution and support for automatic variables.
+%recovering from the inversion of control inherent to the observer pattern, and 
+%thus
+restoring sequential execution and support for automatic variables.
 Parallel compositions allow for multiple \code{await} statements to coexist, 
 which is necessary to handle concurrent events common in reactive applications.
 
+We promote the use of the imperative reactive language 
+\CEU~\cite{ceu.sensys13}, a contemporary outlook of SRP that aims to expand its 
+application domain.
+%
+\CEU is based on Esterel and relies on a similar synchronous and deterministic 
+execution model that simplifies the reasoning about concurrency aspects.
+%
 Our contribution is a new abstraction mechanism that aims to expand the rigid 
 embedded domain of SRP with better support for code reuse and a tractable 
 memory model.
@@ -224,16 +230,12 @@ their data and execution state.
 \item Organisms can be dynamically allocated, requiring a memory management 
 model that also must apply to embedded systems.
 \end{itemize}
-%
-We provide organisms in the Esterel-based programming language 
-\CEU~\cite{ceu.sensys13}.
-%
-%\CEU is based on Esterel and relies on a similar synchronous and deterministic 
-%execution model that simplifies the reasoning about concurrency aspects.
 
 The rest of the paper is organized as follows:
+TODO--
 Section~\ref{sec.synchronous} reviews the synchronous and asynchronous 
 execution model, justifying the former as a better choice for SRP.
+--
 Section~\ref{sec.ceu} presents SRP in \CEU, with its basic control mechanisms 
 and the organisms abstraction.
 %Section~\ref{sec.demo} demonstrates a complete video game for Android 
@@ -241,13 +243,26 @@ and the organisms abstraction.
 Section~\ref{sec.related} discusses related work.
 Section~\ref{sec.conclusion} concludes the paper and makes final remarks.
 
-\section{The Synchronous Concurrency Model}
+\section{A Reactive Concurrency Model}
 \label{sec.synchronous}
 
 ``Reactive systems'' are not a new class of software and have been first 
 described by Harel as being ``repeatedly prompted by the outside world and 
 their role is to continuously respond to external 
 inputs''~\cite{statecharts.reactive}.
+%
+Berry goes further and makes a subtle distinction between ``interactive'' and 
+``reactive'' systems~\cite{rp.synchronous}, in which the former communicate 
+``at their own speed with users or with other programs'', while the latter, 
+``at a speed which is determined by the environment, not by the program itself.
+%
+Overall, \emph{synchronous languages} deal with reactive systems better, while 
+\emph{asynchronous languages}, with interactive systems~\cite{esterel.crp}.
+%
+Both authors propose synchronous languages for designing reactive systems 
+(Statecharts~\cite{statecharts.visual} and Esterel~\cite{esterel.ieee91}).
+
+\begin{comment}
 In comparison to traditional ``transformational systems'', he recognises 
 reactive systems as ``particularly problematic when it comes to finding 
 satisfactory methods for behavioral description''.
@@ -270,13 +285,7 @@ program itself.
 This distinction is fundamental because the different control perspectives 
 (i.e., ``at the speed of the program'' vs ``at the speed of the environment'') 
 implies the use of different underlying concurrency models.
-%
-Overall, \emph{synchronous languages} deal with reactive systems better, while 
-\emph{asynchronous languages}, with interactive systems~\cite{esterel.crp}.
-%
-Both mentioned authors propose synchronous languages for designing reactive 
-systems (Statecharts~\cite{statecharts.visual} and 
-Esterel~\cite{esterel.ieee91}).
+\end{comment}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -285,7 +294,16 @@ computations (\emph{reactions}, in this context) run infinitely faster than the
 rate of events that trigger them~\cite{rp.hypothesis}.
 In other words, the input and corresponded output are simultaneous, because 
 reactions takes no time.
+A reaction represents a logical instant in which the system as a whole reacts 
+synchronously before going to the next instant.
+%
+During a reaction, the environment is invariant and does not interrupt it%
+\footnote{
+An actual implementation enqueues incoming input events to process them in the 
+next iterations.
+}.
 
+\begin{comment}
 \begin{figure}
 \centering
 \includegraphics[width=3.0in]{sync_impl.eps}
@@ -316,6 +334,7 @@ next iterations.
 Both schemes are compliant with the synchronous hypothesis, in which input and 
 resulting output happen at the same time, considering this notion of time as a 
 sequence of discrete events or clock ticks.
+\end{comment}
 
 The asynchronous execution model is more general and does not make assumptions 
 about implicit synchronization.
@@ -377,6 +396,8 @@ behave the same with or without concurrency
 \end{comment}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Deterministic Execution}
 
 In the context of reactive applications, we interpret determinism as 
 reproducible execution given the same sequence of stimuli, i.e., the outcome 
@@ -484,6 +505,8 @@ Every 3 seconds the LEDs should light on together.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\subsection{Orthogonal Abortion}
+
 \begin{figure}[t]
 \begin{lstlisting}
 par/or do
@@ -564,8 +587,11 @@ network transmissions.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Even tough the deterministic and abortion examples can be properly implemented 
-in asynchronous languages, they require to tweak the activities with mutual
+\subsection{The case for synchrony}
+
+Even tough the presented deterministic and abortion examples can be properly 
+implemented in asynchronous languages, they require to tweak the activities 
+with mutual
 synchronization primitives.
 %
 This increases the coupling degree among activities with concerns that are not 
@@ -1300,8 +1326,7 @@ TODO
 
 \begin{comment}
 Overall, organisms reconcile data and control state in a single concept.
-\CEU provides a contemporary outlook of SRP that aims to expand its application 
-domain.
+
 these languages shows that imperative can be safe with a reasonable concurrency 
 model and static analysis
 
