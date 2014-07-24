@@ -232,19 +232,17 @@ model that also must apply to embedded systems.
 \end{itemize}
 
 The rest of the paper is organized as follows:
-TODO--
-Section~\ref{sec.synchronous} reviews the synchronous and asynchronous 
-execution model, justifying the former as a better choice for SRP.
---
-Section~\ref{sec.ceu} presents SRP in \CEU, with its basic control mechanisms 
-and the organisms abstraction.
+Section~\ref{sec.models} justifies the synchronous concurrency model as better 
+choice for SRP.
+Section~\ref{sec.ceu} presents SRP in \CEU, reviewing the basic control 
+mechanisms and formulating the organisms abstraction.
 %Section~\ref{sec.demo} demonstrates a complete video game for Android 
 %implemented in \CEU.
 Section~\ref{sec.related} discusses related work.
 Section~\ref{sec.conclusion} concludes the paper and makes final remarks.
 
 \section{A Reactive Concurrency Model}
-\label{sec.synchronous}
+\label{sec.models}
 
 ``Reactive systems'' are not a new class of software and have been first 
 described by Harel as being ``repeatedly prompted by the outside world and 
@@ -355,9 +353,8 @@ message passing).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-In this work, we emphasize two desired features in concurrent systems that 
-implicit synchronization makes more natural: \emph{deterministic execution} and 
-\emph{orthogonal abortion}.
+We highlight two benefits the synchronous execution model brings to SRP:
+\emph{deterministic execution} and \emph{orthogonal abortion}.
 
 \begin{comment}
 %
@@ -403,7 +400,7 @@ In the context of reactive applications, we interpret determinism as
 reproducible execution given the same sequence of stimuli, i.e., the outcome 
 depends exclusively of an external input timeline, in contrast with internal 
 scheduling and communication timings.
-%
+
 Figure~\ref{lst.leds} shows three implementations for an application that 
 blinks two LEDs in parallel with different frequencies.
 We use two asynchronous languages (a CSP-based~\cite{arduino.occam} and a 
@@ -419,7 +416,7 @@ between 600ms and 1s).
 As we expected, the LEDs in the two asynchronous implementations loose 
 synchronism after some time of execution, while the implementation in \CEU 
 remains synchronized forever.
-%
+
 The example highlights how the inherent non-determinism in the asynchronous 
 model makes hard to (blindly) compose activities supposedly synchronized: 
 unpredictable scheduling as wall as latency in message-passing eventually cause 
@@ -495,9 +492,9 @@ end
 %\rule{8.5cm}{0.37pt}
 \caption{ Two blinking LEDs in OCCAM-PI, ChibiOS and \CEU.\newline
 {\small %\textmd{
-The lines of execution in parallel blink two LEDs (connected to ports 11 and 
-12) with different frequencies.
-Every 3 seconds the LEDs should light on together.
+%The lines of execution in parallel blink two LEDs (connected to ports 11 and 
+%12) with different frequencies.
+%Every 3 seconds the LEDs should light on together.
 }%}
 \label{lst.leds}
 }
