@@ -163,8 +163,8 @@ modernized the dataflow style and became mainstream, deriving a number of
 languages and libraries, such as Flapjax~\cite{frp.flapjax}, Rx (from 
 Microsoft), React (from Facebook), and Elm~\cite{frp.elm}.
 %
-In contrast, the imperative style did not follow this trend and is now confined 
-to the domain of real-time embedded control systems.
+In contrast, the imperative style of Esterel did not follow this trend and is 
+now confined to the domain of real-time embedded control systems.
 % such as flight control on avionics and anti-collision equipment on automobiles.
 
 As a matter of fact, imperative reactivity is now often associated to the 
@@ -172,12 +172,12 @@ As a matter of fact, imperative reactivity is now often associated to the
 relies on side effects~\cite{rp.deprecating,rp.rescala}.
 %
 However, short-lived callbacks (i.e., the observers) eliminate any vestige of 
-structured programming, such as support for lasting loops and automatic 
+structured programming, such as support for long-lasting loops and automatic 
 variables~\cite{sync_async.cooperative}, which are elementary capabilities of 
 imperative languages.
 %
-In this sense, the observer pattern actually disrupts imperative reactivity, 
-becoming ``our generation's \code{goto}''~\cite{dij.goto,rp.goto,elm.goto}.
+In this sense, callbacks actually disrupt imperative reactivity, becoming ``our 
+generation's \code{goto}''~\cite{dij.goto,rp.goto,elm.goto}.
 
 In this work, we revive the imperative style of Esterel, which we now refer as 
 \emph{Structured Reactive Programming (SRP)}.
@@ -187,10 +187,9 @@ Programming (SP)} (i.e., concatenation, selection, and
 repetition~\cite{dij.notes}) to support continuous interaction with the 
 environment.
 %
-In practical terms, we consider that SRP must provide at least two fundamental 
-extensions to SP:
+In practical terms, SRP provides two extensions to SP:
 an ``\code{await <event>}'' statement that suspends a line of execution until 
-the referred event occurs, keeping the whole data and control context alive;
+the referred event occurs, keeping all context alive;
 and parallel constructs that compose multiple lines of execution and make them 
 concurrent.
 %
@@ -198,29 +197,34 @@ The \code{await} statement captures the imperative and reactive nature of SRP,
 %recovering from the inversion of control inherent to the observer pattern, and 
 %thus
 restoring sequential execution and support for automatic variables.
-Parallel compositions allow for multiple \code{await} statements to coexist, 
-which is necessary to handle concurrent events common in reactive applications.
+Parallel compositions%
+\footnote{
+We use the term \emph{parallel composition} as a synonym for \emph{lexical 
+side-by-side composition}, which does not imply many-core parallel execution.
+}
+allow for multiple \code{await} statements to coexist, which is necessary to 
+handle concurrent events, common in reactive applications.
 
-TODO: present?
-We promote the use of the language \CEU~\cite{ceu.sensys13}, a contemporary 
-outlook of SRP that aims to expand it from the rigid embedded domain.
+We present SRP through the language \CEU~\cite{ceu.sensys13}, a contemporary 
+outlook of imperative reactivity that aims to expand it from the rigid embedded 
+domain.
 %
 \CEU is based on Esterel and relies on a similar synchronous and deterministic 
 execution model that simplifies the reasoning about concurrency aspects.
 %
-Our main contribution are the \emph{organisms}, a new abstraction mechanism to 
-support parallel and \code{await} control structures and offer an object-like 
-interface that other parts of the program can manipulate.
+Our main contribution is a new abstraction mechanism, the \emph{organisms}, 
+that provide a parallel execution body with an object-like interface.
+% that other parts of the program can manipulate.
 %
 In brief, organisms are to SRP like procedures are to SP, i.e., one can 
-abstract a portion of code with a name and ``call'' that name from multiple 
-places.
+abstract a portion of code with a name and manipulate (call) that name from 
+multiple places.
 %
-There are, however, some semantic challenges that apply to organisms:
+There are, however, additional challenges that apply to organisms:
 %
 \begin{itemize}
-\item Organisms are themselves alive and concurrent, acting as subprograms with 
-continuous data and control state.
+\item Organisms are themselves alive, acting as subprograms with continuous 
+data and control state.
 \item Organisms are part of a concurrent program that can manipulate and affect 
 their data and execution state.
 \item Organisms can be dynamically allocated, requiring a memory management 
@@ -241,25 +245,26 @@ Section~\ref{sec.conclusion} concludes the paper and makes final remarks.
 \section{Structured Reactive Programming with C\'eu}
 \label{sec.ceu}
 
-\CEU is a Esterel-based synchronous language, in which its lines of execution, 
-known as \emph{trails}, react continuously to external stimuli.
+\CEU is a concurrent language, in which its lines of execution, known as 
+\emph{trails}, react continuously to external stimuli, all together in 
+synchronous steps.
 %
 Figure~\ref{lst.syntax} shows a compact reference of \CEU.
 
 The introductory example of Figure~\ref{lst.intro} starts two trails with the 
-\code{par} statement: the first increments variable \code{v} on every second 
-and prints it on screen; the second resets \code{v} on every \code{RESET} 
-external request.
+\code{par} construct: the first (lines 4-8) increments variable \code{v} on 
+every second and prints its value on screen; the second (lines 10-13) resets 
+\code{v} on every external request to \code{RESET}.
 %
-The input event \code{RESET} (line 1) represents the interface of the program 
-with external requests.
-The loop in the first trail (lines 4-8) continuously waits for 1 second, 
-increments variable \code{v}, and prints its current value.
-The loop in the second trail (lines 10-13) resets \code{v} on every occurrence 
-of \code{RESET}.
+%The input event \code{RESET} (line 1) represents the interface of the program 
+%with external requests.
+%The loop in the first trail (lines 4-8) continuously waits for 1 second, 
+%increments variable \code{v}, and prints its current value.
+%The loop in the second trail (lines 10-13) resets \code{v} on every occurrence 
+%of \code{RESET}.
 %
-Programs in \CEU can access $C$ libraries available in the underlying platform 
-by prefixing symbols with an underscore (e.g., \code{\_printf(<...>)}).
+Programs in \CEU can access $C$ libraries of the underlying platform by 
+prefixing symbols with an underscore (e.g., \code{\_printf(<...>)}).
 
 \begin{figure}[t]
 \begin{lstlisting}%[backgroundcolor=\color{white}]
@@ -279,8 +284,6 @@ if <...> then <...>       // conditional
          else <...> end
 loop do <...> end         // repetition
     break                 //   (escape repetition)
-finalize <...>            // finalization
-    with <...> end
 
 // PARALLEL COMPOSITIONS
 par/and do <...>          // rejoins on both sides
@@ -289,6 +292,11 @@ par/or do  <...>          // rejoins on any side
       with <...> end
 par do <...>              // never rejoins
   with <...> end
+
+// C INTEGRATION
+_f();                   // C call (prefix `_')
+finalize <...>          // finalization
+    with <...> end
 
 // ORGANISMS
 class <T> with
@@ -317,8 +325,8 @@ or terminate.
 During a reaction, the environment is invariant and does not interrupt the 
 running trails%
 \footnote{
-The actual implementation enqueues incoming input events to process them in the 
-incoming reactions.
+The actual implementation enqueues incoming input events to process them in 
+further reactions.
 }.
 If multiple trails react to the same event, the scheduler employs lexical order 
 to preserve determinism, i.e., the trail that appears first in the source code 
@@ -327,9 +335,9 @@ executes first.
 To avoid infinite execution for reactions, \CEU ensures that all loops have 
 \code{await} statements on their bodies~\cite{ceu.sensys13}.
 
-In the example of Figure~\ref{lst.intro}, accesses to variable \code{v} are 
-always atomic because reactions to \code{1s} and \code{RESET} can never 
-interleave.
+As a result of synchronous execution, all operations to variable \code{v} in 
+Figure~\ref{lst.intro} are atomic, because reactions to \code{1s} and 
+\code{RESET} can never interleave.
 %
 In contrast, in an asynchronous model with nondeterministic scheduling, the 
 occurrence of \code{RESET} could preempt the first trail during an increment to 
@@ -363,85 +371,89 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Above all, the synchronous model empowers SRP with an \emph{orthogonal 
-abortion} construct.
-%
-Orthogonal abortion is the ability to abort an activity
+The synchronous model also empowers SRP with an \emph{orthogonal abortion} 
+construct that simplifies the composition of activities%
 \footnote{We use the term activity to generically refer to a language's unit of 
-execution (e.g., \emph{thread}, \emph{actor}, \emph{process}, etc.).}
-from outside it, without affecting the overall consistency of the system (e.g., 
-properly releasing global resources).
+execution (e.g., \emph{thread}, \emph{actor}, \emph{trail}, etc.).}.
 %
-Figure~\ref{lst.abortion} shows the hypothetical construct \code{par/or} that 
-composes concurrent activities and rejoins when either of them terminates, 
-properly aborting the other.
+Orthogonal abortion is the ability to abort an activity from outside it, 
+without affecting the overall consistency of the system (e.g., properly 
+releasing global resources).
 %
-The \code{par/or} is regarded as orthogonal because the composed activities do 
-not know when and how they are aborted (i.e., abortion is external to them).
+Figure~\ref{lst.abortion} shows the \code{par/or} construct of \CEU to compose 
+trails and rejoin when either of them terminates, properly aborting the other.
 %
-In the example, each activity has a set of local variables and an execution 
-body that lasts for an arbitrary time.
-After the \code{par/or} rejoins, a new set of local variables goes alive, 
-supposedly reusing the space from the activities' locals going out of scope.
+The \code{par/or} is regarded as orthogonal because the composed trails do not 
+know when and how they are aborted (i.e., abortion is external to them).
+%
+In the figure, each trail has a set of local variables and an execution body 
+that lasts for an arbitrary time.
+After the \code{par/or} rejoins, a new set of local variables goes alive,
+reusing the space from the trails' locals going out of scope.
 
 \begin{figure}[t]
 \begin{lstlisting}
 par/or do
-    // activity A
-    <local-variables>
-    <body>
+    // trail A
+    <local-variables-A>
+    <body-A>
 with
-    // activity B
-    <local-variables>
-    <body>
+    // trail B
+    <local-variables-B>
+    <body-B>
 end
-<local-variables>
+<local-variables-rejoin>
+<body-rejoin>
 \end{lstlisting}
-\caption{ A \code{par/or} composes two concurrent activities and rejoins when 
-one terminates, aborting the other.
+\caption{ A \code{par/or} composes two concurrent trail and rejoins when one 
+terminates, aborting the other.
 \label{lst.abortion}
 }
 \end{figure}
 
 Abortion in asynchronous languages is challenging~\cite{esterel.preemption}, 
 because the activity to be aborted might be on a inconsistent state (e.g., 
-holding locks or pending messages).
+holding pending messages or locks).
 %
-The language runtime has to await the activity to be in a consistent state 
-before aborting it, resulting in two unsatisfactory semantics for a 
-\code{par/or} construct:
-either wait to rejoin, making the program unresponsive in the meantime;
-or rejoin immediately and wait in the background, which may confuse the 
-programmer (which assumes both activities have terminated), and also cause race 
-conditions with the \code{par/or} continuation.
-Another problem is that local variables need to coexist in memory for some 
-time, moving the language allocation strategy to the heap (which is discouraged 
-in the context of embedded systems).
+The language runtime needs to wait for the activity to be consistent before 
+aborting it, but what results in two unsatisfactory semantics for a 
+hypothetical \code{par/or}:
+either wait to rejoin, making the program unresponsive to incoming events for 
+an arbitrary time;
+or rejoin immediately and wait in the background, which may cause race 
+conditions with the subsequent code.
+%which may confuse the programmer (which assumes both activities have 
+%terminated), and also
+Immediate rejoin also leads to heap-based allocation (which is discouraged in 
+the context of embedded systems), because activities may coexist with the 
+subsequent code for some time.
 
 As matter of fact, asynchronous languages do not provide effective abortion:
-CSP only supports a composition operator that ``terminates when all of the 
-combined processes terminate''~\cite{async.csp};
+CSP only supports a composition operator that \emph{``terminates when 
+\textbf{all} of the combined processes terminate''}~\cite{async.csp};
 Java's \code{Thread.stop} primitive has been officially 
 deprecated~\cite{sync_async.threadsstop};
 and pthread's \code{pthread\_cancel} does not guarantee immediate 
 cancellation~\cite{sync_async.pthreadsstop}.
 %
 Instead, asynchronous activities typically agree a on common protocol to abort 
-each other (e.g., through shared state variables or message passing).
+each other (e.g., through shared state variables or message passing), 
+increasing coupling among them with concerns that are not directly related to 
+the problem specification.
 
 Synchronous languages, however, provide accurate control over the life cycle of 
 concurrent activities, because in between every reaction, the whole system is 
 idle and consistent~\cite{esterel.preemption}.
 %
-\CEU provides the presented \code{par/or} construct, which is equivalent to 
-Esterel's \code{trap} abortion construct.
-%
-In Section~\ref{sec.ceu.orgs} we highlight the importance of abortion for the 
-organisms abstraction.
+In Section~\ref{sec.ceu.par} we show how \CEU deals with abortion of trails 
+that use stateful resources from the environment, such as file handling and 
+network transmissions.
 
-%In Section~\ref{sec.ceu.par} we show how abortion integrates safely with 
-%activities that use stateful resources from the environment, such as file 
-%handling and network transmissions.
+%\CEU provides the presented \code{par/or} construct, which is equivalent to 
+%Esterel's \code{trap} abortion construct.
+%
+%In Section~\ref{sec.ceu.orgs} we highlight the importance of abortion for the 
+%organisms abstraction.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -460,9 +472,8 @@ organisms abstraction.
 - not really parallel (prev section)
 \end{comment}
 
-In terms of control structures, the basic extension of SRP is the support for 
-parallel compositions, allowing applications to handle multiple events 
-concurrently.
+In terms of control structures, SRP extends SP with parallel compositions, 
+allowing applications to handle multiple events concurrently.
 %
 \CEU provides three parallel constructs, which vary on how they rejoin:
 a \code{par/and} rejoins when all trails in parallel terminate;
@@ -470,14 +481,14 @@ a \code{par/or} rejoins when any trail in parallel terminates;
 a \code{par} never rejoins (even if all trails in parallel terminate).
 
 The example of Figure~\ref{lst.patts} compares the \code{par/and} and 
-\code{par/or} compositions.
+\code{par/or} compositions side by side.
 %
-The code \code{<...>} represents a complex operation that takes time to 
-complete.
+The code \code{<...>} represents a complex behavior with any degree of nested 
+compositions.
 %
-In the \code{par/and} variation, the operation repeats every second at minimum, 
-as both sides must terminate before re-executing the loop.
-In the \code{par/or} variation, if the block does not terminate within 1 
+In the \code{par/and} variation, the behavior repeats every second at minimum, 
+because both sides must terminate before re-executing the loop.
+In the \code{par/or} variation, if the behavior does not terminate within 1 
 second, it is restarted.
 %
 These SRP archetypes represent, respectively, the \emph{sampling} and 
@@ -516,9 +527,9 @@ compositions.
 }
 \end{figure}
 
-The code in Figure~\ref{lst.ctp} describes part of a protocol for sensor 
-networks ported to \CEU~\cite{wsn.ctp,ceu.sensys13}, which relies on 
-\code{par/or} and \code{par/and} compositions to describe its state machine.
+The code in Figure~\ref{lst.ctp} relies on hierarchical \code{par/or} and 
+\code{par/and} compositions to describe the state machine of a protocol for 
+sensor networks ported to \CEU~\cite{wsn.ctp,ceu.sensys13}.
 %
 The input events \code{START}, \code{STOP}, and \code{RETRANSMIT} (line 1) 
 represent the external interface of the protocol with a client application.
@@ -534,20 +545,22 @@ and one with the remaining functionality of the protocol (collapsed in line
 As compositions can be nested, the periodic transmission is another loop that 
 starts two other trails (lines 8-17):
 one to handle an immediate retransmission request (line 9);
-and one to await a small random amount of time and transmit the status packet.
+and one to await a small random amount of time and transmit the status packet 
+(lines 11-16).
 %
 The transmission (collapsed in line 15) is enclosed with a \code{par/and} that 
-takes at least one minute before looping, to avoid flooding the network.
+takes at least one minute before looping to avoid flooding the network.
 %
 At any time, the client may request a retransmission (line 9), which terminates 
-the \code{par/or} (line 8), aborts the ongoing transmission (if not idle), and 
-restarts the loop (line 7).
+the \code{par/or} (line 8), aborts the ongoing transmission (line 15, if not 
+idle), and restarts the loop (line 7).
 %
-Also, the client may request to stop the protocol (line 5), which terminates 
-the outermost \code{par/or}, aborts the transmission, the retransmission 
-handling, and the rest of the protocol.
+Also, the client may request to stop the whole protocol (line 5), which 
+terminates the outermost \code{par/or} and aborts the transmission and all 
+composed trails.
 In this case, the top-level loop restarts and waits for the next request to 
-start the protocol (line 3), remaining unresponsive to other requests.
+start the protocol (line 3), remaining unresponsive to other requests as 
+specified.
 
 \begin{figure}[t]
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
@@ -590,23 +603,24 @@ purpose~\cite{ceu.sensys13}.
 %by prefixing symbols with an underscore (e.g., \code{\_printf(<...>)}).
 %
 The \CEU compiler tracks the interaction of \code{par/or} compositions with 
-automatic variables and stateful $C$ functions (e.g., device drivers) to force 
-proper finalization.
+automatic variables and stateful native $C$ functions (e.g., device drivers) to 
+ensure proper trail abortion.
 
-Consider the code on the left of Figure~\ref{lst.fin}, which sends the status 
-packet of Figure~\ref{lst.ctp} (collapsed in line 15).
+Consider the code on the left of Figure~\ref{lst.fin}, which expands the 
+sending trail of Figure~\ref{lst.ctp} (line 15).
 %
-The call to \code{\_send\_enqueue} enqueues a pointer to the local packet 
-buffer in the radio driver and waits for a \code{SEND\_ACK} that acknowledges
-the packet transmission.
+The \code{buffer} packet is a local variable whose pointer is passed to native 
+function \code{\_send\_enqueue}.
+The call enqueues the pointer in the radio driver, which holds it up to the 
+occurrence of \code{SEND\_ACK} that acknowledges the packet transmission.
 %
 In the meantime, the sending trail might be aborted from \code{STOP} or 
 \code{RETRANSMIT} requests (lines 5 and 9 of Figure~\ref{lst.ctp}), making the 
 packet buffer to go out of scope, and leading to a \emph{dangling pointer} in 
 the radio driver.
 %
-\CEU refuses to compile programs like this and requests for \emph{finalization} 
-clauses to accompany unsafe low-level calls~\cite{ceu.sensys13}.
+\CEU refuses to compile programs like this and requires \emph{finalization} 
+clauses to accompany unsafe native calls~\cite{ceu.sensys13}.
 The code on the right of Figure~\ref{lst.fin} properly dequeues the packet if
 the block of \code{buffer} goes out of scope.
 
@@ -666,13 +680,12 @@ await SEND_ACK;
 \subsection{Organisms}
 \label{sec.ceu.orgs}
 
-\CEU provides organisms as an abstraction mechanism that reconciles data and 
-control state into a single concept.
-They provide an object-like interface (data state) as well as multiple lines of 
-execution (control state).
+\CEU abstracts data and control state into the single concept of organisms.
+Organisms provide an execution body with multiple lines of execution (control 
+state) as well as object-like interface (data state).
 %
-A class of organisms is composed of an interface and a single execution body.  
-The interface exposes public variables, methods, and also internal events.
+A class of organisms describes an interface and a single execution body.  The 
+interface exposes public variables, methods, and also internal events.
 The body can contain any valid code in \CEU (including parallel compositions) 
 and starts on instantiation, executing in parallel with the program.
 Organism instantiation can be either static or dynamic.
@@ -691,8 +704,8 @@ The example of Figure~\ref{lst.orgs} introduces static organisms through three
 code chunks:
 %
 \begin{itemize}
-\item The leftmost code (\emph{CODE-1}) is a modified version of the two 
-blinking LEDs of Figure~\ref{lst.leds} that terminates after 1 minute.
+\item The leftmost code (\emph{CODE-1}) blinks two LEDs with different 
+frequencies in parallel and terminates after 1 minute.
 %
 \item The code in the middle (\emph{CODE-2}) abstracts the blinking LEDs in an 
 organism class and uses two instances to reproduce the same behavior.
@@ -702,29 +715,30 @@ organisms, which should resemble the original leftmost code.
 \end{itemize}
 %
 In \emph{CODE-2}, the Blink class (lines 1-9) exposes the \code{port} and 
-\code{dt} fields, which correspond to the LED port and blinking period to be 
-configured for each instance.
-The application creates two instances, specifying the fields in the 
+\code{dt} fields, corresponding to the LED port and blinking period, 
+respectively.
+The application then creates two instances, specifying those fields in the 
 constructors (lines 12-15 and 17-20).
-A constructor starts the instance body to execute in parallel with the 
-application.
-When reaching the \code{await 1min} (line 22), each instance already started 
-its body (lines 5-8).
+The constructors also start the organisms bodies (lines 5-8) to run in the 
+background, in parallel with the application.
+For instance, both instances are already running at the \code{await 1min} (line 
+22).
 
-\emph{CODE-3} is semantically equivalent to the one in the middle, with the 
-organisms constructors and bodies expanded (lines 11-16 and 20-25) in a 
-\code{par/or} with the rest of the application (\code{await 1min}, in line 28).  
+\emph{CODE-3} is semantically equivalent to \emph{CODE-2}, but with the 
+organisms constructors and bodies expanded (lines 11-16 and 20-25).
+The generated \code{par/or} makes the instances and the rest of the application 
+(i.e., \code{await 1min}, in line 28) concurrent.
 Note the \code{await FOREVER} statements (lines 17 and 26) that avoid the 
 organisms bodies to terminate the \code{par/or}.
-The \code{\_Blink} type (lines 1-4) corresponds to a simple datatype without 
+The \code{\_Blink} type (lines 1-4) corresponds to a simple datatype without an
 execution body.
 
-The main characteristic of organisms is that, unlike objects, they react to the 
-environment by themselves, i.e., they become alive once instantiated (hence the 
-name \emph{organisms}).
+The main distinction from objects is how organisms can react independently to 
+the environment, i.e., once instantiated they become alive and reactive (hence 
+the name \emph{organisms}).
 %
-For instance, they need not be included in an global observer list, or rely on 
-the main program to feed their methods with input from the environment.
+For instance, organisms need not be included in observer lists for events, or 
+rely on the main program to feed their methods with input from the environment.
 %
 Even tough the organisms run independent from the main program, they are still 
 subject to the disciplined synchronous model, which keeps the whole system 
@@ -741,12 +755,12 @@ the organisms for 1 minute (line 22).
 During that period, the organisms are accessible (through \code{b1} and 
 \code{b2}) and reactive to the environment.
 %
-Note that the equivalent expansion of \emph{CODE-3} relies on a \code{par/or} 
-(lines 9-29) that properly aborts all organisms bodies after that period (line 
-28), but before they go out of scope (line 30).
+Note how the equivalent expansion of \emph{CODE-3} relies on a \code{par/or} 
+(lines 9-29) to properly abort the organisms bodies after that period (line 
+28), just before they go out of scope (line 30).
 %
-Furthermore, the \code{par/or} termination trigger all active finalization 
-clauses inside the organisms.
+In addition, the \code{par/or} termination properly triggers all active 
+finalization clauses inside the organisms.
 
 \begin{figure*}[t]
 \begin{minipage}[t]{0.28\linewidth}
@@ -869,11 +883,11 @@ end
 Organisms can be explicitly manipulated through their interface variables, 
 methods, and internal events.
 %
-We illustrate events here, given that variables and methods work in the same 
+Here, we illustrate events given that variables and methods work in the same 
 way as in object oriented programming.
 %
-Figure~\ref{lst.unit} defines a class \code{Unit} (lines 1-16) that exposes the 
-event \code{move} (line 2) which requests the unit to move to a position.
+Figure~\ref{lst.unit} defines a class \code{Unit} (lines 1-16) with the event 
+\code{move} (line 2) that exposes requests to move the unit position.
 %
 The main program (lines 18-21) creates two units and requests them to move to 
 different positions in a interval of 1 second.
@@ -891,7 +905,7 @@ loop to apply physics over time.
 The \code{await FOREVER} (line 13) halts the trail after the move completes.
 %
 An advantage of event handling over method calls is that they can be composed 
-in the organism body and affect other ongoing operations.
+in the organism body to affect other ongoing operations.
 In the example, the \code{await move} aborts and restarts the moving operation, 
 just like the timeout pattern of Figure~\ref{lst.patts}.
 
