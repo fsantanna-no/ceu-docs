@@ -85,7 +85,7 @@ mathescape=true,
     numbersep=2em,
     emph={par,or,hor,do,end,loop,await,emit,input,event,call,with,command,%
           var,and,then,else,C,return,pure,deterministic,nohold,finalize,%
-          class, every, FOREVER, this,
+          class, every, FOREVER, this, spawn, in, pool,
           each, abort, when, signal, PROC, CHAN, SIGNAL, PAR},
     emphstyle={\bfseries},
     commentstyle=\color{dark}\scriptsize,
@@ -101,7 +101,7 @@ mathescape=true,
 \title {
     %Imperative and Synchronous Abstractions for Reactive Applications
     %Structured Programming with Reactive Abstractions
-    Structured Reactive Programming
+    Structured Reactive Programming with C\'eu
 }
 %\subtitle{Accepted paper in REM'13 (preprint version)}
 
@@ -193,10 +193,8 @@ the referred event occurs, keeping all context alive;
 and parallel constructs that compose multiple lines of execution and make them 
 concurrent.
 %
-The \code{await} statement captures the imperative and reactive nature of SRP, 
-%recovering from the inversion of control inherent to the observer pattern, and 
-%thus
-restoring sequential execution and support for automatic variables.
+The \code{await} statement represents the imperative and reactive nature of 
+SRP, recovering sequential execution lost with the observer pattern.
 Parallel compositions%
 \footnote{
 We use the term \emph{parallel composition} as a synonym for \emph{lexical 
@@ -205,15 +203,24 @@ side-by-side composition}, which does not imply many-core parallel execution.
 allow for multiple \code{await} statements to coexist, which is necessary to 
 handle concurrent events, common in reactive applications.
 
-We present SRP through the language \CEU~\cite{ceu.sensys13}, a contemporary 
-outlook of imperative reactivity that aims to expand it from the rigid embedded 
-domain.
+We advocate SRP through the Esterel-based language \CEU~\cite{ceu.sensys13}, a 
+contemporary outlook of imperative reactivity that aims to expand it from the 
+rigid embedded domain.
 %
-\CEU is based on Esterel and relies on a similar synchronous and deterministic 
-execution model that simplifies the reasoning about concurrency aspects.
+%\CEU is based on Esterel and relies on a similar synchronous and deterministic 
+%execution model that simplifies the reasoning about concurrency aspects.
 %
-Our main contribution is a new abstraction mechanism, the \emph{organisms}, 
-that provide a parallel execution body with an object-like interface.
+We believe that the excessively rigorous semantics of Esterel, whose focus is 
+on static safety guarantees, is not suitable for other reactive application 
+domains, such as GUIs, games, and distributed systems.
+%
+The lack of abstractions with dynamic lifetime makes difficult to deal with 
+virtual resources such as graphical widgets, game objects, and network 
+transactions, we need a form of abstraction
+
+Our main contribution is a new abstraction mechanism for \CEU, the 
+\emph{organisms}, that encapsulate parallel compositions with an object-like 
+interface.
 % that other parts of the program can manipulate.
 %
 In brief, organisms are to SRP like procedures are to SP, i.e., one can 
@@ -420,8 +427,8 @@ aborting it, but what results in two unsatisfactory semantics for a
 hypothetical \code{par/or}:
 either wait to rejoin, making the program unresponsive to incoming events for 
 an arbitrary time;
-or rejoin immediately and wait in the background, which may cause race 
-conditions with the subsequent code.
+or rejoin immediately and let the activity complete termination in the 
+background, which may cause race conditions with the subsequent code.
 %which may confuse the programmer (which assumes both activities have 
 %terminated), and also
 Immediate rejoin also leads to heap-based allocation (which is discouraged in 
@@ -429,12 +436,15 @@ the context of embedded systems), because activities may coexist with the
 subsequent code for some time.
 
 As matter of fact, asynchronous languages do not provide effective abortion:
-CSP only supports a composition operator that \emph{``terminates when 
-\textbf{all} of the combined processes terminate''}~\cite{async.csp};
-Java's \code{Thread.stop} primitive has been officially 
+\emph{Java}'s \code{Thread.stop} primitive has been officially 
 deprecated~\cite{sync_async.threadsstop};
-and pthread's \code{pthread\_cancel} does not guarantee immediate 
-cancellation~\cite{sync_async.pthreadsstop}.
+\emph{pthread}'s \code{pthread\_cancel} does not guarantee immediate 
+cancellation~\cite{sync_async.pthreadsstop};
+\emph{erlang}'s \code{exit} either enqueues a terminating message (which may 
+take time), or unconditionally terminates the process (regardless of its 
+state)~\cite{sync_async.erlangstop}.
+and \emph{CSP} only supports a composition operator that \emph{``terminates 
+when \textbf{all} of the combined processes terminate''}~\cite{async.csp};
 %
 Instead, asynchronous activities typically agree a on common protocol to abort 
 each other (e.g., through shared state variables or message passing), 
@@ -677,15 +687,20 @@ await SEND_ACK;
 \end{figure}
 \end{comment}
 
-\subsection{Organisms}
+\section{Reactive Abstractions with Organisms}
 \label{sec.ceu.orgs}
 
+TODO: + motivacao
+
+Applications often need to replicate a behavior and rely on abstractions that 
+the language provide.
+%
 \CEU abstracts data and control state into the single concept of organisms.
 %Organisms provide an execution body with multiple lines of execution (control 
 %state) as well as object-like interface (data state).
 %
-A class of organisms describes an interface and a single execution body.  The 
-interface exposes public variables, methods, and also internal events.
+A class of organisms describes an interface and a single execution body.
+The interface exposes public variables, methods, and also internal events.
 The body can contain any valid code in \CEU, including parallel compositions.
 On an organism is instantiated, its bode starts to execute in parallel with the 
 program.
@@ -708,10 +723,12 @@ organisms, which should resemble the original \emph{CODE-1}.
 \end{itemize}
 %
 In \emph{CODE-2}, the Blink class (lines 1-9) exposes the \code{pin} and 
-\code{dt} fields, corresponding to the LED I/O pin and blinking period, 
+\code{dt} properties, corresponding to the LED I/O pin and blinking period, 
 respectively.
-The application then creates two instances, specifying those fields in the 
+The application then creates two instances, specifying those properties in the 
 constructors (lines 12-15 and 17-20).
+Inside constructors, the identifier \code{this} refers to the organism under 
+instantiation.
 The constructors also start the organisms bodies (lines 5-8) to run in parallel 
 in the background, i.e., both instances are already running before the 
 \code{await 1min} (line 22).
@@ -724,10 +741,15 @@ Note the \code{await FOREVER} statements (lines 17 and 26) to avoid the
 organisms bodies to terminate the \code{par/or}.
 The \code{\_Blink} type (lines 1-4) corresponds to a simple datatype without an
 execution body.
+%
+Note that actual implementation of \CEU does not expand the organisms bodies 
+like in \emph{CODE-3} (the implementation is not discussed in this paper).
+In fact, a class generates a single code for its body, which is shared by all 
+instances, in the same way as objects share class methods.
 
-The main distinction from objects is how organisms can react independently to 
-the environment, i.e., once instantiated they become alive and reactive (hence 
-the name \emph{organisms}).
+The main distinction from organisms to standard objects is how they can react 
+independently and directly to the environment, i.e., once instantiated they 
+become alive and reactive (hence the name \emph{organisms}).
 %
 For instance, organisms need not be included in observer lists for events, or 
 rely on the main program to feed their methods with input from the environment.
@@ -879,20 +901,19 @@ end
 }
 \end{figure*}
 
-Organisms can be explicitly manipulated through their interface variables, 
-methods, and internal events.
+In addition to properties and methods, organisms also expose internal events 
+which support \code{await} and \code{emit} operations.
 %
-The example of Figure~\ref{lst.unit} only illustrates events, as variables and 
-methods work in the same way as in object oriented programming.
+In the example of Figure~\ref{lst.unit} the class \code{Unit} (lines 1-16) 
+defines the position property \code{pos} with default vaule \code{0} (line 2), 
+and the event \code{move} which exposes requests to move the unit position 
+(line 3).
 %
-The class \code{Unit} (lines 1-16) defines the event \code{move} (line 2) that 
-exposes requests to move the unit position.
+The main program (lines 18-28) creates two units and requests them to move to 
+position \code{500} with a interval of 1 second.
 %
-The main program (lines 18-21) creates two units and requests them to move to 
-different positions in a interval of 1 second.
-%
-The body of the class initializes the current unit's position \code{pos} and 
-destination position \code{dst} (lines 4-5).
+The body of the class initializes the current unit's destination position 
+\code{dst} to the current position (line 5).
 Then, the body enters in a continuous loop (lines 6-15) to handle \code{move} 
 requests (line 8) while performing the actual moving operation (lines 10-13) in 
 parallel.
@@ -911,10 +932,10 @@ operation, just like the timeout pattern of Figure~\ref{lst.patts}.
 \begin{figure}[t]
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
 class Unit with
+    var   int pos = 0;
     event int move;
 do
-    var int pos = 0;
-    var int dst = 0;
+    var int dst = this.pos;
     loop do
         par/or do
             dst = await this.move;
@@ -927,10 +948,17 @@ do
     end
 end
 
-var Unit u1, u2;
-emit u1.move => 100;
+var Unit u1 with
+    this.pos = 100;
+end;
+
+var Unit u2 with
+    this.pos = 200;
+end;
+
+emit u1.move => 500;
 await 1s;
-emit u2.move => 200;
+emit u2.move => 500;
 \end{lstlisting}
 %\rule{8.5cm}{0.37pt}
 \caption{ Organism manipulation through interface events.
@@ -938,20 +966,63 @@ emit u2.move => 200;
 }
 \end{figure}
 
-\subsubsection{Dynamic organisms}
+\subsection{Dynamic organisms}
 
-\CEU also supports dynamic instances of organisms
-spawn
+TODO: motivation, importance in reactive apps
 
+\CEU also supports dynamic instantiation of organisms through the \code{spawn} 
+primitive.
+The example of Figure~\ref{lst.spawn} spawns a new instance of \code{Unit} on
+every second and moves it to a random position.
+A \code{spawn} returns a pointer to the new organism, which can be dereferenced 
+through the operator \code{:} (the same as \code{->} in C/C++).
+
+\begin{figure}[t]
+\begin{lstlisting}
 every 1s do
-    var Unit* u = spawn Unit;
-    emit u:move => XXX;
+    var Unit* u = spawn Unit with
+                      this.pos = _rand() % 500;
+                  end;
+    emit u:move => _rand() % 500;
 end
+\end{lstlisting}
+%\rule{8.5cm}{0.37pt}
+\caption{ Spawns and moves a new \code{Unit} every second.
+\label{lst.unit}
+}
+\end{figure}
 
+Dynamic instances also execute in parallel with the rest of the application, 
+but differ on scoping and lifetime rules.
+They also introduce pointers, which.
+
+\begin{figure}[t]
+\begin{lstlisting}
+loop do
+    pool Unit[10] units;
+    par/or do
+        every 1s do
+            var Unit* u = spawn Unit in units with
+                              this.pos = _rand() % 500;
+                          end;
+            emit u:move => _rand() % 500;
+        end
+    with
+        await CLICK;
+    end
+end
+\end{lstlisting}
+%\rule{8.5cm}{0.37pt}
+\caption{ Spawns and moves a new \code{Unit} every second.
+\label{lst.unit}
+}
+\end{figure}
 TODO
 %- organisms, static, dynamic. do T;
 
-\subsubsection{References}
+\subsubsection{Pools}
+
+\subsubsection{Pointers and References}
 
 TODO
 
@@ -995,6 +1066,8 @@ scopes
 \label{sec.related}
 
 TODO
+
+TODO: functor tablets paper
 
 \begin{comment}
 - asynchronous langs
