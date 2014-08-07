@@ -681,24 +681,16 @@ await SEND_ACK;
 \label{sec.ceu.orgs}
 
 \CEU abstracts data and control state into the single concept of organisms.
-Organisms provide an execution body with multiple lines of execution (control 
-state) as well as object-like interface (data state).
+%Organisms provide an execution body with multiple lines of execution (control 
+%state) as well as object-like interface (data state).
 %
 A class of organisms describes an interface and a single execution body.  The 
 interface exposes public variables, methods, and also internal events.
-The body can contain any valid code in \CEU (including parallel compositions) 
-and starts on instantiation, executing in parallel with the program.
+The body can contain any valid code in \CEU, including parallel compositions.
+On an organism is instantiated, its bode starts to execute in parallel with the 
+program.
 Organism instantiation can be either static or dynamic.
 % TODO: The syntax xxx
-
-We propose a memory model for organisms that eliminates known issues in 
-allocation: \emph{memory leaks}, \emph{dangling pointers}, and the need for 
-\emph{garbage collection}.
-%
-The model is similar to stack-living local variables of procedures, providing 
-lexical scope and automatic bookkeeping of organisms.
-We also restrict explicit references to organisms to avoid indirect 
-manipulation.
 
 The example of Figure~\ref{lst.orgs} introduces static organisms through three 
 code chunks:
@@ -708,27 +700,27 @@ code chunks:
 frequencies in parallel and terminates after 1 minute.
 %
 \item The code in the middle (\emph{CODE-2}) abstracts the blinking LEDs in an 
-organism class and uses two instances to reproduce the same behavior.
+organism class and uses two instances to reproduce the same behavior of 
+\emph{CODE-1}.
 %
 \item The rightmost code (\emph{CODE-3}) is the equivalent expansion without 
-organisms, which should resemble the original leftmost code.
+organisms, which should resemble the original \emph{CODE-1}.
 \end{itemize}
 %
-In \emph{CODE-2}, the Blink class (lines 1-9) exposes the \code{port} and 
-\code{dt} fields, corresponding to the LED port and blinking period, 
+In \emph{CODE-2}, the Blink class (lines 1-9) exposes the \code{pin} and 
+\code{dt} fields, corresponding to the LED I/O pin and blinking period, 
 respectively.
 The application then creates two instances, specifying those fields in the 
 constructors (lines 12-15 and 17-20).
-The constructors also start the organisms bodies (lines 5-8) to run in the 
-background, in parallel with the application.
-For instance, both instances are already running at the \code{await 1min} (line 
-22).
+The constructors also start the organisms bodies (lines 5-8) to run in parallel 
+in the background, i.e., both instances are already running before the 
+\code{await 1min} (line 22).
 
 \emph{CODE-3} is semantically equivalent to \emph{CODE-2}, but with the 
 organisms constructors and bodies expanded (lines 11-16 and 20-25).
 The generated \code{par/or} makes the instances and the rest of the application 
 (i.e., \code{await 1min}, in line 28) concurrent.
-Note the \code{await FOREVER} statements (lines 17 and 26) that avoid the 
+Note the \code{await FOREVER} statements (lines 17 and 26) to avoid the 
 organisms bodies to terminate the \code{par/or}.
 The \code{\_Blink} type (lines 1-4) corresponds to a simple datatype without an
 execution body.
@@ -746,18 +738,25 @@ deterministic.
 %
 %\emph{CODE-3} shows that the equivalent expansion results in plain \CEU.
 
-Another positive aspect of organisms regards to lexical scope and automatic 
-memory management.
+The memory model for organisms eliminates known issues in allocation: 
+\emph{memory leaks}, \emph{dangling pointers}, and the need for \emph{garbage 
+collection}.
 %
+The model is similar to stack-living local variables of procedures, providing 
+lexical scope and automatic bookkeeping of organisms.
+We also restrict explicit references to organisms to avoid indirect 
+manipulation.
+
+Regarding lexical scope and automatic memory management, note that 
 \emph{CODE-2} uses a \code{do-end} block (lines 11-23) that limits the scope of 
 the organisms for 1 minute (line 22).
 %
 During that period, the organisms are accessible (through \code{b1} and 
 \code{b2}) and reactive to the environment.
 %
-Note how the equivalent expansion of \emph{CODE-3} relies on a \code{par/or} 
-(lines 9-29) to properly abort the organisms bodies after that period (line 
-28), just before they go out of scope (line 30).
+In the equivalent expansion of \emph{CODE-3}, the \code{par/or} (lines 9-29) 
+aborts the organisms bodies after that period (line 28), just before they go 
+out of scope (line 30).
 %
 In addition, the \code{par/or} termination properly triggers all active 
 finalization clauses inside the organisms.
@@ -803,24 +802,24 @@ end
 \begin{minipage}[t]{0.32\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=3.5em]
 class Blink with
-    var int port;
+    var int pin;
     var int dt;
 do
     loop do
         await (dt)ms;
-        _toggle(port);
+        _toggle(pin);
     end
 end
 
 do
     var Blink b1 with
-        this.port = 11;
-        this.dt   = 600;
+        this.pin = 11;
+        this.dt  = 600;
     end;
 
     var Blink b2 with
-        this.port = 12;
-        this.dt   = 1000;
+        this.pin = 12;
+        this.dt  = 1000;
     end;
 
     await 1min;
@@ -840,7 +839,7 @@ end
 \begin{minipage}[t]{0.34\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=3.5em]
 struct _Blink with
-    var int port;
+    var int pin;
     var int dt;
 end;
 
@@ -849,20 +848,20 @@ do
 
     par/or do
         // body of b1
-        b1.port = 0;
-        b1.dt   = 2;
+        b1.pin = 0;
+        b1.dt  = 2;
         loop do
             await (b1.dt)ms;
-            _toggle(b1.port);
+            _toggle(b1.pin);
         end
         await FOREVER;
     with
         // body of b2
-        b2.port = 1;
-        b2.dt   = 4;
+        b2.pin = 1;
+        b2.dt  = 4;
         loop do
             await (b2.dt)ms;
-            _toggle(b2.port);
+            _toggle(b2.pin);
         end
         await FOREVER;
     with
@@ -883,11 +882,11 @@ end
 Organisms can be explicitly manipulated through their interface variables, 
 methods, and internal events.
 %
-Here, we illustrate events given that variables and methods work in the same 
-way as in object oriented programming.
+The example of Figure~\ref{lst.unit} only illustrates events, as variables and 
+methods work in the same way as in object oriented programming.
 %
-Figure~\ref{lst.unit} defines a class \code{Unit} (lines 1-16) with the event 
-\code{move} (line 2) that exposes requests to move the unit position.
+The class \code{Unit} (lines 1-16) defines the event \code{move} (line 2) that 
+exposes requests to move the unit position.
 %
 The main program (lines 18-21) creates two units and requests them to move to 
 different positions in a interval of 1 second.
@@ -906,8 +905,8 @@ The \code{await FOREVER} (line 13) halts the trail after the move completes.
 %
 An advantage of event handling over method calls is that they can be composed 
 in the organism body to affect other ongoing operations.
-In the example, the \code{await move} aborts and restarts the moving operation, 
-just like the timeout pattern of Figure~\ref{lst.patts}.
+In the example, the \code{await move} (line 8) aborts and restarts the moving 
+operation, just like the timeout pattern of Figure~\ref{lst.patts}.
 
 \begin{figure}[t]
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
@@ -940,6 +939,14 @@ emit u2.move => 200;
 \end{figure}
 
 \subsubsection{Dynamic organisms}
+
+\CEU also supports dynamic instances of organisms
+spawn
+
+every 1s do
+    var Unit* u = spawn Unit;
+    emit u:move => XXX;
+end
 
 TODO
 %- organisms, static, dynamic. do T;
