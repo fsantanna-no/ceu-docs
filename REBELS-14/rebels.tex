@@ -85,7 +85,7 @@ mathescape=true,
     numbersep=2em,
     emph={par,or,hor,do,end,loop,await,emit,input,event,call,with,command,%
           var,and,then,else,C,return,pure,deterministic,nohold,finalize,%
-          class, every, FOREVER, this, spawn, in, pool,
+          class, every, FOREVER, this, spawn, in, pool, watching,
           each, abort, when, signal, PROC, CHAN, SIGNAL, PAR},
     emphstyle={\bfseries},
     commentstyle=\color{dark}\scriptsize,
@@ -97,6 +97,7 @@ mathescape=true,
 }
 
 \begin{document}
+\sloppy
 
 \title {
     %Imperative and Synchronous Abstractions for Reactive Applications
@@ -197,8 +198,8 @@ The \code{await} statement represents the imperative and reactive nature of
 SRP, recovering sequential execution lost with the observer pattern.
 Parallel compositions%
 \footnote{
-We use the term \emph{parallel composition} as a synonym for \emph{lexical 
-side-by-side composition}, which does not imply many-core parallel execution.
+We use the term \emph{parallel composition} as a synonym for \emph{side-by-side 
+lexical composition}, which does not imply many-core parallel execution.
 }
 allow for multiple \code{await} statements to coexist, which is necessary to 
 handle concurrent events, common in reactive applications.
@@ -214,9 +215,9 @@ We believe that the excessively rigorous semantics of Esterel, whose focus is
 on static safety guarantees, is not suitable for other reactive application 
 domains, such as GUIs, games, and distributed systems.
 %
-The lack of abstractions with dynamic lifetime makes difficult to deal with 
-virtual resources such as graphical widgets, game objects, and network 
-transactions, we need a form of abstraction
+For instance, the lack of abstractions with dynamic lifetime makes difficult to 
+deal with virtual resources such as graphical widgets, game units, and network 
+sessions.
 
 Our main contribution is a new abstraction mechanism for \CEU, the 
 \emph{organisms}, that encapsulate parallel compositions with an object-like 
@@ -343,7 +344,7 @@ To avoid infinite execution for reactions, \CEU ensures that all loops have
 \code{await} statements on their bodies~\cite{ceu.sensys13}.
 
 As a result of synchronous execution, all operations to variable \code{v} in 
-Figure~\ref{lst.intro} are atomic, because reactions to \code{1s} and 
+Figure~\ref{lst.intro} are atomic because reactions to \code{1s} and 
 \code{RESET} can never interleave.
 %
 In contrast, in an asynchronous model with nondeterministic scheduling, the 
@@ -419,7 +420,7 @@ reusing the space from the trails' locals going out of scope.
 %}
 %\end{figure}
 
-Abortion in asynchronous languages is challenging~\cite{esterel.preemption}, 
+Abortion in asynchronous languages is challenging~\cite{esterel.preemption} 
 because the activity to be aborted might be on a inconsistent state (e.g., 
 holding pending messages or locks).
 %
@@ -433,7 +434,7 @@ background, which may cause race conditions with the subsequent code.
 %which may confuse the programmer (which assumes both activities have 
 %terminated), and also
 Immediate rejoin also leads to heap-based allocation (which is discouraged in 
-the context of embedded systems), because activities may coexist with the 
+the context of embedded systems) because activities may coexist with the 
 subsequent code for some time.
 
 As matter of fact, asynchronous languages do not provide effective abortion:
@@ -453,7 +454,7 @@ increasing coupling among them with concerns that are not directly related to
 the problem specification.
 
 Synchronous languages, however, provide accurate control over the life cycle of 
-concurrent activities, because in between every reaction, the whole system is 
+concurrent activities because in between every reaction, the whole system is 
 idle and consistent~\cite{esterel.preemption}.
 %
 In Section~\ref{sec.ceu.par} we show how \CEU deals with abortion of trails 
@@ -523,7 +524,7 @@ end
 The code \code{<...>} represents a complex behavior with any degree of nested 
 compositions.
 %
-In the \code{par/and} variation, the behavior repeats every second at minimum, 
+In the \code{par/and} variation, the behavior repeats every second at minimum 
 because both sides must terminate before re-executing the loop.
 In the \code{par/or} variation, if the behavior does not terminate within 1 
 second, it is restarted.
@@ -807,7 +808,7 @@ the block of \code{buffer} goes out of scope.
 Finalization clauses are fundamental to preserve the orthogonality of 
 \code{par/or} compositions in SRP.
 
-\section{Organisms: Reactive Abstractions}
+\section{Organisms: SRP Abstractions}
 \label{sec.ceu.orgs}
 
 Applications often need to replicate a behavior and rely on abstractions that 
@@ -822,12 +823,11 @@ continuous and concurrent input.
 For instance, procedures cannot express parallel compositions as described in 
 Section~\ref{sec.ceu.par}.
 %
-As commented in the introduction, objects are the standard way for abstraction 
-for reactive ...
+The prevailing imperative abstraction mechanism for reactive applications are 
+objects used in conjunction with the observer pattern.
 Even though objects abstract data with proper encapsulation, they cannot 
-encapsulate control flow, because methods have to return control as quickly as 
-possible to keep the application responsive in the observer 
-pattern~\cite{games.patterns}.
+encapsulate control flow because methods have to return control as quickly as 
+possible to keep the application responsive~\cite{games.patterns}.
 
 \CEU abstracts data and control state into the single concept of organisms.
 %Organisms provide an execution body with multiple lines of execution (control 
@@ -987,9 +987,18 @@ emit u2.move => 500;
 
 \subsection{Dynamic organisms}
 
-%TODO: motivation, importance in reactive apps
+Static embedded systems typically handle real sensors and actuators hardware 
+through a one-to-one correspondence with software, i.e., a static (possibly 
+complex) piece of software deals with a piece of hardware.
+%
+In contrast, more general reactive systems have to deal with resource 
+virtualization, such as multiplexing protocols in a network, or simulating 
+entire civilizations in a game.
+%
+Dynamic allocation for organisms extends the power of SRP to handle virtual 
+resources in reactive applications.
 
-\CEU also supports dynamic instantiation of organisms through the \code{spawn} 
+\CEU supports dynamic instantiation of organisms through the \code{spawn} 
 primitive.
 The example that follows spawns a new instance of \code{Unit} on
 every second and moves it to a random position:
@@ -1084,9 +1093,21 @@ end
 }
 \end{figure}
 
-Pools support iterators that return pointers to alive instances.
-The example that follows iterates over all alive units and requests them to 
-move to a random position:
+Pools with dimension have static pre-allocation, resulting in efficient and 
+deterministic instantiation of organisms.
+This opens the possibility for dynamic behavior in embedded systems.
+%
+If a pool does not specify a dimension, as in ``\code{pool Unit[] units}'', the 
+instances go to the heap but are still subject to the pool scope.
+%
+If a \code{spawn} does not specify a pool, as in ``\code{spawn Unit;}'', the 
+instances go to a predefined dimension-less pool in the top of the current 
+class (and are subject to that pool scope).
+
+\begin{comment}
+Pools provide iterators to access pointers to all alive instances.
+The example that follows iterates over the \code{units} pool and requests each 
+unit to move to a random position:
 
 %\begin{figure}[t]
 \begin{lstlisting}
@@ -1101,27 +1122,63 @@ end
 %\label{lst.iter}
 %}
 %\end{figure}
-
-At any time
-Note that programs do not require holding references
-because the organisms are reactive
-
-Given that organisms react independently to the environment, it is often not 
-necessary to hold pointers returned by \code{spawn} invocations (as illustrated 
-in line 6 of Figure~\ref{lst.pool}).
-%
-can be recovered through iterators
-
-Pools also have the advantage
-static
-embedded systems
-
-- omit pool
-- omit dimension
+\end{comment}
 
 \subsection{Pointers and References}
 
-TODO
+As organisms react independently from the environment, it is often not 
+necessary to hold pointers to organisms.
+%
+In fact, pointers can be dangerous because they may last longer than the 
+organisms they refer:
+
+\begin{lstlisting}
+var Unit* u = <...>;
+u:pos = 0;              // this access is safe
+await 2h;
+emit u:move => 100;     // this access is unsafe
+\end{lstlisting}
+
+The program first assigns a \code{Unit} reference to pointer \code{u}.
+Then, it dereferences the pointer in two occasions:
+in the same reaction, just after acquiring the reference;
+in another reaction, after \emph{2h}, when the pointed organism may have 
+already terminated and freed.
+
+\CEU enforces all pointer accesses across reactions to use the \code{watching} 
+construct which supervises organism termination:
+
+\begin{minipage}[t]{0.48\linewidth}
+\begin{lstlisting}
+var Unit* u = <...>;
+u:pos = 0;
+watching u do
+    await 2h;
+    emit u:move => 100;
+end
+\end{lstlisting}
+\end{minipage}
+%
+\begin{minipage}[t]{0.48\linewidth}
+\begin{lstlisting}
+var Unit* u = ...;
+u:pos = 0;
+par/or do
+    await u:__killed;
+with
+    await 2h
+    emit u:move => 100;
+end
+\end{lstlisting}
+\end{minipage}
+
+The \code{watching} construct terminates when the referred organism terminates, 
+eliminating possible dangling pointers in the program.
+%
+The code in the right shows the equivalent expansion of the \code{wacthing} 
+construct to a \code{par/or} that awaits the special event \code{\_\_killed}.
+
+% TODO: weak vs strong references
 
 \begin{comment}
 scopes
@@ -1162,9 +1219,39 @@ scopes
 \section{Related work}
 \label{sec.related}
 
-TODO
+Esterel provides module instantiation through the \code{run} command, which 
+syntactically replaces the command by the referred module 
+body~\cite{esterel.primer}.
+%
+Similarly, ESPranto~\cite{espranto} extends Esterel with a macro-based 
+abstraction mechanism that enables the creation of domain specific languages.
+%
+However, macros expand at compile-time, being impossible to describe dynamic 
+instantiation.
+Furthermore, each use of a macro results in code replication, having a negative 
+impact on code size.
 
-TODO: functor tablets paper
+Simula is a simulation language that introduced the concepts of objects and 
+coroutines.
+%
+The syntactic structure of classes in Simula are very similar to \CEU, 
+exporting an interface with fields and methods that encapsulates a single 
+execution body.
+However, the underlying execution model is .
+- composition allows static analysis
+- explicit scheduling vs reactive guidance w/ synchronous sematics
+
+simulation applies to reactivity
+internal vs external
+- corroutines and objects
+
+two fundamental limitations
+- no composition
+- no scopes
+- all on the heap
+- interface however
+
+In some sense Esterel + Simula
 
 \begin{comment}
 - asynchronous langs
@@ -1201,9 +1288,15 @@ control vs data reactivity
 
 TODO
 
-care with embedded systems
-- pool
-- GC
+%care with embedded systems
+%- pool
+%- GC
+
+%- examples w/o watching
+
+%- games
+
+%- wsn
 
 \begin{comment}
 Overall, organisms reconcile data and control state in a single concept.
