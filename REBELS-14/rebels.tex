@@ -117,16 +117,24 @@ mathescape=true,
 \maketitle
 
 \begin{abstract}
-.......... ........... ........... ........... ........... ...........
-.......... ........... ........... ........... ........... ...........
-.......... ........... ........... ........... ........... ...........
-.......... ........... ........... ........... ........... ...........
-.......... ........... ........... ........... ........... ...........
-.......... ........... ........... ........... ........... ...........
-.......... ........... ........... ........... ........... ...........
-.......... ........... ........... ........... ........... ...........
-.......... ........... ........... ........... ........... ...........
-.......... ........... ........... ........... ........... ...........
+Through the language \CEU, we promote structured reactive programming as an 
+extension to classical structured programming that interacts continuously with 
+the environment.
+%
+We revive the synchronous and imperative programming style of Esterel and aim 
+to expand its limits from the strict embedded domain with the new abstraction 
+mechanism of organisms.
+
+Organisms extend objects to react independently to the environment with an 
+execution body that composes multiple lines of execution.
+%
+Compositions bring structured reasoning to concurrency and can better describe 
+state machines typical of reactive applications.
+%
+Organisms are subject to lexical scope and automatic memory management similar 
+to stack-living locals.
+This memory model does not require a free primitive or garbage collection in 
+the language, and also eliminates memory leaks by design.
 \end{abstract}
 
 %\category{CR-number}{subcategory}{third-level}
@@ -408,7 +416,7 @@ end
 The \code{par/or} is regarded as orthogonal because the composed trails do not 
 know when and how they are aborted (i.e., abortion is external to them).
 %
-In the figure, each trail has a set of local variables and an execution body 
+In the example, each trail has a set of local variables and an execution body 
 that lasts for an arbitrary time.
 After the \code{par/or} rejoins, a new set of local variables goes alive,
 reusing the space from the trails' locals going out of scope.
@@ -540,6 +548,37 @@ These SRP archetypes represent, respectively, the \emph{sampling} and
 %}
 %\end{figure}
 
+\begin{figure}[t]
+\begin{lstlisting}[numbers=left,xleftmargin=3em]
+input void START, STOP, RETRANSMIT;
+loop do
+    await START;
+    par/or do
+        await STOP;
+    with
+        loop do
+            par/or do
+                await RETRANSMIT;
+            with
+                await <rand> s;
+                par/and do
+                    await 1min;
+                with
+                    <send-beacon-packet>
+                end
+            end
+        end
+    with
+        <...> // the rest of the protocol
+    end
+end
+\end{lstlisting}
+%\rule{8.5cm}{0.37pt}
+\caption{ Parallel compositions can describe complex state machines.
+\label{lst.ctp}
+}
+\end{figure}
+
 The code in Figure~\ref{lst.ctp} relies on hierarchical \code{par/or} and 
 \code{par/and} compositions to describe the state machine of a protocol for 
 sensor networks ported to \CEU~\cite{wsn.ctp,ceu.sensys13}.
@@ -574,37 +613,6 @@ composed trails.
 In this case, the top-level loop restarts and waits for the next request to 
 start the protocol (line 3), remaining unresponsive to other requests as 
 specified.
-
-\begin{figure}[t]
-\begin{lstlisting}[numbers=left,xleftmargin=3em]
-input void START, STOP, RETRANSMIT;
-loop do
-    await START;
-    par/or do
-        await STOP;
-    with
-        loop do
-            par/or do
-                await RETRANSMIT;
-            with
-                await <rand> s;
-                par/and do
-                    await 1min;
-                with
-                    <send-beacon-packet>
-                end
-            end
-        end
-    with
-        <...> // the rest of the protocol
-    end
-end
-\end{lstlisting}
-%\rule{8.5cm}{0.37pt}
-\caption{ Parallel compositions can describe complex state machines.
-\label{lst.ctp}
-}
-\end{figure}
 
 The example shows how parallel compositions can describe complex state machines 
 in a structured way, eliminating the use of global state variables for this 
@@ -923,7 +931,7 @@ automatically aborted when going out of scope.
 In addition to properties and methods, organisms also expose internal events 
 which support \code{await} and \code{emit} operations.
 %
-In the example of Figure~\ref{lst.unit} the class \code{Unit} (lines 1-16) 
+In the example of Figure~\ref{lst.unit}, the class \code{Unit} (lines 1-16) 
 defines the position property \code{pos} with default vaule \code{0} (line 2), 
 and the event \code{move} which exposes requests to move the unit position 
 (line 3).
@@ -1060,8 +1068,8 @@ end
 The lack of scopes for dynamic organisms prevents orthogonal abortion, as there 
 is no way to abort the execution of dynamic instances.
 %
-To overcome this limitation, \CEU provides scoped \emph{pools} as containers to 
-hold dynamic organisms instances.
+To overcome this limitation, \CEU provides lexically scoped \emph{pools} as 
+containers to hold dynamic organisms instances.
 %
 The example of Figure~\ref{lst.pool} declares the \code{units} pool that holds 
 a maximum of 10 instances (line 3).
@@ -1095,7 +1103,8 @@ end
 
 Pools with dimension have static pre-allocation, resulting in efficient and 
 deterministic instantiation of organisms.
-This opens the possibility for dynamic behavior in embedded systems.
+This opens the possibility for dynamic behavior also in constrained embedded 
+systems.
 %
 If a pool does not specify a dimension, as in ``\code{pool Unit[] units}'', the 
 instances go to the heap but are still subject to the pool scope.
@@ -1103,6 +1112,9 @@ instances go to the heap but are still subject to the pool scope.
 If a \code{spawn} does not specify a pool, as in ``\code{spawn Unit;}'', the 
 instances go to a predefined dimension-less pool in the top of the current 
 class (and are subject to that pool scope).
+
+Note that lexical scope support for both static and dynamic organisms eliminate 
+garbage collection, \code{free} primitives, and memory leaks altogether.
 
 \begin{comment}
 Pools provide iterators to access pointers to all alive instances.
@@ -1178,9 +1190,26 @@ eliminating possible dangling pointers in the program.
 The code in the right shows the equivalent expansion of the \code{wacthing} 
 construct to a \code{par/or} that awaits the special event \code{\_\_killed}.
 
+\begin{comment}
+
 % TODO: weak vs strong references
 
-\begin{comment}
+\CEU distinguishes weak references (pointers) from strong references.
+A strong reference
+(references, for short).
+
+class Unit with
+    <...>
+    var Weapon& weapon;
+do
+    <...>
+    emit weapon.fire;
+end
+var Weapon w;
+var Unit u with
+    this.weapon = w;
+end;
+
 scopes
     - solve the problem of lapsed listener
 
@@ -1232,26 +1261,35 @@ Furthermore, each use of a macro results in code replication, having a negative
 impact on code size.
 
 Simula is a simulation language that introduced the concepts of objects and 
-coroutines.
+coroutines~\cite{simula}.
 %
-The syntactic structure of classes in Simula are very similar to \CEU, 
-exporting an interface with fields and methods that encapsulates a single 
-execution body.
-However, the underlying execution model is .
-- composition allows static analysis
-- explicit scheduling vs reactive guidance w/ synchronous sematics
+The syntactic structure of classes in Simula is very similar to \CEU, exposing 
+an interface that encapsulates an execution body.
+%
+However, the underlying execution models are fundamentally distinct:
+\CEU employs a reactive scheduler to resume trails based on external stimuli, 
+while Simula relies on cooperation between processes (i.e., \code{detach} and 
+\code{resume} calls, at the lowest level).
+%
+Simula has no notion of compositions and each process has a single line of 
+execution.
+In particular, the lack of a \code{par/or} precludes orthogonal abortion and 
+many derived \CEU features, such as lexically scoped organisms, finalization, 
+and reference watching.
+%
+Without scopes, Simula objects and processes have to live on the heap and rely 
+on garbage collection.
+As far as we know, Simula processes cannot be terminated explicitly from other 
+processes.
+%
+%Finally, the conjunction of compositions with the synchronous model of \CEU 
+%enables a XXX of static analysis, such as concurrent accesses to 
+%variables~\cite{ceu.sensys13}.
 
-simulation applies to reactivity
-internal vs external
-- corroutines and objects
-
-two fundamental limitations
-- no composition
-- no scopes
-- all on the heap
-- interface however
-
-In some sense Esterel + Simula
+Even though Simula and Esterel are considerably old languages, their core ideas 
+that apply to \CEU have not evolved significantly, namely objects with an 
+execution body, compositions with orthogonal abortion, and the reactive 
+synchronous model.
 
 \begin{comment}
 - asynchronous langs
@@ -1286,7 +1324,25 @@ control vs data reactivity
 \section{Conclusion}
 \label{sec.conclusion}
 
-TODO
+\CEU provides comprehensive support for structured reactive programming, 
+extending classical structure programming with continuous interaction with
+external stimuli.
+
+\CEU introduces organisms which reconcile data and control state in a single 
+abstraction.
+%
+In contrast with objects, organisms have an execution body that can react 
+independently to stimuli from the environment.
+%
+Both static and dynamic instances of organisms are subject to lexical scope 
+with automatic memory management, which eliminates memory leaks and the need 
+for a garbage collector.
+
+\CEU is suitable for wide range of reactive applications and platforms.
+%
+We have been using it in constrained platforms for sensor networks (e.g., 16MHz 
+CPU with 4Kb of RAM) as well as in full-fledged tablets for games and graphical 
+applications.
 
 %care with embedded systems
 %- pool
@@ -1299,41 +1355,7 @@ TODO
 %- wsn
 
 \begin{comment}
-Overall, organisms reconcile data and control state in a single concept.
 
-these languages shows that imperative can be safe with a reasonable concurrency 
-model and static analysis
-
-Adding dynamic state and references to SRP is a significant contribution.  
-However the presentation assumes the audience already appreciates the 
-advantages of SRP over standard imperative semantics. Most observers will not 
-notice the difference at all and think this is just a weird syntactic sugar for 
-standard multithreaded programming. SRP needs to be better explained and 
-justified, perhaps by showing how it simplifies the examples.
-
-\CEU is a Esterel-based reactive language that targets constrained embedded 
-platforms.
-%
-Relying on a deterministic semantics, it provides safe shared-memory 
-concurrency among lines of execution.
-%
-\CEU introduces a stack-based execution policy for internal events which 
-enables advanced control mechanisms considering the context of embedded 
-systems, such as exception handling and a limited form of coroutines.
-%
-The conjunction of shared-memory concurrency with internal events allows 
-programs to express dependency among variables reliably, reconciling the 
-control and dataflow reactive styles in a single language.
-%As far as we know, \CEU is the first language to reconcile the control and 
-%dataflow reactive styles.
-%
-%We present a formal description of \CEU and show how its synchronous and 
-%static nature enables a compile-time analysis to ensure that reactions to the 
-%environment are deterministic and execute with bounded memory and CPU time.
-
-\end{comment}
-
-\begin{comment}
 ===============================================================================
 
 In computing, reactive programming is a programming paradigm oriented around data flows and the propagation of change. This means that it should be possible to express static or dynamic data flows with ease in the programming languages used, and that the underlying execution model will automatically propagate changes through the data flow.
