@@ -109,21 +109,21 @@ mathescape=true,
 \numberofauthors{1}
 \author{
     \alignauthor
-    Francisco Sant'Anna \hspace{1cm} Noemi Rodriguez \hspace{1cm} Roberto Ierusalimschy   \\
+    Francisco Sant'Anna \hspace{1cm} Roberto Ierusalimschy  \hspace{1cm} Noemi Rodriguez  \\
     \affaddr{Departamento de Inform\'atica --- PUC-Rio, Brasil} \\
-    \email{\{fsantanna,noemi,roberto\}@inf.puc-rio.br}
+    \email{\{fsantanna,roberto,noemi\}@inf.puc-rio.br}
 }
 
 \maketitle
 
 \begin{abstract}
 Through the language \CEU, we promote structured reactive programming as an 
-extension to classical structured programming that interacts continuously with 
-the environment.
+extension to classical structured programming that also interacts continuously 
+with the environment.
 %
 We revive the synchronous and imperative programming style of Esterel and aim 
 to expand its limits from the strict embedded domain with the new abstraction 
-mechanism of organisms.
+mechanism of \emph{organisms}.
 
 Organisms extend objects to react independently to the environment with an 
 execution body that composes multiple lines of execution.
@@ -132,9 +132,9 @@ Compositions bring structured reasoning to concurrency and can better describe
 state machines typical of reactive applications.
 %
 Organisms are subject to lexical scope and automatic memory management similar 
-to stack-living locals.
-This memory model does not require a free primitive or garbage collection in 
-the language, and also eliminates memory leaks by design.
+to locals in a stack.
+We show that this model does not require garbage collection or a \code{free} 
+primitive in the language, eliminating memory leaks by design.
 \end{abstract}
 
 %\category{CR-number}{subcategory}{third-level}
@@ -219,9 +219,9 @@ rigid embedded domain.
 %\CEU is based on Esterel and relies on a similar synchronous and deterministic 
 %execution model that simplifies the reasoning about concurrency aspects.
 %
-We believe that the excessively rigorous semantics of Esterel, whose focus is 
-on static safety guarantees, is not suitable for other reactive application 
-domains, such as GUIs, games, and distributed systems.
+We believe that the rigorous semantics of Esterel, which focus on static safety 
+guarantees, is not suitable for other reactive application domains, such as 
+GUIs, games, and distributed systems.
 %
 For instance, the lack of abstractions with dynamic lifetime makes difficult to 
 deal with virtual resources such as graphical widgets, game units, and network 
@@ -251,8 +251,10 @@ The rest of the paper is organized as follows:
 %Section~\ref{sec.models} justifies the synchronous concurrency model as better 
 %choice for SRP.
 Section~\ref{sec.ceu} presents SRP through \CEU, with its underlying 
-synchronous concurrency model, powerful parallel compositions, and the 
-organisms abstraction.
+synchronous concurrency model and powerful parallel compositions.
+Section~\ref{sec.orgs} presents the organisms abstraction, which provides 
+static and dynamic instances of subprograms with lexical scope and automatic 
+memory management.
 %Section~\ref{sec.demo} demonstrates a complete video game for Android 
 %implemented in \CEU.
 Section~\ref{sec.related} discusses related work.
@@ -262,8 +264,8 @@ Section~\ref{sec.conclusion} concludes the paper and makes final remarks.
 \label{sec.ceu}
 
 \CEU is a concurrent language, in which its lines of execution, known as 
-\emph{trails}, react continuously to external stimuli, all together in 
-synchronous steps.
+\emph{trails}, react all together in synchronous steps and continuously to 
+external stimuli.
 %
 Figure~\ref{lst.syntax} shows a compact reference of \CEU.
 
@@ -353,9 +355,9 @@ To avoid infinite execution for reactions, \CEU ensures that all loops have
 
 As a result of synchronous execution, all operations to variable \code{v} in 
 Figure~\ref{lst.intro} are atomic because reactions to \code{1s} and 
-\code{RESET} can never interleave.
+\code{RESET} can never interrupt each other.
 %
-In contrast, in an asynchronous model with nondeterministic scheduling, the 
+In contrast, in asynchronous models with nondeterministic scheduling, the 
 occurrence of \code{RESET} could preempt the first trail during an increment to 
 \code{v} (line 6) and reset it (line 12) before printing it (line 7), 
 characterizing a race condition on the variable.
@@ -387,39 +389,35 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-The synchronous model also empowers SRP with an \emph{orthogonal abortion} 
-construct that simplifies the composition of activities%
+The synchronous model also empowers SRP with an orthogonal abortion construct 
+that simplifies the composition of activities%
 \footnote{We use the term activity to generically refer to a language's unit of 
 execution (e.g., \emph{thread}, \emph{actor}, \emph{trail}, etc.).}.
 %
 Orthogonal abortion is the ability to abort an activity from outside it, 
-without affecting the overall consistency of the system (e.g., properly 
+without affecting the overall consistency of the program (e.g., properly 
 releasing global resources).
 %
-The example that follows shows the \code{par/or} construct of \CEU to compose 
-trails and rejoin when either of them terminates, properly aborting the other:
+The example that follows shows the \code{par/or} construct of \CEU which 
+composes trails and rejoin when either of them terminates, properly aborting 
+the other:
 
 \begin{lstlisting}
 par/or do
-    // trail A
-    <local-variables-A>
-    <body-A>
+    <body-trail-1>
 with
-    // trail B
-    <local-variables-B>
-    <body-B>
+    <body-trail-2>
 end
-<local-variables-rejoin>
 <body-rejoin>
 \end{lstlisting}
 
 The \code{par/or} is regarded as orthogonal because the composed trails do not 
 know when and how they are aborted (i.e., abortion is external to them).
 %
-In the example, each trail has a set of local variables and an execution body 
-that lasts for an arbitrary time.
-After the \code{par/or} rejoins, a new set of local variables goes alive,
-reusing the space from the trails' locals going out of scope.
+%In the example, each trail has a set of local variables and an execution body 
+%that lasts for an arbitrary time.
+%After the \code{par/or} rejoins, a new set of local variables goes alive,
+%reusing the space from the trails' locals going out of scope.
 
 %\begin{figure}[t]
 %\caption{ A \code{par/or} composes two concurrent trail and rejoins when one 
@@ -432,8 +430,8 @@ Abortion in asynchronous languages is challenging~\cite{esterel.preemption}
 because the activity to be aborted might be on a inconsistent state (e.g., 
 holding pending messages or locks).
 %
-The language runtime needs to wait for the activity to be consistent before 
-aborting it, but what results in two unsatisfactory semantics for a 
+This way, the language runtime needs to wait for the activity to be consistent 
+before aborting it, resulting in two unsatisfactory semantics for a 
 hypothetical \code{par/or}:
 either wait to rejoin, making the program unresponsive to incoming events for 
 an arbitrary time;
@@ -441,38 +439,38 @@ or rejoin immediately and let the activity complete termination in the
 background, which may cause race conditions with the subsequent code.
 %which may confuse the programmer (which assumes both activities have 
 %terminated), and also
-Immediate rejoin also leads to heap-based allocation (which is discouraged in 
-the context of embedded systems) because activities may coexist with the 
-subsequent code for some time.
+%Immediate rejoin also leads to heap-based allocation (which is discouraged in 
+%the context of embedded systems) because activities may coexist with the 
+%subsequent code for some time.
 
-As matter of fact, asynchronous languages do not provide effective abortion:
+In fact, asynchronous languages do not provide effective abortion:
 \emph{Java}'s \code{Thread.stop} primitive has been officially 
 deprecated~\cite{sync_async.threadsstop};
 \emph{pthread}'s \code{pthread\_cancel} does not guarantee immediate 
 cancellation~\cite{sync_async.pthreadsstop};
 \emph{erlang}'s \code{exit} either enqueues a terminating message (which may 
 take time), or unconditionally terminates the process (regardless of its 
-state)~\cite{sync_async.erlangstop}.
+state)~\cite{sync_async.erlangstop};
 and \emph{CSP} only supports a composition operator that \emph{``terminates 
-when \textbf{all} of the combined processes terminate''}~\cite{async.csp};
+when \textbf{all} of the combined processes terminate''}~\cite{async.csp}.
 %
-Instead, asynchronous activities typically agree a on common protocol to abort 
-each other (e.g., through shared state variables or message passing), 
-increasing coupling among them with concerns that are not directly related to 
-the problem specification.
+As an alternative, asynchronous activities typically agree a on common protocol 
+to abort each other (e.g., through shared state variables or message passing), 
+increasing coupling among them with implementation details that are not 
+directly related to the problem specification.
 
 Synchronous languages, however, provide accurate control over the life cycle of 
 concurrent activities because in between every reaction, the whole system is 
 idle and consistent~\cite{esterel.preemption}.
 %
 In Section~\ref{sec.ceu.par} we show how \CEU deals with abortion of trails 
-that use stateful resources from the environment, such as file handling and 
-network transmissions.
+that use stateful resources from the environment, such as file and network 
+handlers.
 
 %\CEU provides the presented \code{par/or} construct, which is equivalent to 
 %Esterel's \code{trap} abortion construct.
 %
-%In Section~\ref{sec.ceu.orgs} we highlight the importance of abortion for the 
+%In Section~\ref{sec.orgs} we highlight the importance of abortion for the 
 %organisms abstraction.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -492,8 +490,8 @@ network transmissions.
 - not really parallel (prev section)
 \end{comment}
 
-In terms of control structures, SRP extends SP with parallel compositions, 
-allowing applications to handle multiple events concurrently.
+In terms of control structures, SRP basically extends SP with parallel 
+compositions, allowing applications to handle multiple events concurrently.
 %
 \CEU provides three parallel constructs, which vary on how they rejoin:
 a \code{par/and} rejoins when all trails in parallel terminate;
@@ -607,12 +605,11 @@ At any time, the client may request a retransmission (line 9), which terminates
 the \code{par/or} (line 8), aborts the ongoing transmission (line 15, if not 
 idle), and restarts the loop (line 7).
 %
-Also, the client may request to stop the whole protocol (line 5), which 
-terminates the outermost \code{par/or} and aborts the transmission and all 
-composed trails.
+Also, the client may request to stop the whole protocol at any time (line 5), 
+which terminates the outermost \code{par/or} and aborts the transmission and 
+all composed trails.
 In this case, the top-level loop restarts and waits for the next request to 
-start the protocol (line 3), remaining unresponsive to other requests as 
-specified.
+start the protocol (line 3), ignoring all other requests as specified.
 
 The example shows how parallel compositions can describe complex state machines 
 in a structured way, eliminating the use of global state variables for this 
@@ -693,8 +690,8 @@ class Blink with
     var int dt;
 do
     loop do
-        await (dt)ms;
-        _toggle(pin);
+        await (this.dt)ms;
+        _toggle(this.pin);
     end
 end
 
@@ -735,8 +732,8 @@ do
 
     par/or do
         // body of b1
-        b1.pin = 0;
-        b1.dt  = 2;
+        b1.pin = 11;
+        b1.dt  = 600;
         loop do
             await (b1.dt)ms;
             _toggle(b1.pin);
@@ -744,8 +741,8 @@ do
         await FOREVER;
     with
         // body of b2
-        b2.pin = 1;
-        b2.dt  = 4;
+        b2.pin = 12;
+        b2.dt  = 1000;
         loop do
             await (b2.dt)ms;
             _toggle(b2.pin);
@@ -792,8 +789,8 @@ end
 %by prefixing symbols with an underscore (e.g., \code{\_printf(<...>)}).
 %
 The \CEU compiler tracks the interaction of \code{par/or} compositions with 
-automatic variables and stateful native $C$ functions (e.g., device drivers) to 
-ensure proper trail abortion.
+local variables and stateful native $C$ functions (e.g., device drivers) to 
+guarantee that trail abortion is always safe.
 
 Consider the code on the left of Figure~\ref{lst.fin}, which expands the 
 sending trail of Figure~\ref{lst.ctp} (line 15).
@@ -801,7 +798,7 @@ sending trail of Figure~\ref{lst.ctp} (line 15).
 The \code{buffer} packet is a local variable whose pointer is passed to native 
 function \code{\_send\_enqueue}.
 The call enqueues the pointer in the radio driver, which holds it up to the 
-occurrence of \code{SEND\_ACK} that acknowledges the packet transmission.
+occurrence of \code{SEND\_ACK} acknowledging the packet transmission.
 %
 In the meantime, the sending trail might be aborted from \code{STOP} or 
 \code{RETRANSMIT} requests (lines 5 and 9 of Figure~\ref{lst.ctp}), making the 
@@ -809,15 +806,16 @@ packet buffer to go out of scope, and leading to a \emph{dangling pointer} in
 the radio driver.
 %
 \CEU refuses to compile programs like this and requires \emph{finalization} 
-clauses to accompany unsafe native calls~\cite{ceu.sensys13}.
+clauses to accompany stateful native calls~\cite{ceu.sensys13}.
 The code on the right of Figure~\ref{lst.fin} properly dequeues the packet if
-the block of \code{buffer} goes out of scope.
+the block of \code{buffer} goes out of scope, i.e., the finalization clause 
+after the \code{with} executes automatically on abortion.
 
 Finalization clauses are fundamental to preserve the orthogonality of 
 \code{par/or} compositions in SRP.
 
 \section{Organisms: SRP Abstractions}
-\label{sec.ceu.orgs}
+\label{sec.orgs}
 
 Applications often need to replicate a behavior and rely on abstractions that 
 the language provide.
@@ -835,7 +833,7 @@ The prevailing imperative abstraction mechanism for reactive applications are
 objects used in conjunction with the observer pattern.
 Even though objects abstract data with proper encapsulation, they cannot 
 encapsulate control flow because methods have to return control as quickly as 
-possible to keep the application responsive~\cite{games.patterns}.
+possible to keep the application responsive~\cite{TODO.games.patterns}.
 
 \CEU abstracts data and control state into the single concept of organisms.
 %Organisms provide an execution body with multiple lines of execution (control 
@@ -844,8 +842,8 @@ possible to keep the application responsive~\cite{games.patterns}.
 A class of organisms describes an interface and a single execution body.
 The interface exposes public variables, methods, and also internal events.
 The body can contain any valid code in \CEU, including parallel compositions.
-On an organism is instantiated, its bode starts to execute in parallel with the 
-program.
+When an organism is instantiated, its body starts to execute in parallel with 
+the program.
 Organism instantiation can be either static or dynamic.
 % TODO: The syntax xxx
 
@@ -860,12 +858,12 @@ frequencies in parallel and terminates after 1 minute.
 organism class and uses two instances to reproduce the same behavior of 
 \emph{CODE-1}.
 %
-\item The rightmost code (\emph{CODE-3}) is the equivalent expansion without 
-organisms, which should resemble the original \emph{CODE-1}.
+\item The rightmost code (\emph{CODE-3}) is the equivalent expansion of the 
+organisms bodies, which should resemble the original \emph{CODE-1}.
 \end{itemize}
 %
 In \emph{CODE-2}, the Blink class (lines 1-9) exposes the \code{pin} and 
-\code{dt} properties, corresponding to the LED I/O pin and blinking period, 
+\code{dt} properties, corresponding to the LED I/O pin and the blinking period, 
 respectively.
 The application then creates two instances, specifying those properties in the 
 constructors (lines 12-15 and 17-20).
@@ -884,10 +882,9 @@ organisms bodies to terminate the \code{par/or}.
 The \code{\_Blink} type (lines 1-4) corresponds to a simple datatype without an
 execution body.
 %
-Note that actual implementation of \CEU does not expand the organisms bodies 
-like in \emph{CODE-3} (the implementation is not discussed in this paper).
-In fact, a class generates a single code for its body, which is shared by all 
-instances, in the same way as objects share class methods.
+The actual implementation of \CEU does not expand the organisms bodies like in 
+\emph{CODE-3}, instead, a class generates a single code for its body, which is 
+shared by all instances (in the same way as objects share class methods).
 
 The main distinction from organisms to standard objects is how they can react 
 independently and directly to the environment, i.e., once instantiated they 
@@ -898,18 +895,18 @@ rely on the main program to feed their methods with input from the environment.
 %
 Even tough the organisms run independent from the main program, they are still 
 subject to the disciplined synchronous model, which keeps the whole system 
-deterministic.
+deterministic, as the static expansion to \emph{CODE-3} suggests.
 %
 %\emph{CODE-3} shows that the equivalent expansion results in plain \CEU.
 
-The memory model for organisms eliminates known issues in allocation: 
-\emph{memory leaks}, \emph{dangling pointers}, and the need for \emph{garbage 
-collection}.
+The memory model for organisms eliminates memory leaks, dangling pointers, and 
+the need for garbage collection.
 %
 The model is similar to stack-living local variables of procedures, providing 
 lexical scope and automatic bookkeeping of organisms.
-We also restrict explicit references to organisms to avoid indirect 
-manipulation.
+We also restrict explicit manipulation of references to organisms to avoid 
+unsafe access after they go out of scope, as we discuss in 
+Section~\ref{sec.orgs.refs}.
 
 Regarding lexical scope and automatic memory management, note that 
 \emph{CODE-2} uses a \code{do-end} block (lines 11-23) that limits the scope of 
@@ -993,11 +990,12 @@ emit u2.move => 500;
 }
 \end{figure}
 
+%\newpage
 \subsection{Dynamic organisms}
 
-Static embedded systems typically handle real sensors and actuators hardware 
-through a one-to-one correspondence with software, i.e., a static (possibly 
-complex) piece of software deals with a piece of hardware.
+Static embedded systems typically manipulate real sensors and actuators 
+hardware with a one-to-one correspondence in software, i.e., a static (possibly 
+complex) piece of software deals with a corresponding piece of hardware.
 %
 In contrast, more general reactive systems have to deal with resource 
 virtualization, such as multiplexing protocols in a network, or simulating 
@@ -1020,9 +1018,9 @@ every 1s do
 end
 \end{lstlisting}
 
-The \code{spawn} allocates proper memory and returns a pointer to the new 
-organism, which can be dereferenced through the operator \code{`:'} (analogous 
-to \code{`->'} of \emph{C/C++}).
+The \code{spawn} allocates the new organism and returns a pointer to it, which 
+can be later dereferenced with the operator \code{`:'} (analogous to 
+\code{`->'} of \emph{C/C++}).
 
 %\begin{figure}[t]
 %\rule{8.5cm}{0.37pt}
@@ -1032,20 +1030,22 @@ to \code{`->'} of \emph{C/C++}).
 %\end{figure}
 
 Dynamic instances also execute in parallel with the rest of the application, 
-but have different lifetime and scoping rules.
+but have different lifetime and scoping rules:
 %
-On the one hand, a static instance has a unique identifier and a well-defined 
-scope that holds its memory resources.
-On the other hand, a dynamic instance outlives the scope that spawns it and is 
-anonymous (but may have pointers to it, as in the previous example).
+A static instance has a unique identifier and a well-defined scope that holds 
+its memory resources;
+A dynamic instance outlives the scope that spawns it and is anonymous (but may 
+have pointers to it, as in the previous example).
 
-To recognise the reactive and independent nature of organisms, \CEU supports 
-that they control their own lifetime:
-once the body of a dynamic organism terminates, it is automatically reclaimed 
-from memory.
+In accordance with the reactive and independent nature of organisms, \CEU 
+supports that a dynamic instance control its own lifetime:
+once its body terminates, a dynamic organism is automatically freed from 
+memory.
+%
 The example that follows redefines the body of the \code{Unit} class of 
 Figure~\ref{lst.unit} to terminate after 1 hour, imposing a maximum life span 
-in which a unit can react to \code{move} requests:
+in which a unit can react to \code{move} requests.
+After that, the body terminates and the organism is automatically freed:
 
 %\begin{figure}[t]
 \begin{lstlisting}
@@ -1065,21 +1065,16 @@ end
 %}
 %\end{figure}
 
-The lack of scopes for dynamic organisms prevents orthogonal abortion, as there 
-is no way to abort the execution of dynamic instances.
+The lack of scopes for dynamic organisms prevents orthogonal abortion, given 
+that there is no way to externally abort the execution of dynamic instances.
 %
 To overcome this limitation, \CEU provides lexically scoped \emph{pools} as 
-containers to hold dynamic organisms instances.
+containers that hold dynamic organisms instances.
 %
-The example of Figure~\ref{lst.pool} declares the \code{units} pool that holds 
-a maximum of 10 instances (line 3).
-A new unit is spawned in this pool on every second (note the \code{in units}, 
-in line 6).
-Once the application receives a \code{CLICK} (line 11), the \code{par/or} 
-terminates, making the \code{units} pool to go out of scope and abort all units 
-alive.
+The example that follows declares the \code{units} pool that holds a maximum of 
+10 instances (line 3):
 
-\begin{figure}[t]
+%\begin{figure}[t]
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
 input void CLICK;
 do
@@ -1096,17 +1091,24 @@ do
 end
 \end{lstlisting}
 %\rule{8.5cm}{0.37pt}
-\caption{ Spawns and moves a new \code{Unit} every second.
-\label{lst.pool}
-}
-\end{figure}
+%\caption{ Spawns and moves a new \code{Unit} every second.
+%\label{lst.pool}
+%}
+%\end{figure}
 
-Pools with dimension have static pre-allocation, resulting in efficient and 
-deterministic instantiation of organisms.
+A new unit is spawned in this pool on every second (note the \code{in units}, 
+in line 6).
+Once the application receives a \code{CLICK} (line 11), the \code{par/or} 
+terminates, making the \code{units} pool to go out of scope and abort/free all 
+units alive.
+
+Pools with dimension (e.g., \code{pool Unit[10] units}), have static 
+pre-allocation, resulting in efficient and deterministic organism 
+instantiation.
 This opens the possibility for dynamic behavior also in constrained embedded 
 systems.
 %
-If a pool does not specify a dimension, as in ``\code{pool Unit[] units}'', the 
+If a pool does not specify a dimension (e.g., \code{pool Unit[] units}), the 
 instances go to the heap but are still subject to the pool scope.
 %
 If a \code{spawn} does not specify a pool, as in ``\code{spawn Unit;}'', the 
@@ -1137,6 +1139,7 @@ end
 \end{comment}
 
 \subsection{Pointers and References}
+\label{sec.orgs.refs}
 
 As organisms react independently from the environment, it is often not 
 necessary to hold pointers to organisms.
@@ -1151,11 +1154,11 @@ await 2h;
 emit u:move => 100;     // this access is unsafe
 \end{lstlisting}
 
-The program first assigns a \code{Unit} reference to pointer \code{u}.
+The example first acquires a pointer \code{u} to \code{Unit} somehow.
 Then, it dereferences the pointer in two occasions:
 in the same reaction, just after acquiring the reference;
-in another reaction, after \emph{2h}, when the pointed organism may have 
-already terminated and freed.
+and in another reaction, after \emph{2h}, when the pointed organism may have 
+already terminated and being freed.
 
 \CEU enforces all pointer accesses across reactions to use the \code{watching} 
 construct which supervises organism termination:
@@ -1184,8 +1187,8 @@ end
 \end{lstlisting}
 \end{minipage}
 
-The \code{watching} construct terminates when the referred organism terminates, 
-eliminating possible dangling pointers in the program.
+The whole \code{watching} construct aborts whenever the referred organism 
+terminates, eliminating possible dangling pointers in the program.
 %
 The code in the right shows the equivalent expansion of the \code{wacthing} 
 construct to a \code{par/or} that awaits the special event \code{\_\_killed}.
@@ -1248,7 +1251,7 @@ scopes
 \section{Related work}
 \label{sec.related}
 
-Esterel provides module instantiation through the \code{run} command, which 
+Esterel provides a module abstraction through the \code{run} command, which 
 syntactically replaces the command by the referred module 
 body~\cite{esterel.primer}.
 %
