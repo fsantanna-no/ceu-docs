@@ -167,7 +167,7 @@ parallelism.
 The dataflow style of Lustre~\cite{lustre.ieee91} represents programs as graphs 
 of values, in which a change to a node updates its dependencies automatically.
 
-In recent years, Functional Reactive Programming~\cite{frp.principles} 
+In recent years, Functional Reactive Programming (FRP)~\cite{frp.principles} 
 modernized the dataflow style and became mainstream, inspiring a number of 
 languages and libraries, such as Flapjax~\cite{frp.flapjax}, Rx (from 
 Microsoft), React (from Facebook), and Elm~\cite{frp.elm}.
@@ -189,65 +189,61 @@ imperative languages.
 In this sense, callbacks actually disrupt imperative reactivity, becoming ``our 
 generation's \code{goto}''~\cite{rp.goto,elm.goto}.
 
-TODO: motivacao
-
-In this work, we revive the imperative style of Esterel, to which we now refer 
-as \emph{Structured Reactive Programming (SRP)}.
+We believe that the full range of reactive applications can benefit from the 
+imperative style of Esterel, which we now refer to as \emph{Structured Reactive 
+Programming (SRP)}.
 %
 SRP extends the classical hierarchical control constructs of \emph{Structured 
 Programming (SP)} (i.e., concatenation, selection, and 
 repetition~\cite{dij.notes}) to support continuous interaction with the 
 environment.
 %
+SRP retains structured and sequential reasoning of programs, contrasting with 
+FRP and raising the classical dichotomy between functional and imperative 
+languages also to the reactive domain.
+
 In practical terms, SRP provides two extensions to SP:
 an ``\code{await <event>}'' statement that suspends a line of execution until 
 the referred event occurs, keeping all context alive;
 and parallel constructs that compose multiple lines of execution and make them 
 concurrent.
 %
-The \code{await} statement represents the imperative/reactive nature of SRP, 
+The \code{await} statement represents the imperative-reactive nature of SRP, 
 recovering sequential execution lost with the observer pattern.
 Parallel compositions%
 \footnote{
-TODO:
-We use the term \emph{parallel composition} as a synonym for \emph{side-by-side 
-lexical composition}, which does not imply many-core parallel execution.
+The term \emph{parallel composition} in this work does not imply many-core 
+parallel execution.
 }
 allow for multiple \code{await} statements to coexist, which is necessary to 
 handle concurrent events, common in reactive applications.
-
-We advocate SRP through the Esterel-based language \CEU~\cite{ceu.sensys13}, a 
-contemporary outlook of imperative reactivity that aims to expand it from the 
-rigid embedded domain.
 %
-%\CEU is based on Esterel and relies on a similar synchronous and deterministic 
-%execution model that simplifies the reasoning about concurrency aspects.
+However, the original rigorous semantics of Esterel, which focuses on static 
+safety guarantees, is not suitable for other reactive application domains, such 
+as GUIs, games, and distributed systems.
 %
-The rigorous semantics of Esterel, which focuses on static safety guarantees, 
-is not suitable for other reactive application domains, such as GUIs, games, 
-and distributed systems.
-%
-TODO
 For instance, the lack of abstractions with dynamic lifetime makes difficult to 
 deal with virtual resources such as graphical widgets, game units, and network 
 sessions.
 
-TODO: In this paper
-Our main contribution is a new abstraction mechanism for \CEU, the 
-\emph{organisms}, that encapsulate parallel compositions with an object-like 
-interface.
+In this work, we extend the Esterel-based language \CEU~\cite{ceu.sensys13} 
+with a new abstraction mechanism, the \emph{organisms}, that encapsulate 
+parallel compositions with an object-like interface.
 % that other parts of the program can manipulate.
 %
 In brief, organisms are to SRP like procedures are to SP, i.e., one can 
 abstract a portion of code with a name and manipulate (call) that name from 
 multiple places.
 %
-In contrast with existing work, organisms provide lexical scope and automatic 
-memory management for both static and dynamic instances, behaving much like 
-local variables in SP.
+Unlike Simula objects~\cite{simula}, organisms react independently to the 
+environment and do not depend on cooperation, i.e., once instantiated they 
+become alive and reactive (hence the name organisms).
+%
+Furthermore, both static and dynamic allocation of organisms are subject to 
+lexical scope and automatic memory management, behaving much like local 
+variables in SP.
 
 \begin{comment}
-TODO: simula
 There are, however, additional challenges that apply to organisms:
 %
 \begin{itemize}
@@ -279,7 +275,7 @@ Section~\ref{sec.conclusion} concludes the paper.
 \emph{trails}, react all together in synchronous steps and continuously to 
 external stimuli.
 %
-Figure~\ref{lst.syntax} shows a compact reference of \CEU.
+%Figure~\ref{lst.syntax} shows a compact reference of \CEU.
 
 The introductory example in Figure~\ref{lst.intro} starts two trails with the 
 \code{par} construct: the first (lines 4-8) increments variable \code{v} on 
@@ -296,6 +292,7 @@ every second and prints its value on screen; the second (lines 10-13) resets
 Programs in \CEU can access $C$ libraries of the underlying platform by 
 prefixing symbols with an underscore (e.g., \code{\_printf(<...>)}, in line 7).
 
+\begin{comment}
 \begin{figure}[t]
 \begin{lstlisting}%[backgroundcolor=\color{white}]
 
@@ -346,6 +343,7 @@ end;
 \label{lst.syntax}
 }
 \end{figure}
+\end{comment}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Synchronous concurrency}
@@ -468,7 +466,7 @@ In fact, asynchronous languages do not provide effective abortion:
 deprecated~\cite{sync_async.threadsstop};
 \emph{pthread}'s \code{pthread\_cancel} does not guarantee immediate 
 cancellation~\cite{sync_async.pthreadsstop};
-\emph{erlang}'s \code{exit} either enqueues a terminating message (which may 
+\emph{Erlang}'s \code{exit} either enqueues a terminating message (which may 
 take time), or unconditionally terminates the process (regardless of its 
 state)~\cite{sync_async.erlangstop};
 and \emph{CSP} only supports a composition operator that \emph{``terminates 
@@ -639,6 +637,63 @@ purpose~\cite{ceu.sensys13}.
 
 \subsubsection{Finalization}
 
+\begin{comment}
+\begin{figure}[t]
+\begin{lstlisting}[numbers=left,xleftmargin=3em]
+<...>
+    par/or do
+        await STOP;
+    with
+        <...>
+            par/or do
+                await RETRANSMIT;
+            with
+                <...>
+            end
+    end
+\end{lstlisting}
+%\rule{14cm}{0.37pt}
+\caption{
+\label{lst.ctp}
+}
+\end{figure}
+\end{comment}
+
+%Programs in \CEU can access $C$ libraries available in the underlying platform 
+%by prefixing symbols with an underscore (e.g., \code{\_printf(<...>)}).
+%
+The \CEU compiler tracks the interaction of \code{par/or} compositions with 
+local variables and stateful $C$ functions (e.g., device drivers) to guarantee 
+that trail abortion is always safe.
+
+\begin{figure}[t]
+\begin{minipage}[t]{0.45\linewidth}
+\begin{lstlisting}
+var _packet_t buffer;
+<fill-buffer-info>
+_send_enqueue(&buffer);
+await SEND_ACK;
+\end{lstlisting}
+\end{minipage}
+%
+\begin{minipage}[t]{0.50\linewidth}
+\begin{lstlisting}
+var _packet_t buffer;
+<fill-buffer-info>
+finalize
+    _send_enqueue(&buffer)
+with
+    _send_dequeue(&buffer);
+end
+await SEND_ACK;
+\end{lstlisting}
+\end{minipage}
+%\rule{8.5cm}{0.37pt}
+\caption{ Finalization clauses safely release stateful resources.
+\label{lst.fin}
+}
+\end{figure}
+
 \begin{figure*}[t]
 \begin{minipage}[t]{0.28\linewidth}
 \begin{lstlisting}
@@ -757,63 +812,6 @@ end
 }
 \end{figure*}
 
-\begin{comment}
-\begin{figure}[t]
-\begin{lstlisting}[numbers=left,xleftmargin=3em]
-<...>
-    par/or do
-        await STOP;
-    with
-        <...>
-            par/or do
-                await RETRANSMIT;
-            with
-                <...>
-            end
-    end
-\end{lstlisting}
-%\rule{14cm}{0.37pt}
-\caption{
-\label{lst.ctp}
-}
-\end{figure}
-\end{comment}
-
-%Programs in \CEU can access $C$ libraries available in the underlying platform 
-%by prefixing symbols with an underscore (e.g., \code{\_printf(<...>)}).
-%
-The \CEU compiler tracks the interaction of \code{par/or} compositions with 
-local variables and stateful $C$ functions (e.g., device drivers) to guarantee 
-that trail abortion is always safe.
-
-\begin{figure}[t]
-\begin{minipage}[t]{0.45\linewidth}
-\begin{lstlisting}
-var _packet_t buffer;
-<fill-buffer-info>
-_send_enqueue(&buffer);
-await SEND_ACK;
-\end{lstlisting}
-\end{minipage}
-%
-\begin{minipage}[t]{0.50\linewidth}
-\begin{lstlisting}
-var _packet_t buffer;
-<fill-buffer-info>
-finalize
-    _send_enqueue(&buffer)
-with
-    _send_dequeue(&buffer);
-end
-await SEND_ACK;
-\end{lstlisting}
-\end{minipage}
-%\rule{8.5cm}{0.37pt}
-\caption{ Finalization clauses safely release stateful resources.
-\label{lst.fin}
-}
-\end{figure}
-
 Consider the code in the left of Figure~\ref{lst.fin}, which expands the 
 sending trail of Figure~\ref{lst.ctp} (line 15).
 %
@@ -869,7 +867,6 @@ The body can contain any valid code in \CEU, including parallel compositions.
 When an organism is instantiated, its body starts to execute in parallel with 
 the program.
 Organism instantiation can be either static or dynamic.
-% TODO: The syntax xxx
 
 The example in Figure~\ref{lst.orgs} introduces static organisms with three 
 code chunks:
