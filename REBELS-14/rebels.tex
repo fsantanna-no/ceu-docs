@@ -168,14 +168,14 @@ The dataflow style of Lustre~\cite{lustre.ieee91} represents programs as graphs
 of values, in which a change to a node updates its dependencies automatically.
 
 In recent years, Functional Reactive Programming (FRP)~\cite{frp.principles} 
-modernized the dataflow style and became mainstream, inspiring a number of 
-languages and libraries, such as Flapjax~\cite{frp.flapjax}, Rx (from 
-Microsoft), React (from Facebook), and Elm~\cite{frp.elm}.
+modernized the dataflow style, inspiring a number of languages and libraries, 
+such as Flapjax~\cite{frp.flapjax}, Rx (from Microsoft), React (from Facebook), 
+and Elm~\cite{frp.elm}.
 %
-In contrast, the imperative style of Esterel is now confined to the domain of 
+In contrast, the imperative style of Esterel is confined to the domain of 
 real-time embedded control systems.
 % such as flight control on avionics and anti-collision equipment on automobiles.
-
+%
 As a matter of fact, imperative reactivity is now often associated to the 
 \emph{observer pattern}, typical in object-oriented systems, because it heavily 
 relies on side effects~\cite{rp.deprecating,rp.rescala}.
@@ -201,22 +201,6 @@ environment.
 SRP retains structured and sequential reasoning of programs, contrasting with 
 FRP and raising the classical dichotomy between functional and imperative 
 languages also to the reactive domain.
-
-In practical terms, SRP provides two extensions to SP:
-an ``\code{await <event>}'' statement that suspends a line of execution until 
-the referred event occurs, keeping all context alive;
-and parallel constructs that compose multiple lines of execution and make them 
-concurrent.
-%
-The \code{await} statement represents the imperative-reactive nature of SRP, 
-recovering sequential execution lost with the observer pattern.
-Parallel compositions%
-\footnote{
-The term \emph{parallel composition} in this work does not imply many-core 
-parallel execution.
-}
-allow for multiple \code{await} statements to coexist, which is necessary to 
-handle concurrent events, common in reactive applications.
 %
 However, the original rigorous semantics of Esterel, which focuses on static 
 safety guarantees, is not suitable for other reactive application domains, such 
@@ -225,6 +209,28 @@ as GUIs, games, and distributed systems.
 For instance, the lack of abstractions with dynamic lifetime makes difficult to 
 deal with virtual resources such as graphical widgets, game units, and network 
 sessions.
+
+In practical terms, SRP provides three extensions to SP:
+an ``\code{await <event>}'' statement that suspends a line of execution until 
+the referred event occurs, keeping all context alive;
+parallel constructs to compose multiple lines of execution and make them 
+concurrent;
+and an orthogonal mechanism to abort reactive compositions.
+%
+The \code{await} statement represents the imperative-reactive nature of SRP, 
+recovering sequential execution lost with the observer pattern.
+%
+Parallel compositions%
+\footnote{
+In this work, the term \emph{parallel composition} does not imply many-core 
+parallel execution.
+}
+allow for multiple \code{await} statements to coexist, which is necessary to 
+handle concurrent events, common in reactive applications.
+%
+Orthogonal abortion is the ability to abort an activity from outside it, 
+without affecting the overall consistency of the program (e.g., properly 
+releasing global resources).
 
 In this work, we extend the Esterel-based language \CEU~\cite{ceu.sensys13} 
 with a new abstraction mechanism, the \emph{organisms}, that encapsulate 
@@ -406,16 +412,14 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-TODO: why?
-
 The synchronous model also empowers SRP with an orthogonal abortion construct 
 that simplifies the composition of activities%
 \footnote{We use the term activity to generically refer to a language's unit of 
 execution (e.g., \emph{thread}, \emph{actor}, \emph{trail}, etc.).}.
 %
-Orthogonal abortion is the ability to abort an activity from outside it, 
-without affecting the overall consistency of the program (e.g., properly 
-releasing global resources).
+%Orthogonal abortion is the ability to abort an activity from outside it, 
+%without affecting the overall consistency of the program (e.g., properly 
+%releasing global resources).
 %
 The code that follows shows the \code{par/or} construct of \CEU which composes 
 trails and rejoins when either of them terminates, properly aborting the other:
@@ -432,6 +436,14 @@ end
 The \code{par/or} is regarded as orthogonal because the composed trails do not 
 know when and how they are aborted (i.e., abortion is external to them).
 %
+This is possible in synchronous languages because of the accurate control over 
+the life cycle of concurrent activities, i.e., in between every reaction, the 
+whole system is idle and consistent~\cite{esterel.preemption}.
+%
+\CEU extends orthogonal abortion to also work with trails that use stateful 
+resources from the environment, such as file and network handlers, as we 
+discuss in Section~\ref{sec.ceu.par}.
+
 %In the example, each trail has a set of local variables and an execution body 
 %that lasts for an arbitrary time.
 %After the \code{par/or} rejoins, a new set of local variables goes alive,
@@ -444,9 +456,9 @@ know when and how they are aborted (i.e., abortion is external to them).
 %}
 %\end{figure}
 
-Abortion in asynchronous languages is challenging~\cite{esterel.preemption} 
-because the activity to be aborted might be on a inconsistent state (e.g., 
-holding pending messages or locks).
+However, abortion in asynchronous languages is 
+challenging~\cite{esterel.preemption} because the activity to be aborted might 
+be on a inconsistent state (e.g., holding pending messages or locks).
 %
 This way, the possible (unsatisfactory) semantics for a hypothetical 
 \code{par/or} are:
@@ -476,17 +488,6 @@ As an alternative, asynchronous activities typically agree a on common protocol
 to abort each other (e.g., through shared state variables or message passing), 
 increasing coupling among them with implementation details that are not 
 directly related to the problem specification.
-
-TODO: up
-TODO: finalize
-
-Synchronous languages, however, provide accurate control over the life cycle of 
-concurrent activities because in between every reaction, the whole system is 
-idle and consistent~\cite{esterel.preemption}.
-%
-In Section~\ref{sec.ceu.par} we show how \CEU deals with abortion of trails 
-that use stateful resources from the environment, such as file and network 
-handlers.
 
 %\CEU provides the presented \code{par/or} construct, which is equivalent to 
 %Esterel's \code{trap} abortion construct.
@@ -663,8 +664,11 @@ purpose~\cite{ceu.sensys13}.
 %by prefixing symbols with an underscore (e.g., \code{\_printf(<...>)}).
 %
 The \CEU compiler tracks the interaction of \code{par/or} compositions with 
-local variables and stateful $C$ functions (e.g., device drivers) to guarantee 
-that trail abortion is always safe.
+local variables and stateful $C$ functions (e.g., device drivers) to preserve 
+safe orthogonal abortion of trails.
+%
+%Finalization clauses are fundamental to preserve the orthogonality of 
+%\code{par/or} compositions in SRP.
 
 \begin{figure}[t]
 \begin{minipage}[t]{0.45\linewidth}
@@ -831,30 +835,27 @@ The code in the right of Figure~\ref{lst.fin} properly dequeues the packet if
 the block of \code{buffer} goes out of scope, i.e., the finalization clause 
 (after the \code{with}) executes automatically on abortion.
 
-Finalization clauses are fundamental to preserve the orthogonality of 
-\code{par/or} compositions in SRP.
-
 \section{Organisms: SRP Abstractions}
 \label{sec.orgs}
-
-TODO: procs, react
 
 %Applications often need to replicate a behavior and rely on abstractions that 
 %the language provides.
 %
-In SP, the typical abstraction mechanism are procedures, which abstract
-recurrent routines with meaningful names that can be invoked multiple times 
-with different parameters.
+In SP, the typical abstraction mechanism is a procedure, which abstracts a 
+routine with a meaningful name that can be invoked multiple times with 
+different parameters.
 %
-However, procedures were not devised for continuous and concurrent input.
-For instance, procedures cannot express parallel compositions as described in 
-Section~\ref{sec.ceu.par}.
+However, procedures were not devised for continuous input, and cannot retain 
+control across reactions to the environment.
+As a consequence, procedures cannot contain awaiting parallel compositions as
+described in Section~\ref{sec.ceu.par}.
 %
-The prevailing imperative abstraction mechanism for reactive applications are 
-objects used in conjunction with the observer pattern.
-Even though objects abstract data with proper encapsulation, they cannot 
-encapsulate control flow because methods have to return as quickly as possible 
-to keep the application responsive~\cite{TODO.games.patterns}.
+Note that the same restriction applies to object-oriented programming, which 
+can properly encapsulate data, but not control flow.
+Even though objects are the prevailing imperative abstraction mechanism for 
+reactive applications when used in conjunction with the observer pattern, they 
+do not provide plentiful SRP abstractions because they also suffer from 
+inversion of control~\cite{rp.rescala}.
 
 \CEU abstracts data and control state into the single concept of organisms.
 %Organisms provide an execution body with multiple lines of execution (control 
@@ -921,19 +922,18 @@ the scheduler description of Section~\ref{sec.ceu.sync}).
 %
 %\emph{CODE-3} shows that the equivalent expansion results in plain \CEU.
 
-TODO: ?
-The memory model for organisms eliminates memory leaks, dangling pointers, and 
-the need for garbage collection.
+%TODO: ?
+%The memory model for organisms eliminates memory leaks, dangling pointers, and 
+%the need for garbage collection.
 %
-The model is similar to stack-living local variables of procedures, providing 
-lexical scope and automatic bookkeeping of organisms.
-We also restrict explicit manipulation of references to organisms to avoid 
-unsafe access after they go out of scope, as we discuss in 
-Section~\ref{sec.orgs.refs}.
+%We also restrict explicit manipulation of references to organisms to avoid 
+%unsafe access after they go out of scope, as we discuss in 
+%Section~\ref{sec.orgs.refs}.
 
-Regarding lexical scope and automatic memory management, note that 
-\emph{CODE-2} uses a \code{do-end} block (lines 11-23) that limits the scope of 
-the organisms for 1 minute (line 22).
+The memory model for organisms is similar to stack-living local variables of 
+procedures, providing lexical scope and automatic bookkeeping of organisms.
+Note that \emph{CODE-2} uses a \code{do-end} block (lines 11-23) that limits 
+the scope of the organisms for 1 minute (line 22).
 %
 During that period, the organisms are accessible (through \code{b1} and 
 \code{b2}) and reactive to the environment (i.e., blinking continuously).
@@ -1179,13 +1179,13 @@ In fact, pointers can be dangerous because they may last longer than the
 organisms they refer:
 
 \begin{lstlisting}
-var Unit* u = spawn Unit;
-u:pos = 0;              // this access is safe
+var Unit* ptr = spawn Unit;
+ptr:pos = 0;              // this access is safe
 await 2h;
-emit u:move => 100;     // this access is unsafe
+emit ptr:move => 100;     // this access is unsafe
 \end{lstlisting}
 
-The example first acquires a pointer \code{u} to \code{Unit}.
+The example first acquires a pointer \code{ptr} to \code{Unit}.
 Then, it dereferences the pointer in two occasions:
 in the same reaction, just after acquiring the reference;
 and in another reaction, after \emph{2h}, when the pointed organism may have 
@@ -1196,24 +1196,24 @@ construct which supervises organism termination:
 
 \begin{minipage}[t]{0.48\linewidth}
 \begin{lstlisting}
-var Unit* u = spawn Unit;
-u:pos = 0;
-watching u do
+var Unit* ptr = spawn Unit;
+ptr:pos = 0;
+watching ptr do
     await 2h;
-    emit u:move => 100;
+    emit ptr:move => 100;
 end
 \end{lstlisting}
 \end{minipage}
 %
 \begin{minipage}[t]{0.48\linewidth}
 \begin{lstlisting}
-var Unit* u = spawn Unit;
-u:pos = 0;
+var Unit* ptr = spawn Unit;
+ptr:pos = 0;
 par/or do
-    await u:__killed;
+    await ptr:__killed;
 with
     await 2h
-    emit u:move => 100;
+    emit ptr:move => 100;
 end
 \end{lstlisting}
 \end{minipage}
@@ -1224,6 +1224,18 @@ terminates, eliminating possible dangling pointers in the program.
 The code in the right shows the equivalent expansion of the \code{wacthing} 
 construct to a \code{par/or} that awaits the special event \code{\_\_killed} 
 (which all classes have internally).
+
+\CEU also refuses to assign the address of an organism to a pointer of greater 
+scope, as illustrated below:
+
+\begin{lstlisting}
+var Unit* ptr;
+do
+    var Unit u;
+    ptr = &u;   // unsafe attribution
+end
+ptr:pos = 0;    // unsafe access ("u" went out of scope)
+\end{lstlisting}
 
 \begin{comment}
 
@@ -1311,7 +1323,7 @@ However, the underlying execution models are fundamentally distinct:
 while Simula relies on cooperation between processes (i.e., \code{detach} and 
 \code{resume} calls, at the lowest level).
 %
-Simula has no notion of compositions and each process has a single line of 
+Simula has no notion of compositions, with each process having a single line of 
 execution.
 In particular, the lack of a \code{par/or} precludes orthogonal abortion and 
 many derived \CEU features, such as lexically scoped organisms, finalization, 
@@ -1326,37 +1338,62 @@ processes.
 %enables a XXX of static analysis, such as concurrent accesses to 
 %variables~\cite{ceu.sensys13}.
 
-SugarCubes is a set of Java classes for reactive programming~\cite{sugarcubes} 
-that provides dynamic instantiation of code for the synchronous model.
+Some previous work extend Esterel to provide dynamic synchronous abstractions:
+Reactive Scripts~\cite{rp.scripts} and Reactive Objects~\cite{rp.scripts} 
+provide abstractions that are much closer to \CEU organisms.
 %
-Reactive Objects provide .
-\cite{rp.oo}.
-
-ReactiveML~\cite{rml} is a functional variant of Esterel influenced by 
-SugarCubes with rich dynamic synchronous abstractions through \emph{processes}.
-% TODO: which first appeared in Sugar Cubes.
-Processes are functions that support hierarchical reactive constructs, such as 
-parallel compositions and an await primitive, similarly to organism bodies in 
-\CEU.
-A process can create dynamic abstractions by executing an arbitrary expression 
-in parallel with a recursive invocation of the process.
-
-
+SugarCubes is a set of Java classes for reactive programming which can 
+instantiate synchronous instructions on the fly~\cite{sugarcubes}.
 %
-Being a functional language, ReactiveML heavily relies on heap allocation and 
-garbage collection and may not be suitable for constrained embedded systems.
+ReactiveML~\cite{rml} is a functional variant of Esterel with rich dynamic 
+synchronous abstractions through \emph{processes}.
+%Processes are functions that support hierarchical reactive constructs, such as 
+%parallel compositions and an await primitive, similarly to organism bodies in 
+%\CEU.
+A process can express dynamic instantiation with recursive invocations in 
+parallel with its own body.
+%
+All these languages rely on heap allocation and/or garbage collection and may 
+not be suitable for constrained embedded systems.
 %
 %\CEU programs, however, can use dynamic organisms that reside on static memory 
 %(through bounded pools).
 %
-ReactiveML lacks a finalization mechanism that may hinder proper orthogonal 
-abortion because a process that uses stateful resources cannot be safely 
-aborted.
+They also lack a finalization mechanism that may hinder proper orthogonal 
+abortion in the presence of stateful resources.
 For instance, \CEU relies on finalization for handling stateful resources as 
 well as for watching references.
 
-%- more functional (data + process => organism)
-    %- less structured in this sense
+Finally, the main distinction from \CEU to existing work is how the concept of 
+lexical scope for variables, which is fundamental in SP, is also incorporated 
+to SRP.
+%
+All constructs of \CEU have a clear and unambiguous lifespan that can be 
+inferred statically from the source code.
+%
+Lexical scope permeates all aspects of \CEU:
+Any piece of data or control structure has a well-defined scope that can be 
+abstracted as an organism and safely aborted through finalization.
+%
+Even dynamic instances of organisms reside in a pool, which in turn, has a 
+well-defined scope with the same properties.
+%
+References to organisms are tracked and assignments with incompatible scopes 
+are refused.
+
+Functional Reactive Programming~\cite{frp.principles} contrasts with SRP as a
+complementary programming style for reactive applications.
+%
+We believe that FRP is more suitable for data-intensive applications, while 
+SRP, for control-intensive applications.
+%
+For instance, describing a sequence of steps in FRP requires to encode explicit 
+state machines so that functions can switch behavior depending on the current 
+state.
+%
+In contrast, when the application employs continuous functions, such as physics 
+equations or data constraints among entities, SRP requires explicit loops to 
+update dependencies continuously.
 
 \begin{comment}
 - asynchronous langs
