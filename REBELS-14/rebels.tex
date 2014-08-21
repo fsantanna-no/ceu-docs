@@ -440,7 +440,7 @@ This is possible in synchronous languages because of the accurate control over
 the life cycle of concurrent activities, i.e., in between every reaction, the 
 whole system is idle and consistent~\cite{esterel.preemption}.
 %
-\CEU extends orthogonal abortion to also work with trails that use stateful 
+\CEU extends orthogonal abortion to also work with activities that use stateful 
 resources from the environment, such as file and network handlers, as we 
 discuss in Section~\ref{sec.ceu.par}.
 
@@ -854,7 +854,7 @@ Note that the same restriction applies to object-oriented programming, which
 can properly encapsulate data, but not control flow.
 Even though objects are the prevailing imperative abstraction mechanism for 
 reactive applications when used in conjunction with the observer pattern, they 
-do not provide plentiful SRP abstractions because they also suffer from 
+do not provide complete SRP abstractions because they also suffer from 
 inversion of control~\cite{rp.rescala}.
 
 \CEU abstracts data and control state into the single concept of organisms.
