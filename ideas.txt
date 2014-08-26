@@ -1,0 +1,23 @@
+= Lua scripts inside Céu:
+
+var int a;
+err =
+    script do
+        <lua>
+        local t = { ... }
+        $a = t[i]
+    end;
+
+= Variáveis persistentes por execuções
+- Só funciona com variáveis da classe Main.
+- Só precisa de um `finalize´ no bloco da variável.
+
+var persistent int v = 1;
+
+var int v;
+v = 1;
+finalize with
+    write(v, 1);
+        ou
+    emit WRITE => (v_id,1);
+end
