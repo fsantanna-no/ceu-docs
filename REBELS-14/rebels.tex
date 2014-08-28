@@ -41,6 +41,7 @@
 \newcommand{\5}{\;\;\;\;\;}
 \newcommand{\ten}{\5\5}
 \newcommand{\twenty}{\ten\ten}
+\newcommand{\URL}{\small\url}
 
 \newenvironment{itemize*}%
   {\begin{itemize}%
@@ -117,13 +118,12 @@ mathescape=true,
 \maketitle
 
 \begin{abstract}
-We promote structured reactive programming, an extension to classical 
-structured programming that supports continuous interaction with the 
-environment.
+Based on the synchronous and imperative style of Esterel, we promote structured 
+reactive programming (SRP), an extension to classical structured programming 
+that supports continuous interaction with the environment.
 %
-TODO: revive
-We revive the synchronous and imperative style of Esterel and aim to expand its 
-limits from the strict embedded domain.
+%We revive the synchronous and imperative style of Esterel and aim to expand 
+%its limits from the strict embedded domain.
 %
 We propose the new abstraction mechanism of \emph{organisms} for the language 
 \CEU.
@@ -201,8 +201,8 @@ Programming (SP)} (i.e., concatenation, selection, and
 repetition~\cite{dij.notes}) to support continuous interaction with the 
 environment.
 %
-SRP retains structured and sequential reasoning of programs, contrasting with 
-FRP and bringing the historical dichotomy between functional and imperative 
+SRP retains structured and sequential reasoning of programs in constrast with 
+FRP, bringing the historical dichotomy between functional and imperative 
 languages also to the reactive domain.
 %
 However, the original rigorous semantics of Esterel, which focuses on static 
@@ -251,8 +251,12 @@ become alive and reactive (hence the name organisms).
 Furthermore, both static and dynamic allocation of organisms are subject to 
 lexical scope and automatic memory management, not relying on heap allocation 
 at all, and behaving much like local variables in SP.
+%
+%Organisms retain control and can describe, in a self-contained and structured 
+%style, continuous control behavior, such as independent state machines for 
+%network packets, or XXX in games.
 
-TODO: o que ganha com orgs
+%TODO: o que ganha com orgs
 
 \begin{comment}
 There are, however, additional challenges that apply to organisms:
@@ -494,7 +498,7 @@ to abort each other (e.g., through shared state variables or message passing),
 increasing coupling among them with implementation details that are not 
 directly related to the problem specification.
 
-TODO: talvez falar em termos de controle e dados
+%TODO: talvez falar em termos de controle e dados
 
 %\CEU provides the presented \code{par/or} construct, which is equivalent to 
 %Esterel's \code{trap} abortion construct.
@@ -1465,12 +1469,14 @@ We believe that programming reactive systems can benefit from SRP in \CEU:
 extending classical structure programming with continuous interaction with the 
 environment.
 
-TODO: o que ganha contra CBs
 \CEU introduces organisms which reconcile data and control state in a single 
 abstraction.
 %
 In contrast with objects, organisms have an execution body that can react 
 independently to stimuli from the environment.
+An organism body supports multiple lines of execution that can await events 
+without loosing control context, offering an effective alternative to the 
+infamous ``callback hell''.
 %
 Both static and dynamic instances of organisms are subject to lexical scope 
 with automatic memory management, which eliminates memory leaks and the need 
@@ -1479,11 +1485,21 @@ for a garbage collector.
 \CEU is suitable for wide range of reactive applications and platforms.
 %
 We have been experimenting with it in constrained platforms for sensor networks 
-(e.g., 16MHz CPU with 4Kb of RAM) as well as in full-fledged tablets for games 
-and graphical applications.
-TODO: pagina de exemplos de uso
-TODO: aulas
-
+as well as in full-fledged computers and tablets for games and graphical 
+applications%
+\footnote{Uses of \CEU: \URL{http://www.ceu-lang.org/wiki/index.php?title=Uses}}.
+%
+\CEU successfully participated in the \emph{Google Summer of Code}%
+\footnote{LabLua GSoC'14: 
+\small{\URL{http://google-opensource.blogspot.com/2014/08/google-summer-of-code-new-organizations.html}}}
+with a student that had no previous experience with the language working 
+remotely in a 3-month project.
+%
+We have also been teaching \CEU as an alternative language for sensor networks 
+for the past two years in high-school and undergraduate levels.
+%
+Our experience shows that students take advantage of the sequential style of 
+\CEU and can implement non-trivial reactive programs in a couple of weeks.
 
 %care with embedded systems
 %- pool
