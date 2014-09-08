@@ -22,6 +22,8 @@
 \everymath{\displaystyle}
 \usepackage{xspace}
 
+\usepackage[bottom]{footmisc}
+
 \newcommand{\CEU}{\textsc{C\'{e}u}\xspace}
 \newcommand{\code}[1] {{\small{\texttt{#1}}}}
 \newcommand{\DOFIN}{\code{do-finally}\xspace}
@@ -118,24 +120,20 @@ mathescape=true,
 \maketitle
 
 \begin{abstract}
-Based on the synchronous and imperative style of Esterel, we promote structured 
-reactive programming (SRP), an extension to classical structured programming 
-that supports continuous interaction with the environment.
+Structured reactive programming (SRP) augments classical structured programming 
+with continuous interaction with the environment.
 %
-%We revive the synchronous and imperative style of Esterel and aim to expand 
-%its limits from the strict embedded domain.
+We propose a new SRP abstraction mechanism, the \emph{organisms}, for the 
+language \CEU.
 %
-We propose the new abstraction mechanism of \emph{organisms} for the language 
-\CEU.
-%
-Organisms extend objects with an execution body composed of multiple lines of 
-execution that react to the environment independently.
+Organisms extend objects with an execution body that composes multiple lines of 
+execution to react to the environment independently.
 %
 Compositions bring structured reasoning to concurrency and can better describe 
 state machines typical of reactive applications.
 %
 Organisms are subject to lexical scope and automatic memory management similar 
-to locals in a stack.
+to stack-based allocation for local variables.
 We show that this model does not require garbage collection or a \code{free} 
 primitive in the language, eliminating memory leaks by design.
 \end{abstract}
@@ -201,9 +199,9 @@ Programming (SP)} (i.e., concatenation, selection, and
 repetition~\cite{dij.notes}) to support continuous interaction with the 
 environment.
 %
-SRP retains structured and sequential reasoning of programs in constrast with 
-FRP, bringing the historical dichotomy between functional and imperative 
-languages also to the reactive domain.
+SRP retains structured and sequential reasoning of concurrent programs and 
+constrasts with FRP, bringing the historical dichotomy between functional and 
+imperative languages also to the reactive domain.
 %
 However, the original rigorous semantics of Esterel, which focuses on static 
 safety guarantees, is not suitable for other reactive application domains, such 
@@ -276,7 +274,7 @@ The rest of the paper is organized as follows:
 %choice for SRP.
 Section~\ref{sec.ceu} presents SRP through \CEU, with its underlying 
 synchronous concurrency model and parallel compositions.
-Section~\ref{sec.orgs} presents the organisms abstraction with static and 
+Section~\ref{sec.orgs} describes the organisms abstraction with static and 
 dynamic instantiation, lexical scope, and automatic memory management.
 %Section~\ref{sec.demo} demonstrates a complete video game for Android 
 %implemented in \CEU.
@@ -365,8 +363,8 @@ end;
 \label{sec.ceu.sync}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-In \CEU, following the synchronous execution model, a program must react 
-completely to an occurring event before handling the next.
+In \CEU, a program reacts completely to an occurring event before handling the 
+next.
 %
 A reaction represents a logical instant in which all trails awaiting the 
 occurring event awake and execute, one after the other, until they await again 
@@ -445,9 +443,9 @@ end
 The \code{par/or} is regarded as orthogonal because the composed trails do not 
 know when and how they are aborted (i.e., abortion is external to them).
 %
-This is possible in synchronous languages because of the accurate control over 
-the life cycle of concurrent activities, i.e., in between every reaction, the 
-whole system is idle and consistent~\cite{esterel.preemption}.
+This is possible in synchronous languages due to the accurate control over the 
+life cycle of concurrent activities, i.e., in between every reaction, the whole 
+system is idle and consistent~\cite{esterel.preemption}.
 %
 \CEU extends orthogonal abortion to work also with activities that use stateful 
 resources from the environment (such as file and network handlers), as we 
@@ -475,13 +473,13 @@ either wait for the activity to be consistent before rejoining, making the
 program unresponsive to incoming events for an arbitrary time;
 or rejoin immediately and let the activity complete in the background, which 
 may cause race conditions with the subsequent code.
-
+%
 %which may confuse the programmer (which assumes both activities have 
 %terminated), and also
 %Immediate rejoin also leads to heap-based allocation (which is discouraged in 
 %the context of embedded systems) because activities may coexist with the 
 %subsequent code for some time.
-
+%
 In fact, asynchronous languages do not provide effective abortion:
 \emph{Java}'s \code{Thread.stop} primitive has been 
 deprecated~\cite{sync_async.threadsstop};
@@ -526,12 +524,12 @@ directly related to the problem specification.
 In terms of control structures, SRP basically extends SP with parallel 
 compositions, allowing applications to handle multiple events concurrently.
 %
-\CEU provides three parallel constructs, which vary on how they rejoin:
+\CEU provides three parallel constructs that vary on how they rejoin:
 a \code{par/and} rejoins when all trails in parallel terminate;
 a \code{par/or} rejoins when any trail in parallel terminates;
 a \code{par} never rejoins (even if all trails in parallel terminate).
 %
-The code chunks that follow compares the \code{par/and} and \code{par/or} 
+The code chunks that follow compare the \code{par/and} and \code{par/or} 
 compositions side by side:
 
 \begin{minipage}[t]{0.40\linewidth}
@@ -562,7 +560,7 @@ The code \code{<...>} represents a complex operation with any degree of nested
 compositions.
 %
 In the \code{par/and} variation, the operation repeats on intervals of at least 
-one second because both sides must terminate before re-executing the loop.
+one second because both sides must terminate before re-entering the loop.
 In the \code{par/or} variation, if the operation does not terminate within 1 
 second, it is restarted.
 %
@@ -842,12 +840,14 @@ the radio driver.
 %
 \CEU refuses to compile programs like this and requires \emph{finalization} 
 clauses to accompany stateful $C$ calls~\cite{ceu.sensys13}.
-The code on the right of Figure~\ref{lst.fin} properly dequeues the packet if
+The code in the right of Figure~\ref{lst.fin} properly dequeues the packet if
 the block of \code{buffer} goes out of scope, i.e., the finalization clause 
-(after the \code{with}) executes automatically on abortion.
+(after the \code{with}) executes automatically on external abortion.
 
 \section{Organisms: SRP Abstractions}
 \label{sec.orgs}
+
+% TODO: RW 1dt paragraph
 
 %Applications often need to replicate a behavior and rely on abstractions that 
 %the language provides.
@@ -861,18 +861,18 @@ control across reactions to the environment.
 %As a consequence, procedures cannot contain awaiting parallel compositions as
 %described in Section~\ref{sec.ceu.par}.
 %
-Note that the same restriction applies to object-oriented programming, which 
-can properly encapsulate data, but not control flow that awaits.
-This way, although objects (when used in conjunction with the observer pattern) 
-are the prevailing imperative abstraction mechanism for reactive applications, 
-they do not provide complete SRP abstractions.
+The same restriction applies to object-oriented programming, which can properly 
+encapsulate data, but not control flow across reactions.
+This way, although objects are the prevailing imperative abstraction mechanism 
+for reactive applications (when used in conjunction with the observer pattern), 
+they cannot provide proper SRP abstractions.
 % because they also suffer from inversion of control~\cite{rp.rescala}.
 
-\CEU abstracts data and control state into the single concept of organisms.
+\CEU abstracts data and control into the single concept of organisms.
 %Organisms provide an execution body with multiple lines of execution (control 
 %state) as well as object-like interface (data state).
 %
-A class of organisms describes an interface and a single execution body.
+A class of organisms describes an interface and an execution body.
 The interface exposes public variables, methods, and also internal events 
 (exemplified later).
 The body can contain any valid code in \CEU, including parallel compositions.
@@ -891,8 +891,8 @@ frequencies in parallel and terminates after 1 minute.
 organism class and uses two instances of it to reproduce the same behavior of 
 \emph{CODE-1}.
 %
-\item The rightmost code (\emph{CODE-3}) is the equivalent expansion of the 
-organisms bodies, which resembles the original \emph{CODE-1}.
+\item The rightmost code (\emph{CODE-3}) is the semantically equivalent 
+expansion of the organisms bodies, which resembles the original \emph{CODE-1}.
 \end{itemize}
 %
 In \emph{CODE-2}, the Blink class (lines 1-9) exposes the \code{pin} and 
@@ -943,7 +943,7 @@ the scheduler description of Section~\ref{sec.ceu.sync}).
 %Section~\ref{sec.orgs.refs}.
 
 The memory model for organisms is similar to stack-living local variables of 
-procedures, employing lexical scope and automatic bookkeeping.
+procedures, employing lexical scope and automatic management.
 Note that \emph{CODE-2} uses a \code{do-end} block (lines 11-23) that limits 
 the scope of the organisms for 1 minute (line 22).
 %
@@ -957,8 +957,8 @@ inaccessible but their bodies are automatically aborted, as the expansion of
 The \code{par/or} (lines 9-29) aborts the organisms bodies after 1 minute (line 
 28), just before they go out of scope (line 30).
 %
-The \code{par/or} termination also properly triggers all active finalization 
-clauses inside the organisms (if any).
+The \code{par/or} termination properly triggers all active finalization clauses 
+inside the organisms (if any).
 %
 Lexical scope extends the idea of orthogonal abortion to organisms, as they are 
 automatically aborted when going out of scope.
@@ -971,23 +971,24 @@ In addition to properties and methods, organisms also expose internal events
 which support \code{await} and \code{emit} operations.
 %
 In the example in Figure~\ref{lst.unit}, class \code{Unit} (lines 1-16) defines 
-the position property \code{pos} with default value \code{0} (line 2), and the 
-event \code{move} to listen requests to move the unit position (line 3).
+the position and destination properties \code{pos} and \code{dst} with default 
+values \code{0} (lines 2-3), and the event \code{move} to listen requests to 
+move the unit position (line 4).
 %
-The main program (lines 18-28) creates two units and requests them to move to 
-position \code{500} with an interval of 1 second.
+The main program (lines 18-29) creates two units, requests the first to move 
+immediatelly to \code{dst=300} (line 20), and the second to move after 1 second 
+to position \code{500} (line 29).
 %
-The body of the class (lines 5-15) initializes the current unit's destination 
-position \code{dst} to the current position (line 5).
-Then, the body enters a continuous loop (lines 6-15) to handle \code{move} 
-requests (line 8) while performing the actual moving operation (lines 10-13) in 
-parallel.
-The \code{par/or} restarts the loop on every \code{move} request, which updates 
-the \code{dst} position.
+The body of the class enters a continuous loop (lines 6-15) to handle 
+\code{move} requests (line 8) while performing the ongoing moving operation 
+(lines 10-13) in parallel.
+The \code{par/or} (lines 7-14) restarts the loop on every \code{move} request 
+which updates the \code{dst} position.
 %
 The moving operation (collapsed in line 11) can be as complex as needed, for 
 example, using another loop to apply physics over time.
-The \code{await FOREVER} (line 13) halts the trail after the move completes.
+The \code{await FOREVER} (line 13) halts the trail after the move completes to 
+avoid restarting the outer loop.
 %
 An advantage of event handling over method calls is that they can be composed 
 in the organism body to affect other ongoing operations.
@@ -998,9 +999,9 @@ operation, just like the timeout pattern of Section~\ref{sec.ceu.par}.
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
 class Unit with
     var   int pos = 0;
+    var   int dst = 0;
     event int move;
 do
-    var int dst = this.pos;
     loop do
         par/or do
             dst = await this.move;
@@ -1015,13 +1016,14 @@ end
 
 var Unit u1 with
     this.pos = 100;
+    this.dst = 300;
 end;
 
 var Unit u2 with
     this.pos = 200;
+    this.dst = 200;
 end;
 
-emit u1.move => 500;
 await 1s;
 emit u2.move => 500;
 \end{lstlisting}
@@ -1034,12 +1036,12 @@ emit u2.move => 500;
 %\newpage
 \subsection{Dynamic organisms}
 
-Static embedded systems typically manipulate real sensors and actuators 
-hardware with a one-to-one correspondence in software, i.e., a static piece of 
-software deals with a corresponding piece of hardware.
+Static embedded systems typically manipulate hardware with a one-to-one 
+correspondence in software, i.e., a static piece of software deals with a 
+corresponding piece of hardware (e.g., a sensor or actuator).
 %
 In contrast, more general reactive systems have to deal with resource 
-virtualization that require dynamic allocation, such as multiplexing protocols 
+virtualization that requires dynamic allocation, such as multiplexing protocols 
 in a network, or simulating entire civilizations in a game.
 %
 Dynamic allocation for organisms extends the power of SRP to handle virtual 
@@ -1047,22 +1049,18 @@ resources in reactive applications.
 
 \CEU supports dynamic instantiation of organisms through the \code{spawn} 
 primitive.
-The example that follows spawns a new instance of \code{Unit} every second and 
-moves it to a random position:
+The example that follows spawns a new instance of \code{Unit} (defined in 
+Figure~\ref{lst.unit}) every second and moves it to a random position:
 
 \begin{lstlisting}
 loop do
     await 1s;
-    var Unit* u = spawn Unit with
-                      this.pos = _rand() % 500;
-                  end;
-    emit u:move => _rand() % 500;
+    spawn Unit with
+        this.pos = _rand() % 500;
+        this.dst = _rand() % 500;
+    end;
 end
 \end{lstlisting}
-
-\code{spawn} allocates the new organism and returns a pointer to it, which can 
-be later dereferenced with the operator \code{`:'} (analogous to \code{`->'} of 
-\emph{C/C++}).
 
 %\begin{figure}[t]
 %\rule{8.5cm}{0.37pt}
@@ -1076,14 +1074,18 @@ but have different lifetime and scoping rules then static ones:
 %
 A static instance has an identifier and a well-defined scope that holds its 
 memory resources;
-A dynamic instance is anonymous (i.e., \code{spawn} returns a pointer to it) 
-and outlives the scope that spawns it.
-
-In accordance with the reactive and independent nature of organisms, \CEU 
-allows a dynamic instance to control its own lifetime:
+A dynamic instance is anonymous and outlives the scope that spawns it:
+in the example, the spawned units outlive the enclosing loop iterations.
+%
+Due to the lack of an explicit identifier or reference, a dynamic instance can 
+control its own lifetime:
 once its body terminates, a dynamic organism is automatically freed from 
 memory.
 %
+This do not apply for static instances because the memory is preallocated 
+within the scope and the organism identifier is accessible even if its body 
+terminates.
+
 The code that follows redefines the body of the \code{Unit} class of 
 Figure~\ref{lst.unit} to terminate after 1 hour, imposing a maximum life span 
 in which a unit can react to \code{move} requests.
@@ -1111,8 +1113,8 @@ end
 The lack of scopes for dynamic organisms prevents orthogonal abortion, given 
 that there is no way to externally abort the execution of dynamic instances.
 %
-To overcome this limitation, \CEU provides lexically scoped \emph{pools} as 
-containers that hold dynamic organisms instances.
+To address orthogonal abortion, \CEU provides lexically scoped \emph{pools} as 
+containers that hold dynamic instances.
 %
 The example that follows declares the \code{units} pool to hold a maximum of 10 
 instances (line 3):
@@ -1159,8 +1161,8 @@ If a \code{spawn} does not specify a pool, as in ``\code{spawn Unit;}'', the
 instances go to a predefined dimension-less pool in the top of the current 
 class (and are still subject to that pool scope).
 
-Lexical scope support for both static and dynamic organisms eliminate garbage 
-collection, \code{free} primitives, and memory leaks altogether.
+Support for lexical scope for both static and dynamic organisms eliminate 
+garbage collection, \code{free} primitives, and memory leaks altogether.
 
 \begin{comment}
 Pools provide iterators to access pointers to all alive instances.
@@ -1186,10 +1188,11 @@ end
 \label{sec.orgs.refs}
 
 As organisms react independently to the environment, it is often not necessary 
-to hold pointers to organisms.
+to hold pointers to them.
 %
-In fact, pointers can be dangerous because they may last longer than the 
-organisms to which they refer:
+Nonetheless, a \code{spawn} allocation returns a pointer to the new organism, 
+which can be later dereferenced with the operator \code{`:'} (analogous to 
+\code{`->'} of \emph{C/C++}):
 
 \begin{lstlisting}
 var Unit* ptr = spawn Unit;
@@ -1198,11 +1201,15 @@ await 2h;
 emit ptr:move => 100;     // this access is unsafe
 \end{lstlisting}
 
+Pointers can be dangerous because they may last longer than the organisms to 
+which they refer.
+%
 The code above first acquires a pointer \code{ptr} to \code{Unit}.
 Then, it dereferences the pointer in two occasions:
 in the same reaction, just after acquiring the reference;
-and in another reaction, after \emph{2h}, when the pointed organism has already 
-terminated and been freed.
+and in another reaction, after \emph{2h}, when the pointed organism may have 
+already terminated and been freed, leading to unspecified behavior in the 
+program.
 
 As a protection against dangling pointers, \CEU enforces all pointer accesses 
 across reactions to use the \code{watching} construct which supervises organism 
@@ -1211,7 +1218,7 @@ termination, as illustrated in the left of Figure~\ref{lst.watching}.
 The whole \code{watching} construct aborts whenever the referred organism 
 terminates, eliminating possible dangling pointers in the program.
 %
-The code in the right shows the equivalent expansion of the \code{wacthing} 
+The code in the right shows the equivalent expansion of the \code{watching} 
 construct into a \code{par/or} that awaits the special event \code{\_\_killed} 
 (which all classes have internally).
 
@@ -1359,23 +1366,19 @@ processes.
 %enables a XXX of static analysis, such as concurrent accesses to 
 %variables~\cite{ceu.sensys13}.
 
-Some previous work extend Esterel to provide dynamic synchronous abstractions:
-Reactive Scripts~\cite{rp.scripts} and Reactive Objects~\cite{rp.scripts} 
-provide abstractions that are close to \CEU organisms.
+Some previous work extend Esterel to provide dynamic synchronous 
+abstractions~\cite{rp.scripts,rp.oo,sugarcubes}.
 %
-SugarCubes is a set of Java classes for reactive programming which can 
-instantiate synchronous instructions on the fly~\cite{sugarcubes}.
-%
-ReactiveML~\cite{rml} is a functional variant of Esterel with rich dynamic 
-synchronous abstractions through \emph{processes}.
+In particular, ReactiveML~\cite{rml} is a functional variant of Esterel with 
+rich dynamic synchronous abstractions through \emph{processes}.
 %Processes are functions that support hierarchical reactive constructs, such as 
 %parallel compositions and an await primitive, similarly to organism bodies in 
 %\CEU.
 %A process can express dynamic instantiation with recursive invocations in 
 %parallel with its own body.
 %
-All these languages rely on heap allocation and/or garbage collection and may 
-not be suitable for constrained embedded systems.
+However, these languages rely on heap allocation and/or garbage collection and 
+may not be suitable for constrained embedded systems.
 %
 %\CEU programs, however, can use dynamic organisms that reside on static memory 
 %(through bounded pools).
@@ -1410,10 +1413,9 @@ For instance, describing a sequence of steps in FRP requires to encode explicit
 state machines so that functions can switch behavior depending on the current 
 state.
 %
-In contrast, when the application employs continuous functions (such as physics 
-equations or data constraints among entities), SRP requires explicit loops to 
-update dependencies continuously, which is not as straightforward as specifying 
-a formula as in FRP.
+In contrast, FRP just uses declarative formulas to specify continuous functions 
+over time, such as for physics or data constraints among entities, while SRP 
+requires explicit loops to update data dependencies continuously.
 
 \begin{comment}
 - asynchronous langs
@@ -1492,8 +1494,8 @@ applications%
 \CEU successfully participated in the \emph{Google Summer of Code}%
 \footnote{LabLua GSoC'14: 
 \small{\URL{http://google-opensource.blogspot.com/2014/08/google-summer-of-code-new-organizations.html}}}
-with a student that had no previous experience with the language working 
-remotely in a 3-month project.
+with a student that had no previous experience with the language in a 3-month 
+project.
 %
 We have also been teaching \CEU as an alternative language for sensor networks 
 for the past two years in high-school and undergraduate levels.
@@ -1526,7 +1528,7 @@ the new values.
 
 There seems to be a lot of confusion about Reactive Programming. What is it? Who created it?
 
-The earliest reference I could find was written by Gérard Berry (one of the creators of the Esterel dataflow language) in his 1989 paper, “Real time programming: Special purpose or general purpose languages.” I emailed him to see if he knew of an earlier use. Mr. Berry pointed me to the 1985 paper, “On the development of reactive systems” by David Harel and Amir Pnueli. After contacting Professor Harel, he confirmed that they where the originators of the term.
+The earliest reference I could find was written by Gérard Berry (one of the creators of the Esterel dataflow language) in his 1989 paper, “Real time programming: Special purpose or general purpose languages.” I emailed him to see if he knew of an earlier use. Mr. Berry pointed me to the 1985 paper, "On the development of reactive systems" by David Harel and Amir Pnueli. After contacting Professor Harel, he confirmed that they where the originators of the term.
 
 So it would seem that Reactive Programming is at least 30 years old.
 
@@ -1534,9 +1536,9 @@ Harel and Pnueli’s paper discussed designing reactive systems in general, soft
 
     “Reactive systems… are repeatedly prompted by the outside world and their role is to continuously respond to external inputs.”
 
-    D. Harel and A. Pnuli, “On the Development of Reactive Systems” (1985)
+    D. Harel and A. Pnueli, “On the Development of Reactive Systems” (1985)
 
-Mr. Berry’s paper focused on the software aspects of Reactive Programming…
+Mr. Berry’s paper focused on the software aspects of Reactive Programming
 
     “It is convenient to distinguish roughly between three kinds of computer programs. Transformational programs compute results from a given set of inputs; typical examples are compilers or numerical computation programs. Interactive programs interact at their own speed with users or with other programs; from a user point of view a time-sharing system is interactive. Reactive programs also maintain a continuous interaction with their environment, but at a speed which is determined by the environment, not by the program itself. Interactive programs work at their own pace and mostly deal with communications, while reactive programs only work in response to external demands and mostly deal with accurate interrupt handling.
 
@@ -1546,7 +1548,7 @@ Mr. Berry’s paper focused on the software aspects of Reactive Programming…
 
     Berry, Gérard. “Real time programming: Special purpose or general purpose languages.” (1989)
 
-From the preceding quotes we can say that reactive programs…
+From the preceding quotes we can say that reactive programs
 
     Activate in response to external demands
     Mostly deal with handling parallelism
@@ -1565,9 +1567,6 @@ Some people believe that Erik Meijer (formerly of Microsoft) and Jonas Bonér (o
 
 Reactive Programming and dataflow are old ideals that are being rediscovered because they help us solve problems we currently face.
 \end{comment}
-
-\bibliographystyle{abbrv}
-\bibliography{other,my}
 
 \begin{comment}
 \section{A Reactive Concurrency Model}
@@ -1896,5 +1895,8 @@ For reactive applications with continuous and real-time concurrency, we believe
 that the synchronous execution model is more appropriate.
 
 \end{comment}
+
+\bibliographystyle{abbrv}
+\bibliography{other,my}
 
 \end{document}
