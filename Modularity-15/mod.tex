@@ -450,6 +450,11 @@ end
 <subsequent-code>
 \end{lstlisting}
 
+Each trail has a set of local variables and an execution body that lasts for an 
+arbitrary time.
+After the \code{par/or} rejoins, a new set of local variables goes alive, 
+reusing the space from the trails' locals which are now out of scope.
+
 The \code{par/or} is regarded as orthogonal because the composed trails do not 
 know when and how they are aborted (i.e., abortion is external to them).
 %
@@ -460,11 +465,6 @@ idle and consistent~\cite{esterel.preemption}.
 \CEU extends orthogonal abortion to work also with activities that use stateful 
 resources from the environment (such as file and network handlers), as we 
 discuss in Section~\ref{sec.ceu.par}.
-
-%In the example, each trail has a set of local variables and an execution body 
-%that lasts for an arbitrary time.
-%After the \code{par/or} rejoins, a new set of local variables goes alive,
-%reusing the space from the trails' locals going out of scope.
 
 %\begin{figure}[t]
 %\caption{ A \code{par/or} composes two concurrent trail and rejoins when one 
@@ -486,9 +486,9 @@ may cause race conditions with the subsequent code.
 %
 %which may confuse the programmer (which assumes both activities have 
 %terminated), and also
-%Immediate rejoin also leads to heap-based allocation (which is discouraged in 
-%the context of embedded systems) because activities may coexist with the 
-%subsequent code for some time.
+Immediate rejoin also implies heap-based allocation for locals (which is 
+discouraged in the context of embedded systems) because activities may coexist 
+with the subsequent code for some time.
 %
 In fact, asynchronous languages do not provide effective abortion:
 \emph{Java}'s \code{Thread.stop} primitive has been 
@@ -1178,7 +1178,7 @@ class (and are still subject to that pool scope).
 Support for lexical scope for both static and dynamic organisms eliminate 
 garbage collection, \code{free} primitives, and memory leaks altogether.
 
-\subsection{Pointers and References}
+\subsection{Pointers Analysis}
 \label{sec.orgs.refs}
 
 As organisms react independently to the environment, it is often not necessary 
@@ -1329,9 +1329,10 @@ scopes
 - ORGS relies on par/or for bodies and track refs
 \end{comment}
 
-%\section{Applications}
-%\subsection{WSN ring}
-%\subsection{Game}
+\section{Applications}
+\subsection{Dynamic Protocol}
+\subsection{Interactive Game}
+\subsection{Discussion}
 
 \section{Related work}
 \label{sec.related}
