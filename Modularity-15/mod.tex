@@ -693,7 +693,7 @@ preserve safe orthogonal abortion of trails.
 \begin{figure}[t]
 \begin{minipage}[t]{0.45\linewidth}
 \begin{lstlisting}
-var _packet_t buffer;
+var _pkt_t buffer;
 <fill-buffer-info>
 _send_enqueue(&buffer);
 await SEND_ACK;
@@ -702,7 +702,7 @@ await SEND_ACK;
 %
 \begin{minipage}[t]{0.50\linewidth}
 \begin{lstlisting}
-var _packet_t buffer;
+var _pkt_t buffer;
 <fill-buffer-info>
 finalize
     _send_enqueue(&buffer)
@@ -1330,7 +1330,257 @@ scopes
 \end{comment}
 
 \section{Applications}
-\subsection{Dynamic Protocol}
+
+- constrained
+- general
+
+To demonstrate the expressiveness of \CEU{}, we implemented three applications 
+in different domains and platforms.
+
+The first example explores Wireless Sensor Networks (WSNs), which are networks 
+composed of a large number of tiny devices capable of sensing the environment 
+and communicating among them.
+We integrated \CEU with the \emph{TinyOS} operating system~\cite{wsn.tos} in 
+order to use the abstracted radio services the operating system provides.
+
+The second example uses \CEU with the SDL graphics library%
+\footnote{\url{http://www.libsdl.org}} under linux.
+With a more powerful platform, we can explore some simulation techniques that 
+require fast processing.
+
+The two demos also illustrate different ways to integrate \CEU{} with an 
+underlying platform.
+
+The applications are somewhat simple to fit the paper (ranging from 70 to 200 
+lines), but still complete enough to explore the programming techniques 
+promoted by \CEU{}.
+
+\subsection{A Simple Network Protocol}
+\label{sec.apps.srp}
+
+The \emph{Source Routing Protocol} for WSNs delivers packets from an origin 
+node to a destination node~\cite{wsn.teps}.
+The protocol stores the routing path in the data packet itself, as a vector of 
+node addresses to traverse in sequence.
+Each hop in the path forwards the packet to the next address in the vector up 
+to the final destination node.
+%
+All nodes in the network play the role of \emph{clients} and \emph{forwarders} 
+at the same time:
+%
+a client periodically sends a packet to a destination node;
+a forwarder listen for a incoming packet from other nodes and forward it to the 
+next node in the path.
+%
+Each node has a single radio interface shared by all active roles.
+Multiple clients reside in the same node (defined statically), and, at a given 
+time, multiple forwarders may also be active (depending on the dynamic network 
+traffic).
+
+TinyOS offers an event-driven API that relies on short-lived callbacks to 
+remain responsive:
+``all long-latency operations are split-phase: operation request and completion 
+are separate functions''~\cite{wsn.nesc}.
+This way, the original protocol implementation requires to track the state of 
+active clients and forwarders with global vectors (for static clients) and 
+allocated structures (for dynamic forwarders), so that they are accessible 
+across separate functions in split-phase operations (e.g., timers and radio 
+transmissions).
+The implementation also requires to manipulate a queue to multiplex 
+transmissions from all clients and forwarders in the single radio.
+
+The implementation in \CEU uses static organisms for clients and a dynamic pool 
+for forwarders that adapt to the network traffic.
+%
+The code in the left of Figure~\ref{lst.app.srp} shows the top-level block for 
+the protocol.
+The \code{Client} and \code{Forwarder} classes are collapsed in lines 4-5 and 
+expanded in the middle and right of the figure, respectively.
+
+The input events \code{START} and \code{STOP} control the global state of the 
+protocol (similarly to example of Figure~\label{lst.ctp}):
+the top-level loop awaits the starting event (line 8) and, on request, starts 
+the protocol (lines 12-25) and monitors the stopping event (line 10) in 
+parallel.
+%
+At any time a request to stop the protocol terminates the \code{par/or} (line 
+9), aborts all active clients and forwarders, restarts the loop (line 7), and 
+waits for the next request to start.
+
+The core of the protocol first creates a vector of predefined clients (line 12) 
+and pool to dynamically allocate forwarders (line 13).
+
+The input event \code{RECEIVE} and \code{SENDONE} (line 2) handle pointers to 
+radio packets in the radio driver:
+\code{RECEIVE} notifies the program of an incoming packet in the node;
+\code{SENDDONE} acknowledges a packet transmission first requested by the 
+application through a \code{send_enqueue} call.
+
+control the global state of the 
+
+one periodically transmits a status packet (lines 7-18);
+and one handles the remaining functionality of the protocol (collapsed in line 
+20).
+%
+
+\begin{figure*}[t]
+\begin{minipage}[t]{0.33\linewidth}
+\begin{lstlisting}
+input void    START,   STOP;
+input _pkt_t* RECEIVE, SENDDONE;
+
+<...> // "class Client"
+<...> // "class Forwarder"
+
+loop do
+   await START;
+   par/or do
+      await STOP;
+   with
+      var  Client   [N_CLTS] clients;
+      pool Forwarder[N_FWDS] forwarders;
+
+      var _pkt_t* pkt;
+      every pkt in RECEIVE do
+         if pkt:left == 0 then
+            _receive(pkt);
+         else
+            pkt:left = pkt:left - 1;
+            spawn Forwarder with
+               this.src := pkt;
+            end;
+         end
+      end
+   end
+end
+\end{lstlisting}
+\end{minipage}
+%
+\begin{minipage}[t]{0.33\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=3.5em]
+class Client with
+do
+   loop seqno do
+      par/and do
+         await 1min;
+      with
+         var _pkt_t pkt;
+         _pkt_setRoute(&pkt, seqno);
+         _pkt_setContents(&pkt, seqno);
+
+         loop do
+            finalize
+               _send_enqueue(&pkt)
+            with
+               _send_dequeue(&pkt);
+            end
+
+            var _pkt_t* done = await SENDDONE;
+            if done == &pkt then
+               break;
+            end
+         end
+      end
+   end
+end
+
+\end{lstlisting}
+\end{minipage}
+%
+\begin{minipage}[t]{0.33\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=3.5em]
+class Forwarder with
+   var _pkt_t* src;
+do
+   var _pkt_t pkt;
+   _memcpy(&pkt, src, src:len);
+   loop do
+      finalize
+         _send_enqueue(&pkt)
+      with
+         _send_dequeue(&pkt);
+      end
+
+      var _pkt_t* done = await SENDDONE;
+      if done == &pkt then
+         break;
+      end
+   end
+end
+\end{lstlisting}
+\end{minipage}
+%
+%\rule{17.5cm}{0.37pt}
+\caption{ The Source Routing Protocol in \CEU.
+\label{lst.apps.srp}
+}
+\end{figure*}
+
+ SRP
+looks up the next hop in the source route in the data packet header and
+forwards the data packet to the next hop. Once the data packet reaches
+the destination, it is considered as being successfully delivered.
+
+The routing information 
+
+ through a static routing tables shared by all nodes
+
+Specifically, source routing allows the origin node to
+specify the route the packet should take in the network. In this
+respect, source routing is considered as one implementation of the
+forwarding engine in network protocols.
+
+Figure~\ref{lst.srp} shows part of our port of the SRP routing 
+protocol~\cite{wsn.teps} to \CEU.
+The protocol specifies a fixed number of \emph{forwarders} responsible for 
+routing received messages to neighbours based on a static table.
+Given that a forwarder holds internal state (i.e. a message buffer and the 
+forwarding activity), we define a \code{Forwarder} class and create multiple 
+instances to serve requests.
+
+The first column of Figure~\ref{lst.srp} shows the receiving loop of the 
+protocol, which invokes \code{emit~go} when a message needs to be forwarded.
+The event is declared as global, so that \code{Forwarder} instances have access 
+to it.
+The forwarders are declared in a vector, creating \code{COUNT} different 
+instances.
+As the vector is local, all instances are automatically killed when the 
+protocol is stopped.
+(Note the use of the start/stop pattern of Figure~\ref{lst.radio} again.)
+
+The second column of Figure~\ref{lst.srp} shows the \code{Forwarder} class.
+Initially, all forwarders are in the same state, waiting for the global event 
+\code{go}.
+Once the receiving loop emits the event in the top-level body, the forwarders 
+awake in the order they were declared.
+The first forwarder atomically sets the \code{gotcha} variable, indicating that 
+the message will be handled and that other forwarders should ignore it:
+all other forwarders will await again for the next \code{go} emission.
+With this technique, we eliminated the need of an explicit queue.
+In the case that all forwarders become busy, the \code{go} emission will be 
+missed (with \code{gotcha=0}), acting just like a full queue.
+
+Note that \CEU organisms are not global entities and do not use the heap for 
+memory.
+Instead, they are bounded to the scope they are declared, and all memory is 
+statically allocated, just like \CEU does for standard local variables.
+Also, when an organism goes out of scope, the same automatic bookkeeping of 
+\code{par/or} compositions holds, all internal trails are killed and 
+finalization blocks execute (if any).
+Hence, the ``garbage collection'' for both the memory and code in organisms is 
+efficient and static.
+Although \CEU does not support dynamic creation (which could lead do unbounded 
+memory), scoped organisms offer some degree of flexibility when compared to 
+systems providing global objects only~\cite{wsn.virgil,wsn.flowtalk}.
+
+No queues
+state vars
+incr. scope
+30% reduction in source code size
+and same equivalent memory footprint (RAM-3, ROM+5)
+
+% TODO: ND access
+
 \subsection{Interactive Game}
 \subsection{Discussion}
 
