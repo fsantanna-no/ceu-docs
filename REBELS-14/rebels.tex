@@ -1,3 +1,14 @@
+%TODO:
+    %- normal data structures (manual memory management)
+    %- there is no other evaluation (experimental or otherwise) provided.
+%
+%In my view, you are missing citations to a large body of work on actors and 
+%%actor-based
+%language that are very related to the notion of organisms that you discuss in 
+%%this work.
+%For example, see the work by Agha, and work on Salsa, Thorn, Capsules, JCoBox, 
+%%etc...
+
 %\documentclass[preprint]{sigproc}
 \documentclass{acm_proc_article-sp}
 
@@ -105,7 +116,7 @@ mathescape=true,
 \title {
     %Imperative and Synchronous Abstractions for Reactive Applications
     %Structured Programming with Reactive Abstractions
-    Structured Reactive Programming with C\'eu
+    Structured Synchronous Reactive Programming with C\'eu
 }
 %\subtitle{Accepted paper in REM'13 (preprint version)}
 
@@ -120,10 +131,10 @@ mathescape=true,
 \maketitle
 
 \begin{abstract}
-Structured reactive programming (SRP) augments classical structured programming 
-with continuous interaction with the environment.
+Structured synchronous reactive programming (SSRP) augments classical 
+structured programming with continuous interaction with the environment.
 %
-We propose a new SRP abstraction mechanism for the synchronous language \CEU:
+We propose a new SSRP abstraction mechanism for the language \CEU:
 %
 \emph{Organisms} extend objects with an execution body that composes multiple 
 lines of execution to react to the environment independently.
@@ -166,6 +177,11 @@ parallelism.
 %
 The dataflow style of Lustre~\cite{lustre.ieee91} represents programs as graphs 
 of values, in which a change to a node updates its dependencies automatically.
+%
+Both styles rely on the \emph{synchronous execution hypothesis} which states 
+that the input and corresponded output in reactions to the environment are 
+simultaneous because internal computations run infinitely faster than the rate 
+of events~\cite{rp.hypothesis}.
 
 In recent years, Functional Reactive Programming (FRP)~\cite{frp.principles} 
 has modernized the dataflow style, inspiring a number of languages and 
@@ -187,18 +203,22 @@ variables~\cite{sync_async.cooperative}, which are elementary capabilities of
 imperative languages.
 %
 In this sense, callbacks actually disrupt imperative reactivity, becoming ``our 
-generation's \code{goto}''~\cite{rp.goto,elm.goto}.
+generation's \code{goto}''.%
+\footnote{``Callbacks as our Generations' Go To Statement'':
+\url{http://tirania.org/blog/archive/2013/Aug-15.html}}%
+\footnote{``Escape from Callback Hell'':
+\url{http://elm-lang.org/learn/Escape-from-Callback-Hell.elm}}
 
 We believe that the full range of reactive applications can benefit from the 
-imperative style of Esterel, which we now refer to as \emph{Structured Reactive 
-Programming (SRP)}.
+imperative style of Esterel, which we now refer to as \emph{Structured 
+Synchronous Reactive Programming (SSRP)}.
 %
-SRP extends the classical hierarchical control constructs of \emph{Structured 
+SSRP extends the classical hierarchical control constructs of \emph{Structured 
 Programming (SP)} (i.e., concatenation, selection, and 
 repetition~\cite{dij.notes}) to support continuous interaction with the 
 environment.
 %
-SRP retains structured and sequential reasoning of concurrent programs which 
+SSRP retains structured and sequential reasoning of concurrent programs which 
 constrasts with FRP, bringing the historical dichotomy between functional and 
 imperative languages also to the reactive domain.
 %
@@ -210,14 +230,14 @@ For instance, the lack of abstractions with dynamic lifetime makes it difficult
 to deal with virtual resources such as graphical widgets, game units, and 
 network sessions.
 
-In practical terms, SRP provides three extensions to SP:
+In practical terms, SSRP provides three extensions to SP:
 an ``\code{await <event>}'' statement that suspends a line of execution until 
 the referred event occurs, keeping all context alive;
 parallel constructs to compose multiple lines of execution and make them 
 concurrent;
 and an orthogonal mechanism to abort parallel compositions.
 %
-The \code{await} statement represents the imperative-reactive nature of SRP, 
+The \code{await} statement represents the imperative-reactive nature of SSRP, 
 recovering sequential execution lost with the observer pattern.
 %
 Parallel compositions%
@@ -237,7 +257,7 @@ with a new abstraction mechanism, the \emph{organisms}, that encapsulate
 parallel compositions with an object-like interface.
 % that other parts of the program can manipulate.
 %
-In brief, organisms are to SRP like procedures are to SP, i.e., one can 
+In brief, organisms are to SSRP like procedures are to SP, i.e., one can 
 abstract a portion of code with a name and manipulate (call) that name from 
 multiple places.
 %
@@ -270,8 +290,8 @@ model that must also apply to embedded systems.
 
 The rest of the paper is organized as follows:
 %Section~\ref{sec.models} justifies the synchronous concurrency model as better 
-%choice for SRP.
-Section~\ref{sec.ceu} presents SRP through \CEU, with its underlying 
+%choice for SSRP.
+Section~\ref{sec.ceu} presents SSRP through \CEU, with its underlying 
 synchronous concurrency model and parallel compositions.
 Section~\ref{sec.orgs} describes the organisms abstraction with static and 
 dynamic instantiation, lexical scope, and automatic memory management.
@@ -280,7 +300,7 @@ dynamic instantiation, lexical scope, and automatic memory management.
 Section~\ref{sec.related} discusses related work.
 Section~\ref{sec.conclusion} concludes the paper.
 
-\section{SRP with C\'eu}
+\section{SSRP with C\'eu}
 \label{sec.ceu}
 
 \CEU is a concurrent language in which the lines of execution, known as 
@@ -383,8 +403,9 @@ To avoid infinite execution for reactions, \CEU ensures that all loops contain
 \code{await} statements~\cite{ceu.sensys13}.
 
 As a result of synchronous execution, all consecutive operations to variable 
-\code{v} in Figure~\ref{lst.intro} are atomic because reactions to events 
-\code{1s} and \code{RESET} can never interrupt each other.
+\code{v} in Figure~\ref{lst.intro} are atomic (up to the next \code{await}) 
+because reactions to events \code{1s} and \code{RESET} can never interrupt each 
+other.
 %
 In contrast, in asynchronous models with nondeterministic scheduling, the 
 occurrence of \code{RESET} could preempt the first trail during an increment to 
@@ -418,7 +439,7 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-The synchronous model also empowers SRP with an orthogonal abortion construct 
+The synchronous model also empowers SP with an orthogonal abortion construct 
 that simplifies the composition of activities%
 \footnote{We use the term activity to generically refer to a language's unit of 
 execution (e.g., \emph{thread}, \emph{actor}, \emph{trail}, etc.).}.
@@ -520,7 +541,7 @@ directly related to the problem specification.
 - not really parallel (prev section)
 \end{comment}
 
-In terms of control structures, SRP basically extends SP with parallel 
+In terms of control structures, SSRP basically extends SP with parallel 
 compositions, allowing applications to handle multiple events concurrently.
 %
 \CEU provides three parallel constructs that vary on how they rejoin:
@@ -563,7 +584,7 @@ one second because both sides must terminate before re-entering the loop.
 In the \code{par/or} variation, if the operation does not terminate within 1 
 second, it is restarted.
 %
-These SRP archetypes represent, respectively, the \emph{sampling} and 
+These SSRP archetypes represent, respectively, the \emph{sampling} and 
 \emph{timeout} patterns, which are typical of reactive applications.
 
 %\begin{figure}[t]
@@ -677,7 +698,7 @@ local variables and stateful $C$ functions (e.g., device drivers) in order to
 preserve safe orthogonal abortion of trails.
 %
 %Finalization clauses are fundamental to preserve the orthogonality of 
-%\code{par/or} compositions in SRP.
+%\code{par/or} compositions in SSRP.
 
 \begin{figure}[t]
 \begin{minipage}[t]{0.45\linewidth}
@@ -844,7 +865,7 @@ The code in the right of Figure~\ref{lst.fin} properly dequeues the packet if
 the block of \code{buffer} goes out of scope, i.e., the finalization clause 
 (after the \code{with}) executes automatically on external abortion.
 
-\section{Organisms: SRP Abstractions}
+\section{Organisms: SSRP Abstractions}
 \label{sec.orgs}
 
 % TODO: RW 1dt paragraph
@@ -866,7 +887,7 @@ control across reactions to the environment.
 %methods.
 %This way, although objects are the prevailing imperative abstraction mechanism 
 %for reactive applications (when used in conjunction with the observer 
-%pattern), they cannot provide proper SRP abstractions.
+%pattern), they cannot provide proper SSRP abstractions.
 % because they also suffer from inversion of control~\cite{rp.rescala}.
 
 \CEU abstracts data and control into the single concept of organisms.
@@ -1045,7 +1066,7 @@ In contrast, more general reactive systems have to deal with resource
 virtualization that requires dynamic allocation, such as multiplexing protocols 
 in a network, or simulating entire civilizations in a game.
 %
-Dynamic allocation for organisms extends the power of SRP to handle virtual 
+Dynamic allocation for organisms extends the power of SSRP to handle virtual 
 resources in reactive applications.
 
 \CEU supports dynamic instantiation of organisms through the \code{spawn} 
@@ -1251,7 +1272,7 @@ To preserve safe pointer accesses, iterators cannot await.
 The example that follows iterates over the \code{units} pool to check for 
 collision among units:
 
-\newpage
+%\newpage
 
 %\begin{figure}[t]
 \begin{lstlisting}
@@ -1392,7 +1413,7 @@ in the presence of stateful resources.
 %For instance, \CEU relies on finalization for handling stateful resources as 
 %well as for watching references.
 
-Finally, the main distinction to existing work is how \CEU incorporates to SRP 
+Finally, the main distinction to existing work is how \CEU incorporates to SSRP 
 the fundamental concept in SP of lexically scoped variables.
 %
 All constructs of \CEU have a clear and unambiguous lifespan that can be 
@@ -1402,23 +1423,23 @@ Lexical scope permeates all aspects of the language:
 Any piece of data or control structure has a well-defined scope that can be 
 abstracted as an organism and safely aborted through finalization.
 %
-Even dynamic instances of organisms reside in pools with well-defined scopes 
-with the same properties.
+Even dynamic instances of organisms reside in scoped pools with the same 
+properties.
 %
 %Assignments of organisms references with incompatible scopes are refused.
 
-Functional Reactive Programming~\cite{frp.principles} contrasts with SRP as a
+Functional Reactive Programming~\cite{frp.principles} contrasts with SSRP as a
 complementary programming style for reactive applications.
 %
 We believe that FRP is more suitable for data-intensive applications, while 
-SRP, for control-intensive applications.
+SSRP, for control-intensive applications.
 %
 For instance, describing a sequence of steps in FRP requires to encode explicit 
 state machines so that functions can switch behavior depending on the current 
 state.
 %
 In contrast, FRP uses declarative formulas to specify continuous functions over 
-time, such as for physics or data constraints among entities, while SRP 
+time, such as for physics or data constraints among entities, while SSRP 
 requires explicit loops to update data dependencies continuously.
 
 \begin{comment}
@@ -1455,7 +1476,7 @@ control vs data reactivity
 \label{sec.conclusion}
 
 \begin{comment}
-We believe that programming reactive systems can benefit from SRP in \CEU:
+We believe that programming reactive systems can benefit from SSRP in \CEU:
 
 \begin{itemize}
 \item The synchronous model enables simpler reasoning about concurrency and is 
@@ -1464,16 +1485,16 @@ We believe that programming reactive systems can benefit from SRP in \CEU:
         from other activities.
 \item The finalization mechanism of \CEU extends orthogonal abortion for 
         activities that deal with stateful resources.
-\item Static and dynamic organisms abstractions extend the domain of SRP to a 
+\item Static and dynamic organisms abstractions extend the domain of SSRP to a 
         wide range of applications and platforms.
-\item Lexical scope for organisms provides seamless control of memory for SRP, 
+\item Lexical scope for organisms provides seamless control of memory for SSRP, 
         eliminating memory leaks and the need for garbage collection.
 \end{itemize}
 \end{comment}
 
-\CEU provides comprehensive support for structured reactive programming, 
-extending classical structure programming with continuous interaction with the 
-environment.
+\CEU provides comprehensive support for structured synchronous reactive 
+programming, extending classical structure programming with continuous 
+interaction with the environment.
 
 \CEU introduces organisms which reconcile data and control state in a single 
 abstraction.
