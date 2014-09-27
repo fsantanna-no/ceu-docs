@@ -1,3 +1,7 @@
+%TODO:
+    %- normal data structures (manual memory management)
+    %- there is no other evaluation (experimental or otherwise) provided.
+
 %\documentclass[preprint]{sigproc}
 \documentclass{sigplanconf}
 
@@ -208,7 +212,6 @@ generation's \code{goto}''.%
 \url{http://tirania.org/blog/archive/2013/Aug-15.html}}%
 \footnote{``Escape from Callback Hell'':
 \url{http://elm-lang.org/learn/Escape-from-Callback-Hell.elm}}
-
 
 We believe that the full range of reactive applications can benefit from the 
 imperative style of Esterel, which we now refer to as \emph{Structured 
@@ -1345,6 +1348,8 @@ scopes
 - constrained
 - general
 
+- nocao de environment com dois exemplos de cada
+
 To demonstrate the expressiveness of \CEU{}, we implemented three applications 
 in different domains and platforms.
 
@@ -1352,7 +1357,7 @@ The first example explores Wireless Sensor Networks (WSNs), which are networks
 composed of a large number of tiny devices capable of sensing the environment 
 and communicating among them.
 We integrated \CEU with the \emph{TinyOS} operating system~\cite{wsn.tos} in 
-order to use the abstracted radio services the operating system provides.
+order to use the abstracted radio services it already provides.
 
 The second example uses \CEU with the SDL graphics library%
 \footnote{\url{http://www.libsdl.org}} under linux.
@@ -1371,8 +1376,8 @@ promoted by \CEU{}.
 
 The \emph{Source Routing Protocol} for WSNs delivers packets from an origin 
 node to a destination node~\cite{wsn.teps}.
-The protocol stores the routing path in the data packet itself, as a vector of 
-node addresses to traverse in sequence.
+The protocol stores the routing path in the packet itself, as a vector of node 
+addresses to traverse in sequence.
 Each hop in the path forwards the packet to the next address in the vector up 
 to the final destination node.
 %
@@ -1380,12 +1385,12 @@ All nodes in the network play the role of \emph{clients} and \emph{forwarders}
 at the same time:
 %
 a client periodically sends a packet to a destination node;
-a forwarder listen for a incoming packet from other nodes and forward it to the 
-next node in the path.
+a forwarder listen for an incoming packet from other nodes and forward it to 
+the next node in the path.
 %
 Each node has a single radio interface shared by all active roles.
 Multiple clients reside in the same node (defined statically), and, at a given 
-time, multiple forwarders may also be active (depending on the dynamic network 
+moment, multiple forwarders may also be active (depending on the network 
 traffic).
 
 TinyOS offers an event-driven API that relies on short-lived callbacks to 
@@ -1393,48 +1398,58 @@ remain responsive:
 ``all long-latency operations are split-phase: operation request and completion 
 are separate functions''~\cite{wsn.nesc}.
 This way, the original protocol implementation requires to track the state of 
-active clients and forwarders with global vectors (for static clients) and 
-allocated structures (for dynamic forwarders), so that they are accessible 
-across separate functions in split-phase operations (e.g., timers and radio 
-transmissions).
+active clients and forwarders with either global static vectors (for clients) 
+or dynamically allocated structures (for forwarders) which have to be 
+accessible across separate functions in split-phase operations (e.g., timers 
+and radio transmissions).
 The implementation also requires to manipulate a queue to multiplex 
-transmissions from all clients and forwarders in the single radio.
+transmissions from all clients and forwarders in the single radio available.
 
-The implementation in \CEU uses static organisms for clients and a dynamic pool 
-for forwarders that adapt to the network traffic.
+The implementation in \CEU takes advantage of SSRP and overcome split-phase 
+operations with simple sequential flow separated by \code{await} statements.
+It also uses static organisms for clients and a dynamic pool of forwarders that 
+adapt to the network traffic.
 %
-The code in the left of Figure~\ref{lst.app.srp} shows the top-level block for 
+The code in the left of Figure~\ref{lst.apps.srp} shows the top-level block for 
 the protocol.
 The \code{Client} and \code{Forwarder} classes are collapsed in lines 4-5 and 
-expanded in the middle and right of the figure, respectively.
+expanded in the middle and in the right of the figure, respectively.
 
 The input events \code{START} and \code{STOP} control the global state of the 
-protocol (similarly to example of Figure~\label{lst.ctp}):
-the top-level loop awaits the starting event (line 8) and, on request, starts 
-the protocol (lines 12-25) and monitors the stopping event (line 10) in 
+protocol (similarly to example of Figure~\ref{lst.ctp}):
+the top-level loop awaits the starting event (line 8) and, on request, monitors 
+the stopping event (line 10) while executing the protocol (lines 12-25) in 
 parallel.
 %
 At any time a request to stop the protocol terminates the \code{par/or} (line 
 9), aborts all active clients and forwarders, restarts the loop (line 7), and 
-waits for the next request to start.
-%
-The input events \code{RECEIVE} and \code{SENDONE} (line 2) interface with the 
-radio driver:
-\code{RECEIVE} notifies the program with a pointer to an incoming packet;
-\code{SENDDONE} acknowledges a packet transmission started with a 
-\code{send\_enqueue} call from the application.
+waits for the next request to start (line 8).
 
-The core of the protocol first creates a vector of clients and a pool to 
-dynamically allocate forwarders (line 12-13).
-Then, it enters a loop to continuously receive packets as they arrive and take 
-the proper action (lines 15-25):
+The input events \code{RECEIVE} and \code{SENDONE} (line 2) represent the 
+interfaces with the radio driver:
+\code{RECEIVE} notifies the program of a incoming packet (carrying a pointer to 
+it);
+\code{SENDDONE} acknowledges that a previous call to \code{send\_enqueue} to 
+transmit a packet has completed (carrying the pointer to it).
+
+The core of the protocol (lines 12-25) first declares the vector of clients and 
+the pool of forwarders (line 12-13).
+Then, it enters a loop to continuously receive incoming packets and take the 
+proper action as they arrive (lines 15-25):
 if the packet has no hops left, it reached the destination and the protocol 
-calls the user-defined \code{\_receive} function to handle the packet (lines 
+calls the user-defined function \code{\_receive} to handle the packet (lines 
 17-18);
 otherwise, the protocol spawns a new forwarder that takes care of redirecting 
 the packet to the next hop (19-24).
+Given that a forwarder may not complete immediately (as we discuss further), 
+multiple arriving packets
+Meanwhile, the declared clients are alive and executing independently in 
+parallel, sending packets with a XXX frequency and sharing the radio...
 
 The \code{Client} class
+    - no interface (completely independent)
+    - seq incremented each iter and identifies the packet
+    - par/and periodic pattern
 
 %
 queue disappears
@@ -1491,7 +1506,6 @@ do
             with
                _send_dequeue(&pkt);
             end
-
             var _pkt_t* done;
             done = await SENDDONE;
             if done == &pkt then
@@ -1519,7 +1533,6 @@ do
       with
          _send_dequeue(&pkt);
       end
-
       var _pkt_t* done;
       done = await SENDDONE;
       if done == &pkt then
@@ -1702,6 +1715,19 @@ state.
 In contrast, FRP uses declarative formulas to specify continuous functions over 
 time, such as for physics or data constraints among entities, while SSRP 
 requires explicit loops to update data dependencies continuously.
+
+In the asynchronous spectrum of concurrency, a number of actor-based languages 
+extend objects with independent execution contexts that communicate exclusively 
+through message 
+passing~\cite{agha.salsa,actors.thorn,actors.jcobox,actors.capsule}.
+%
+In contrast with the synchronous model of \CEU, the inherent nondeterministic 
+execution of actors demands full state isolation and makes distribution and 
+many-core parallelism more straightforward.
+%
+However, \CEU organisms promote data sharing and depend on global consensus 
+about the overall state of the system for abortion and scoping rules for 
+compositions.
 
 \begin{comment}
 - asynchronous langs

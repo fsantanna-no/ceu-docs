@@ -1,14 +1,3 @@
-%TODO:
-    %- normal data structures (manual memory management)
-    %- there is no other evaluation (experimental or otherwise) provided.
-%
-%In my view, you are missing citations to a large body of work on actors and 
-%%actor-based
-%language that are very related to the notion of organisms that you discuss in 
-%%this work.
-%For example, see the work by Agha, and work on Salsa, Thorn, Capsules, JCoBox, 
-%%etc...
-
 %\documentclass[preprint]{sigproc}
 \documentclass{acm_proc_article-sp}
 
@@ -219,7 +208,7 @@ repetition~\cite{dij.notes}) to support continuous interaction with the
 environment.
 %
 SSRP retains structured and sequential reasoning of concurrent programs which 
-constrasts with FRP, bringing the historical dichotomy between functional and 
+contrasts with FRP, bringing the historical dichotomy between functional and 
 imperative languages also to the reactive domain.
 %
 However, the original rigorous semantics of Esterel, which focuses on static 
@@ -532,10 +521,10 @@ directly related to the problem specification.
 \label{sec.ceu.par}
 
 \begin{comment}
-- besides standard strucutred (loops, conditionals, sequences)
+- besides standard structured (loops, conditionals, sequences)
 - add compositions
 - await, sequence, vars
-- parallel, patterns, ortoghonal
+- parallel, patterns, orthogonal
 - finalize for C integration and keep orthogonality
     - no await inside it
 - not really parallel (prev section)
@@ -865,6 +854,7 @@ The code in the right of Figure~\ref{lst.fin} properly dequeues the packet if
 the block of \code{buffer} goes out of scope, i.e., the finalization clause 
 (after the \code{with}) executes automatically on external abortion.
 
+\newpage
 \section{Organisms: SSRP Abstractions}
 \label{sec.orgs}
 
@@ -1442,12 +1432,45 @@ In contrast, FRP uses declarative formulas to specify continuous functions over
 time, such as for physics or data constraints among entities, while SSRP 
 requires explicit loops to update data dependencies continuously.
 
+%%%%%%%%%%%%%%%%%%%%%%
+
+In the asynchronous spectrum of concurrency, a number of actor-based languages 
+extend objects with independent execution contexts that communicate exclusively 
+through message 
+passing~\cite{agha.salsa,actors.thorn,actors.jcobox,actors.capsule}.
+%
+In contrast with the synchronous model of \CEU, the inherent nondeterministic 
+execution of actors demands full state isolation and makes distribution and 
+many-core parallelism more straightforward.
+%
+However, \CEU organisms promote data sharing and depend on global consensus 
+about the overall state of the system for abortion and scoping rules for 
+compositions.
+
 \begin{comment}
 - asynchronous langs
 - Esterel + descendants
 - CRP
 - simula
 - FRP
+
+The asynchronous execution model is more general and does not make assumptions 
+about implicit synchronization.
+Each activity%
+\footnote{We use the term activity to generically refer to a language's unit of 
+execution (e.g., \emph{thread}, \emph{actor}, \emph{process}, etc.).}
+in the system is independent from one another and executes at its own pace.
+%
+For instance, an activity can perform time-consuming operations (e.g., 
+compression, cryptography) without obstructing other activities.
+%
+Independence of activities also makes distribution and many-core parallelism 
+straightforward.
+%
+However, in order to coordinate activities at specific points, the programmer 
+has to use explicit synchronization primitives (e.g., mutual exclusion or 
+message passing).
+% ADA, thread-based concurrency, CSP
 
 interactive  vs reactive
 asynchronous vs synchronous
@@ -1651,23 +1674,6 @@ An actual implementation enqueues incoming input events to process them in the
 next iterations.
 }.
 ADVANTAGES: deterministic, etc.
-
-The asynchronous execution model is more general and does not make assumptions 
-about implicit synchronization.
-Each activity%
-\footnote{We use the term activity to generically refer to a language's unit of 
-execution (e.g., \emph{thread}, \emph{actor}, \emph{process}, etc.).}
-in the system is independent from one another and executes at its own pace.
-%
-For instance, an activity can perform time-consuming operations (e.g., 
-compression, cryptography) without obstructing other activities.
-%
-Independence of activities also makes many-core parallelism straightforward.
-%
-However, in order to coordinate activities at specific points, the programmer 
-has to use explicit synchronization primitives (e.g., mutual exclusion or 
-message passing).
-% ADA, thread-based concurrency, CSP
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
