@@ -2178,7 +2178,7 @@ SSRP and \CEU rely on control compositions to express program flow concisely
 and in a structured way.
 %
 In contrast, solutions based on the observer pattern rely on explicit 
-manipulation of global variables and state machines for control flow across 
+manipulation of global variables and state machines for flow control across 
 reactions.
 %
 The presented applications corroborate our previous experiments regarding the 
@@ -2186,64 +2186,63 @@ eradication of state variables~\cite{ceu.sensys13}, expressing all control
 patterns exclusively with hierarchical compositions of activities and 
 organisms.
 %
-In addition, control compositions enable that new higher-level self-contained 
-constructs are created, such as the syntactic sugars of Figure~\ref{fig.sugars} 
-used in the examples.
+In addition, control compositions enable designing new higher-level 
+self-contained constructs, such as the syntactic sugars of 
+Figure~\ref{fig.sugars} used in the examples.
 
 Organisms are fundamental to expand SSRP to the development of more complex 
 systems.
 %
-Organisms define abstractions that tie data and control together, which then 
-can be deployed to a limited scope in an application with proper finalization 
-guarantees.
+Organisms define abstractions that tie data and control together, which can be 
+deployed in conjunction to a limited scope in applications.
 %
 In the protocol, the \code{Forwarder} and \code{Client} classes are defined in 
 separate and used in a restricted scope through anonymous instances that do not 
 mingle with the rest of the code.
-On requests to stop the protocol, the orthogonal abortion mechanism for 
-organisms removes all clients and forwarders in a consistent state from memory.
+Requests to stop the protocol trigger orthogonal abortion and finalization for 
+all clients and forwarders, leaving the memory in a consistent state.
 %
-We believe that such lexically scoped mechanism for modularity in applications 
-is a novel contribution of \CEU.
+%We believe that such lexically scoped mechanism for modularity in applications 
+%is a novel contribution of \CEU.
 
 The distinction between static and dynamic organisms reflects more precisely 
-the life cycle of each element in an application.
+the life cycle of each component in an application.
 %
 In the game, the two ships are declared static because they are alive during 
 the whole scope of the gameplay; the meteors, in contrast, are declared dynamic 
 because they terminate when disappearing from the screen, which is a runtime 
 condition.
-Nonetheless dynamic instances reside in pools that are always static, also
-restricting them to a static scope.
+Nonetheless dynamic instances must reside in static pools, also restricting 
+them to a lexical scope.
 %
 Even though the distinction between static and dynamic instances exists in O.O.  
-languages like C++, they do not apply effectively to reactive applications 
-because callbacks that define new objects are short lived, requiring all 
-allocations to be dynamic in practice.
+languages like C++, it does not apply effectively because callbacks in reactive 
+applications are short lived, requiring all allocations to be dynamic in 
+practice.
 
 Static scopes helps developers to better understand the overall state of memory 
 in applications: blocks in parallel coexist in memory; blocks in sequence do 
 not; static organisms and pools coexist with their enclosing block.
 %
 This information is more difficult to infer when deallocation is explicit or 
-relies on garbage collection, because both cases depend on execution and cannot 
-be analyzed statically.
+relies on garbage collection, because both cases depend on runtime behavior 
+that cannot be analyzed statically.
 %
-In the protocol, after a stop request, it is statically guaranteed that no 
-forwarders or clients are in memory.
+In the protocol, after a stop request, it is guaranteed that no forwarders or 
+clients are in memory.
 In the game, the memory for the starting screen and gameplay can never coexist 
 because they are enclosed by blocks in sequence.
 
-The eviction of explicit pointer manipulation in \CEU eliminates the known 
-problem of \emph{lapsed listeners} which is a form of memory leak that happens 
-in garbage collected languages~\cite{gamepatterns,dobbs.loiterers}.
+Explicit reference manipulation may introduce memory leaks even in garbage 
+collected languages~\cite{dobbs.loiterers}.
+For instance, a \emph{lapsed listener}~\cite{gamepatterns} is a pointer to an 
+object---supposedly unreferred---that is not explicitly unregistered as a
+listener from an event, preventing the garbage collector to release the object 
+from memory.
 %
-A lapsed listener is a pointer to a supposedly unreferred object that is never 
-unregistered as an event listener, preventing the garbage collector to release 
-if from memory.
-%
-When absolutely necessary, the \code{watching} construct of \CEU ensures that 
-pointers to organisms are weak references and do not hold them in memory.
+When absolutely necessary, explicit manipulation in \CEU must be protected with 
+the \code{watching} construct, which ensures that pointers to organisms are 
+weak and do not hold them in memory.
 %
 In the game, the code for the guided missile that manipulates a reference to 
 the closest meteor is automatically aborted when the latter goes out of scope.
