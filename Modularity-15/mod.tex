@@ -3,7 +3,7 @@
     %- there is no other evaluation (experimental or otherwise) provided.
 
 %\documentclass[preprint]{sigproc}
-\documentclass{sigplanconf}
+\documentclass[preprint]{sigplanconf}
 
 % The following \documentclass options may be useful:
 %
@@ -123,23 +123,26 @@ mathescape=true,
 }
 %\subtitle{Accepted paper in REM'13 (preprint version)}
 
-\authorinfo{Francisco Sant'Anna}
-           {Departamento de Inform\'atica --- PUC-Rio, Brazil}
-           {fsantanna@inf.puc-rio.br}
-\authorinfo{Roberto Ierusalimschy}
-           {Departamento de Inform\'atica --- PUC-Rio, Brazil}
-           {roberto@inf.puc-rio.br}
-\authorinfo{Noemi Rodriguez}
-           {Departamento de Inform\'atica --- PUC-Rio, Brazil}
-           {noemi@inf.puc-rio.br}
+%\authorinfo{Francisco Sant'Anna}
+           %{Departamento de Inform\'atica --- PUC-Rio, Brazil}
+           %{fsantanna@inf.puc-rio.br}
+%\authorinfo{Roberto Ierusalimschy}
+           %{Departamento de Inform\'atica --- PUC-Rio, Brazil}
+           %{roberto@inf.puc-rio.br}
+%\authorinfo{Noemi Rodriguez}
+           %{Departamento de Inform\'atica --- PUC-Rio, Brazil}
+           %{noemi@inf.puc-rio.br}
+
+\authorinfo{}{}{}
 
 \maketitle
 
 \begin{abstract}
 Structured synchronous reactive programming (SSRP) augments classical 
-structured programming with continuous interaction with the environment.
+structured programming (SP) with continuous interaction with the environment.
 %
-We propose a new SSRP abstraction mechanism for the synchronous language \CEU:
+We advocate SSRP as viable in multiple domains of reactive applications and 
+propose a new abstraction mechanism for the synchronous language \CEU:
 %
 \emph{Organisms} extend objects with an execution body that composes multiple 
 lines of execution to react to the environment independently.
@@ -148,7 +151,7 @@ Compositions bring structured reasoning to concurrency and can better describe
 state machines typical of reactive applications.
 %
 Organisms are subject to lexical scope and automatic memory management similar 
-to stack-based allocation for local variables.
+to stack-based allocation for local variables in SP.
 We show that this model does not require garbage collection or a \code{free} 
 primitive in the language, eliminating memory leaks by design.
 \end{abstract}
@@ -213,7 +216,7 @@ generation's \code{goto}''.%
 \footnote{``Escape from Callback Hell'':
 \url{http://elm-lang.org/learn/Escape-from-Callback-Hell.elm}}
 
-We believe that the full range of reactive applications can benefit from the 
+We believe that all domains of reactive applications can benefit from the 
 imperative style of Esterel, which we now refer to as \emph{Structured 
 Synchronous Reactive Programming (SSRP)}.
 %
@@ -222,8 +225,8 @@ Programming (SP)} (i.e., concatenation, selection, and
 repetition~\cite{dij.notes}) to support continuous interaction with the 
 environment.
 %
-SSRP retains structured and sequential reasoning of concurrent programs which 
-contrasts with FRP, bringing the historical dichotomy between functional and 
+In contrast with FRP, SSRP retains structured and sequential reasoning of 
+concurrent programs, bringing the historical dichotomy between functional and 
 imperative languages also to the reactive domain.
 %
 However, the original rigorous semantics of Esterel, which focuses on static 
@@ -265,8 +268,8 @@ In brief, organisms are to SSRP like procedures are to SP, i.e., one can
 abstract a portion of code with a name and manipulate (call) that name from 
 multiple places.
 %
-Unlike procedure calls with multi-threading, organisms have deterministic 
-behavior and do not require explicit synchronization.
+Unlike procedure calls in multi-threaded applications, organisms have 
+deterministic behavior and do not require explicit synchronization.
 %
 Unlike Simula objects~\cite{simula}, organisms react independently to the 
 environment and do not depend on cooperation, i.e., once instantiated they 
@@ -418,7 +421,7 @@ To avoid infinite execution for reactions, \CEU ensures that all loops contain
 
 % TODO: rules? (slides da aula)
 
-As a result of synchronous execution, all consecutive operations to shared 
+As a consequence of synchronous execution, all consecutive operations to shared 
 variable \code{v} in Figure~\ref{lst.intro} are atomic (until reaching the next 
 \code{await}) because reactions to events \code{1s} and \code{RESET} can never 
 interrupt each other.
@@ -488,7 +491,7 @@ This is possible in synchronous languages due to the accurate control of
 concurrent activities, i.e., in between every reaction, the whole system is 
 idle and consistent~\cite{esterel.preemption}.
 %
-\CEU extends orthogonal abortion to work also with activities that use stateful 
+\CEU extends orthogonal abortion to also work with activities that use stateful 
 resources from the environment (such as file and network handlers), as we 
 discuss in Section~\ref{sec.ceu.par}.
 
@@ -675,7 +678,7 @@ transmission and all composed trails.
 In this case, the top-level loop restarts (line 2) and waits for the next 
 request to start the protocol (line 3), ignoring all other requests (as the 
 protocol specifies).
-
+%
 The example shows how parallel compositions can describe complex state machines 
 in a structured way, eliminating the use of global state variables for this 
 purpose~\cite{ceu.sensys13}.
@@ -857,7 +860,7 @@ end
 \end{figure*}
 
 Consider the code in the left of Figure~\ref{lst.fin}, which expands the 
-sending trail of Figure~\ref{lst.ctp} (line 15).
+sending trail of Figure~\ref{lst.ctp} (line 14).
 %
 The \code{buffer} packet is a local variable whose address is passed to 
 function \code{\_send\_enqueue}.
@@ -940,7 +943,8 @@ parallel in the background, i.e., both instances are already running before the
 \emph{CODE-3} is semantically equivalent to \emph{CODE-2}, but with the 
 organism constructors and bodies expanded (lines 10-17 and 19-26).
 The generated \code{par/or} (lines 9-29) makes the instances concurrent with 
-the rest of the application (i.e., the \code{await 1min}, in line 28).
+the rest of the application (in this example, the \code{await 1min} in line 
+28).
 Note the generated \code{await FOREVER} statements (lines 17 and 26) to avoid 
 the organisms bodies to terminate the \code{par/or}.
 The \code{\_Blink} type (lines 1-4) corresponds to a simple datatype without an
@@ -974,7 +978,7 @@ on lexical scheduling described in Section~\ref{sec.ceu.sync}).
 %Section~\ref{sec.orgs.refs}.
 
 The memory model for organisms is similar to stack-living local variables of 
-procedures in SP with lexical scope and automatic management.
+procedures in SP, featuring lexical scope and automatic management.
 Note that \emph{CODE-2} uses a \code{do-end} block (lines 11-23) that limits 
 the scope of the organisms for 1 minute (line 22).
 %
@@ -1002,18 +1006,18 @@ In addition to properties and methods, organisms also expose internal events
 which support \code{await} and \code{emit} operations.
 %
 In the example in Figure~\ref{lst.unit}, the class \code{Unit} (lines 1-16) 
-defines the position and destination properties \code{pos} and \code{dst} with 
-default values \code{0} (lines 2-3), and the event \code{move} to listen for
-requests to move the unit position (line 4).
+defines the position and destination properties \code{pos} and \code{dst} 
+(lines 2-3), and the event \code{move} to listen for requests to move the unit 
+position (line 4).
 %
-The main program (lines 18-24) creates two units, requests the first to move 
-immediately to \code{dst=300} (line 19), and the second to move after 1 second 
-to position \code{500} (lines 23-24).
+The main program (lines 18-24) creates two units, requesting the first to move 
+immediately to \code{dst=300}, and the second to move after 1 second to 
+position \code{500}.
 %
 On instantiation, the organism body enters a continuous loop (lines 6-15) to 
 handle \code{move} requests (line 8) while performing the ongoing moving 
 operation (lines 10-13) in parallel.
-The \code{par/or} (lines 7-14) restarts the loop for every \code{move} request,
+The \code{par/or} (lines 7-14) restarts the loop for every \code{move} request
 which updates the \code{dst} position.
 %
 The moving operation (collapsed in line 11) can be as complex as needed, for 
@@ -1076,8 +1080,9 @@ resources in reactive applications.
 
 \CEU supports dynamic instantiation of organisms through the \code{spawn} 
 primitive.
-The example that follows spawns a new instance of \code{Unit} (defined in 
-Figure~\ref{lst.unit}) on every second and moves it to a random position:
+The example that follows spawns a new instance of \code{Unit} (previously 
+defined in Figure~\ref{lst.unit}) on every second and moves it to a random 
+position:
 
 \begin{lstlisting}
 loop do
@@ -1101,8 +1106,8 @@ but have different lifetime and scoping rules then static ones:
 %
 A static instance has an identifier and a well-defined scope that holds its 
 memory resources;
-A dynamic instance is anonymous and outlives the scope that spawns it:
-in the example, the spawned units outlive the enclosing loop iterations.
+A dynamic instance is anonymous and outlives the scope that spawns it.
+In the example, the spawned units outlive the enclosing loop iterations.
 %
 Due to the lack of an explicit identifier or reference, a dynamic instance can 
 control its own lifetime:
@@ -1275,8 +1280,8 @@ expansion (in the right).
 }
 \end{figure}
 
-A more typical use of pointers is inside a \emph{pool iterator} which acquire 
-temporary pointers to all of its alive instances.
+A more typical use of pointers to organisms is inside a \emph{pool iterator} 
+which acquire temporary pointers to all of its alive instances.
 To preserve pointer accesses safe, iterators cannot await.
 The example that follows iterates over the \code{units} pool to check for 
 collision among units:
@@ -1571,10 +1576,9 @@ the next node in the path.
 A node has a single radio interface shared by all of its active roles.
 
 TinyOS offers an event-driven API that relies on short-lived callbacks to keep 
-nodes responsive:
+nodes responsive, sharing the same limitations with the observer pattern:
 ``all long-latency operations are split-phase: operation request and completion 
-are separate functions''~\cite{wsn.nesc}, sharing the same limitations with the 
-observer pattern.
+are separate functions''~\cite{wsn.nesc}.
 %
 This way, the original protocol implementation keeps the state of active 
 clients and forwarders in static- or heap-living globals to be accessible 
@@ -1586,8 +1590,8 @@ dynamically allocated in the heap to adapt to the network traffic.
 
 The implementation in \CEU takes advantage of SSRP and overcomes split-phase 
 operations with simple sequential flow separated by \code{await} statements.
-It uses static organisms for clients and a dynamic pool of forwarders to behave 
-like the original implementation.
+It uses static organisms for clients and a dynamic pool for forwarders to 
+behave like the original implementation.
 %
 The file \emph{main.ceu} in Figure~\ref{lst.apps.srp} shows the main body for 
 the protocol in \CEU.
@@ -1650,7 +1654,7 @@ do
         <...>
     end
     await org.ok; // <Class> must implement and emit
-end
+end               //         the event "ok"
 \end{lstlisting}
 %\rule{8.5cm}{0.37pt}
 \caption{ Syntactic sugars to describe typical control patterns in SSRP.
@@ -1665,9 +1669,9 @@ Figure~\ref{lst.ctp}):
 the top-level loop awaits the starting event (line 10) and, on request, 
 ``watches'' the stopping event (line 11) while executing the protocol (lines 
 12-25).
-The \code{watching} construct (in Figure~\ref{fig.sugars}.1) aborts its nested 
-block on the occurrence of the referred event (and is more idiomatic than the 
-equivalent expansion to a \code{par/or}).
+The \code{watching} construct (described in Figure~\ref{fig.sugars}.1) aborts 
+its nested block on the occurrence of the referred event (and is more idiomatic 
+than the equivalent expansion to a \code{par/or}).
 %
 At any time, a request to stop the protocol aborts all active clients and 
 forwarders, restarts the loop (line 9), and waits for the next request to start 
@@ -1685,11 +1689,11 @@ The core of the protocol (lines 12-25) first declares a pool of forwarders and
 a vector of clients (line 12-13).
 %
 The identifier `\code{\_}' for static instances makes them anonymous, which is 
-recommended for organisms that the application does not manipulate explicitly:
-the clients execute independently in parallel, frequently sending packets to 
-other nodes in the network.
+recommended for organisms that the application does not manipulate directly:
+each client in the vector executes independently in parallel, frequently 
+sending packets to other nodes in the network.
 %
-The protocol then enters the \code{every} construct (in 
+The protocol then enters the \code{every} construct (described in 
 Figure~\ref{fig.sugars}.2) to receive incoming packets continuously and take 
 the proper action as they arrive (lines 15-25):
 if the packet has no hops left, it reached the destination and the protocol 
@@ -1715,9 +1719,9 @@ otherwise, the body awaits until the radio driver acknowledges the transmission
 of the enqueued packet (\code{done==\&out} in lines 16-17), signals the 
 completion to potential listeners through the event \code{ok} (line 18, 
 discussed further), and escapes the loop to terminate (line 19).
-The \code{await-until} construct (in Figure~\ref{fig.sugars}.3) expands to a 
-loop that checks every occurrence of the referred event, escaping when the 
-condition is met.
+The \code{await-until} construct (described in Figure~\ref{fig.sugars}.3) 
+expands to a loop that checks every occurrence of the referred event, escaping 
+when the condition is met.
 %
 Note that for forwarders spawned in the main body (line 21 in \emph{main.ceu}), 
 the organism termination automatically frees it from memory, as discussed in 
@@ -1733,17 +1737,16 @@ The loop automatic variable \code{seqno} (line 5), which starts at \code{0} and
 is incremented on each loop iteration, represents the packet sequence number.
 %
 The \code{par/and} (lines 6-12) restricts the loop iteration to occur at least 
-once every minute.
+once every minute, just like the sampling pattern of Section~\ref{sec.ceu.par}.
 %
 To send a new packet, the body embeds a \code{Forward} organism and sets the 
 contents of the \code{out} packet to depend on the current sequence number and 
 a user-defined function (lines 9-11).
-The \code{do-<class>} construct (in Figure~\ref{fig.sugars}.4) expands to a 
-static organism declaration that awaits its own termination.
+The \code{do-<class>} construct (described in Figure~\ref{fig.sugars}.4) 
+expands to a static organism declaration that awaits its own termination.
 %
 The expansion expects the organism interface to define the event \code{ok} and 
-the body to emit it to represent completion (e.g., that the transmission 
-succeeded).
+the body to emit it on completion (e.g., that the transmission succeeded).
 The expansion is enclosed with an explicit \code{do-end} block to make the 
 organism to go out of scope after the \code{await ok}, and proceed to the 
 statement in sequence.
@@ -1755,11 +1758,13 @@ control (e.g., message buffers and associated transmission activities).
 These modules are then instantiated inside the main execution body in a 
 deliberate depth that restricts their scope.
 %
-For instance, at any time, a \code{STOP} request (line 12 of \emph{main.ceu}) 
-rejoins the \code{par/or} (lines 11-28) and aborts all clients and forwarders, 
-which are automatically finalized to a consistent state (lines 7-11 of 
-\emph{forwarder.ceu}) in spite of being defined in separate files, possibly by 
-different developers.
+For instance, at any time, a \code{STOP} request terminates the \code{wacthing} 
+construct (lines 11-26 of \emph{main.ceu}) and aborts all clients and 
+forwarders.
+%
+In spite of being defined in separate files, possibly by different developers, 
+all clients and forwarders are automatically finalized to a consistent state 
+(lines 7-11 of \emph{forwarder.ceu}).
 
 The example also shows how organisms can nest to avoid code duplication:
 To forward a packet, the \code{Client} class ``calls'' a \code{Forwarder} 
@@ -1769,10 +1774,10 @@ subroutine''.
 In the protocol, the radio driver is subjected to a high degree of concurrency, 
 with incoming packets to the node, requests from local clients, and forwarders 
 routing data through the network.
-However, the execution model of \CEU synchronizes reactions to radio events and 
-eliminates race conditions by design, such as on calls to side-effect functions 
-\code{\_receive} and \code{\_send\_enqueue} (line 18 of \emph{main.ceu} and 
-line 8 of \emph{forwarder.ceu}, respectively).
+However, the execution model of \CEU synchronizes all reactions to radio events 
+and eliminates race conditions by design, such as on calls to side-effect 
+functions \code{\_receive} and \code{\_send\_enqueue} (line 18 of 
+\emph{main.ceu} and line 8 of \emph{forwarder.ceu}, respectively).
 % TODO
 %rule 1 for external events on receive
 %rule 2 for trails on send_enqueue
@@ -1876,7 +1881,7 @@ end
 
 The game is considerably more complex than the protocol of 
 Section~\ref{sec.apps.srp}, so we generally describe the abstract interfaces 
-and focus on the top-level block which put all pieces together.
+and focus on the top-level block which puts all pieces together.
 %
 Figure~\ref{lst.apps.rocks.1} shows the relevant parts of the main file.
 %
@@ -1892,9 +1897,10 @@ The interfaces (lines 6-27), with implementations included in corresponding
 files (lines 29-32), represent the abstract concepts that the main program 
 manipulates:
 \begin{description}
-\item[\code{IScore}] (lines 6-9) represents the player scores, which expects a 
-\code{position} (line 7) and exposes the event \code{go\_increment} which the 
-application emits to increment the score (line 8).
+\item[\code{IScore}] (lines 6-9) represents the player scores, expecting a 
+\code{position} in the screen (line 7), and exposing the event 
+\code{go\_increment} which the application emits to increment the score (line 
+8).
 The actual implementation holds the score current state (e.g., points and 
 graphical texture) and knows how to redraw itself on screen in reactions to 
 \code{SDL\_REDRAW}.
@@ -1912,7 +1918,7 @@ the relevant \code{SDL\_TOUCH} inputs.
 \item[\code{ICollidable}] (lines 16-20) represents all objects that require 
 collision detection: the ships, shots, and meteors.
 The field \code{id} (line 17) identifies the object when applying collisions 
-(e.g., collisions between meteors are ignored).
+(e.g., collisions between two meteors are ignored).
 The field \code{rect} (line 18) exposes the current position and dimension for 
 collision detection.
 The application emits the \code{go\_hit} event to signal that the object has 
@@ -1940,7 +1946,7 @@ Then, we switch between the starting tap and gameplay behaviors of
 Figure~\ref{fig.rocks}, putting them in sequence and surrounded with loop 
 (lines 48-55).
 The \code{do-end} enclosing each behavior isolates one from another, i.e., no 
-variables or organisms survive when switching between them.
+variables or organisms should survive when switching between them.
 
 \begin{figure}%[t]
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
@@ -1992,10 +1998,10 @@ var Ship ship2 with
     this.controller = controller2;
 end
 
-pool Object[] meteors;
+pool Meteor[] meteors; // Meteor in collidables.ceu
 
 par/or do
-    every (_rand() % 2000)ms do
+    every (1000 + _rand()%2000)ms do
         spawn Meteor in meteors;
     end
 with
@@ -2029,14 +2035,13 @@ The code for the gameplay is expanded in Figure~\ref{lst.apps.rocks.3}.
 First, we declare the two controller organisms (lines 1-8), passing the move 
 and fire regions in which they operate inside the screen (as illustrated in 
 Figure~\ref{fig.rocks}).
-After the declarations, each controller reacts to \code{SDL\_TOUCH} swipe and 
-tap events to either update its \code{ax} and \code{ay} fields, or emit 
+After the declarations, each controller body reacts to \code{SDL\_TOUCH} swipe 
+and tap events to either update its \code{ax} and \code{ay} fields, or emit 
 \code{ok\_fired} events to the application, as specified by the 
 \code{IController} interface.
 %
-Then, we declare the two ships organisms (lines 10-19), specifying the 
-collision identifiers, starting position and dimensions, and controllers for 
-each ship.
+Then, we declare the two ship organisms (lines 10-19), specifying the collision 
+identifiers, starting position and dimensions, and controllers for each ship.
 A ship knows how to move according to \code{SDL\_DT} frame events and its 
 controller acceleration, as well as to redraw itself on screen on every 
 \code{SDL\_REDRAW} request.
@@ -2054,19 +2059,20 @@ The real code (which is considerable more complex in this case) avoids
 comparing each pair twice and uses a temporary helper vector to hold all static 
 and dynamic \code{ICollidables} in the same structure (illustrated by the 
 \code{<all>} placeholder in lines 29-30).
-}.
-We compare their \code{rect} and \code{id} fields (inside \code{collides} and 
+}:
+we compare their \code{rect} and \code{id} fields (inside \code{collides} and 
 \code{enemies} calls in lines 31-32) and, if it is the case, we signal both
 instances that they have collided (lines 33-34).
 %
-The gameplay terminates when either of the ships signal its destruction (lines 
+The gameplay terminates when either of the ships signal its destruction (line
 40 or 43).
-In this case, the program increments the enemy points (lines 41 or 44) and 
-aborts the whole \code{par/or}, switching to the tap behavior.
+In this case, the program increments the enemy points (line 41 or 44) and 
+aborts the whole \code{par/or}, switching back to the starting tap behavior.
 
 Remind that a \code{do-end} encloses the gameplay behavior and isolates its 
-state from the tap behavior (lines 52-54 of Figure~\ref{lst.apps.rocks.1}), 
-making the controllers, ships, shots, and all meteors to go out of scope.
+state from the starting tap behavior (lines 52-54 of 
+Figure~\ref{lst.apps.rocks.1}), making the controllers, ships, shots, and all 
+meteors to go out of scope.
 However, the \code{Score} organisms have a broader scope and persist for the 
 whole game session (lines 41-46 of Figure~\ref{lst.apps.rocks.1}).
 
@@ -2137,19 +2143,23 @@ Finally, we redraw the ship image in its current position for every
 
 \begin{figure}%[t]
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
-var Meteor* to_follow = <...> // closest meteor
-par/or do
-    watching to_follow do
-        every SDL_DT do
-            if this.rect.y > to_follow:rect.y then
-                this.ay = -0.1;
-            else
-                this.ay =  0.1;
+class Missile with
+    var Meteor* to_follow; // closest meteor
+    <...>
+do
+    par/or do
+        watching this.to_follow do
+            every SDL_DT do
+                if rect.y > to_follow:rect.y then
+                    this.ay = -0.1;
+                else
+                    this.ay =  0.1;
+                end
             end
         end
+    with
+        <...>   // missile moving, redrawing, etc
     end
-with
-    <...>   // missile moving, redrawing, etc
 end
 \end{lstlisting}
 %\rule{8.5cm}{0.37pt}
@@ -2165,12 +2175,12 @@ and available shots, among other features.
 For the guided missiles, for instance, we use the \code{watching} construct to 
 track the closest meteor that approaches the ship, as the code in 
 Figure~\ref{lst.apps.rocks.5} shows.
-After acquiring a pointer to the meteor (line 1), the guided missile adjusts 
-its acceleration on every frame, based on the target position (lines 4-10).
+The guided missile adjusts its acceleration on every frame (lines 7-13), based 
+on the target position.
 %
 If the supervised meteor disappears (or is destroyed), the \code{watching} 
-construct terminates and aborts the \code{par/or}, which makes the guided 
-missile to self-destruct.
+construct terminates (lines 6-14) and aborts the \code{par/or} (lines 5-17), 
+making the guided missile to self-destruct.
 
 \subsection{Discussion}
 
@@ -2181,26 +2191,32 @@ In contrast, solutions based on the observer pattern rely on explicit
 manipulation of global variables and state machines for flow control across 
 reactions.
 %
-The presented applications corroborate our previous experiments regarding the 
-eradication of state variables~\cite{ceu.sensys13}, expressing all control 
-patterns exclusively with hierarchical compositions of activities and 
-organisms.
+The presented applications express all control patterns exclusively with 
+hierarchical compositions of activities and organisms, corroborating our 
+previous experiments towards the eradication of state 
+variables~\cite{ceu.sensys13},
 %
-In addition, control compositions enable designing new higher-level 
+In addition, control compositions enable the conception of new higher-level 
 self-contained constructs, such as the syntactic sugars of 
-Figure~\ref{fig.sugars} used in the examples.
+Figure~\ref{fig.sugars} used in the applications.
 
 Organisms are fundamental to expand SSRP to the development of more complex 
 systems.
 %
-Organisms define abstractions that tie data and control together, which can be 
-deployed in conjunction to a limited scope in applications.
+Organisms tie data and control together to form abstractions that can be 
+deployed deliberately to a limited scope in applications.
 %
 In the protocol, the \code{Forwarder} and \code{Client} classes are defined in 
-separate and used in a restricted scope through anonymous instances that do not 
-mingle with the rest of the code.
-Requests to stop the protocol trigger orthogonal abortion and finalization for 
-all clients and forwarders, leaving the memory in a consistent state.
+separate and applied to a restricted scope that does not mingle with the rest 
+of the code.
+%
+Furthermore, the example uses anonymous (static and dynamic) instances that are 
+completely autonomous and do not require explicit manipulation from the main 
+program.
+%
+Finally, requests to stop the protocol trigger orthogonal abortion and 
+finalization for all clients and forwarders, leaving the memory in a consistent 
+state.
 %
 %We believe that such lexically scoped mechanism for modularity in applications 
 %is a novel contribution of \CEU.
@@ -2212,13 +2228,12 @@ In the game, the two ships are declared static because they are alive during
 the whole scope of the gameplay; the meteors, in contrast, are declared dynamic 
 because they terminate when disappearing from the screen, which is a runtime 
 condition.
-Nonetheless dynamic instances must reside in static pools, also restricting 
-them to a lexical scope.
+Nonetheless dynamic instances must still reside in static pools, also 
+restricting them to a maximum lexical scope.
 %
-Even though the distinction between static and dynamic instances exists in O.O.  
-languages like C++, it does not apply effectively because callbacks in reactive 
-applications are short lived, requiring all allocations to be dynamic in 
-practice.
+Even though this distinction exists in O.O. languages like C++, it does not 
+apply effectively because the dependency in short-lived callbacks for reactive 
+applications require all allocations to be dynamic in practice.
 
 Static scopes helps developers to better understand the overall state of memory 
 in applications: blocks in parallel coexist in memory; blocks in sequence do 
@@ -2241,8 +2256,8 @@ listener from an event, preventing the garbage collector to release the object
 from memory.
 %
 When absolutely necessary, explicit manipulation in \CEU must be protected with 
-the \code{watching} construct, which ensures that pointers to organisms are 
-weak and do not hold them in memory.
+the \code{watching} construct, which ensures that pointers to organisms do not 
+hold them in memory.
 %
 In the game, the code for the guided missile that manipulates a reference to 
 the closest meteor is automatically aborted when the latter goes out of scope.
@@ -2352,13 +2367,13 @@ complementary programming style for reactive applications.
 We believe that FRP is more suitable for data-intensive applications, while 
 SSRP, for control-intensive applications.
 %
-On the one hand, describing a sequence of steps in FRP requires to encode 
+On the one hand, FRP uses declarative formulas to specify continuous functions 
+over time, such as for physics or data constraints among entities, while SSRP 
+requires explicit loops to update data dependencies continuously.
+%
+On the other hand, describing a sequence of steps in FRP requires to encode 
 explicit state machines so that functions can switch behavior depending on the 
 current state.
-%
-On the other hand, FRP uses declarative formulas to specify continuous 
-functions over time, such as for physics or data constraints among entities, 
-while SSRP requires explicit loops to update data dependencies continuously.
 
 In the asynchronous spectrum of concurrency, a number of actor-based languages 
 extend objects with independent execution contexts that communicate exclusively 
@@ -2369,9 +2384,9 @@ On the one hand, the inherent nondeterministic execution of actors demands full
 state isolation which makes distribution and many-core parallelism more 
 straightforward.
 %
-On the other hand, implicit synchronization provides safe data sharing and 
-global consensus about the overall state of the system, enabling abortion and 
-lexical scopes for compositions.
+On the other hand, the implicit synchronization in \CEU provides safe data 
+sharing and global consensus about the overall state of the system, enabling 
+abortion and lexical scopes for compositions.
 
 \begin{comment}
 - asynchronous langs

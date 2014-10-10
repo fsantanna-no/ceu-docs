@@ -122,9 +122,10 @@ mathescape=true,
 
 \begin{abstract}
 Structured synchronous reactive programming (SSRP) augments classical 
-structured programming with continuous interaction with the environment.
+structured programming (SP) with continuous interaction with the environment.
 %
-We propose a new SSRP abstraction mechanism for the synchronous language \CEU:
+We advocate SSRP as viable in multiple domains of reactive applications and 
+propose a new abstraction mechanism for the synchronous language \CEU:
 %
 \emph{Organisms} extend objects with an execution body that composes multiple 
 lines of execution to react to the environment independently.
@@ -133,7 +134,7 @@ Compositions bring structured reasoning to concurrency and can better describe
 state machines typical of reactive applications.
 %
 Organisms are subject to lexical scope and automatic memory management similar 
-to stack-based allocation for local variables.
+to stack-based allocation for local variables in SP.
 We show that this model does not require garbage collection or a \code{free} 
 primitive in the language, eliminating memory leaks by design.
 \end{abstract}
@@ -200,7 +201,7 @@ generation's \code{goto}''.%
 \footnote{``Escape from Callback Hell'':
 \url{http://elm-lang.org/learn/Escape-from-Callback-Hell.elm}}
 
-We believe that the full range of reactive applications can benefit from the 
+We believe that all domains of reactive applications can benefit from the 
 imperative style of Esterel, which we now refer to as \emph{Structured 
 Synchronous Reactive Programming (SSRP)}.
 %
@@ -209,8 +210,8 @@ Programming (SP)} (i.e., concatenation, selection, and
 repetition~\cite{dij.notes}) to support continuous interaction with the 
 environment.
 %
-SSRP retains structured and sequential reasoning of concurrent programs which 
-contrasts with FRP, bringing the historical dichotomy between functional and 
+In contrast with FRP, SSRP retains structured and sequential reasoning of 
+concurrent programs, bringing the historical dichotomy between functional and 
 imperative languages also to the reactive domain.
 %
 However, the original rigorous semantics of Esterel, which focuses on static 
@@ -252,8 +253,8 @@ In brief, organisms are to SSRP like procedures are to SP, i.e., one can
 abstract a portion of code with a name and manipulate (call) that name from 
 multiple places.
 %
-Unlike procedure calls with multi-threading, organisms have deterministic 
-behavior and do not require explicit synchronization.
+Unlike procedure calls in multi-threaded applications, organisms have 
+deterministic behavior and do not require explicit synchronization.
 %
 Unlike Simula objects~\cite{simula}, organisms react independently to the 
 environment and do not depend on cooperation, i.e., once instantiated they 
@@ -291,8 +292,6 @@ Section~\ref{sec.ceu} presents SSRP through \CEU, with its underlying
 synchronous concurrency model and parallel compositions.
 Section~\ref{sec.orgs} describes the organisms abstraction with static and 
 dynamic instantiation, lexical scope, and automatic memory management.
-%Section~\ref{sec.demo} demonstrates a complete video game for Android 
-%implemented in \CEU.
 Section~\ref{sec.related} discusses related work.
 Section~\ref{sec.conclusion} concludes the paper.
 
@@ -404,7 +403,7 @@ To avoid infinite execution for reactions, \CEU ensures that all loops contain
 
 % TODO: rules? (slides da aula)
 
-As a result of synchronous execution, all consecutive operations to shared 
+As a consequence of synchronous execution, all consecutive operations to shared 
 variable \code{v} in Figure~\ref{lst.intro} are atomic (until reaching the next 
 \code{await}) because reactions to events \code{1s} and \code{RESET} can never 
 interrupt each other.
@@ -469,7 +468,7 @@ This is possible in synchronous languages due to the accurate control of
 concurrent activities, i.e., in between every reaction, the whole system is 
 idle and consistent~\cite{esterel.preemption}.
 %
-\CEU extends orthogonal abortion to work also with activities that use stateful 
+\CEU extends orthogonal abortion to also work with activities that use stateful 
 resources from the environment (such as file and network handlers), as we 
 discuss in Section~\ref{sec.ceu.par}.
 
@@ -661,7 +660,7 @@ transmission and all composed trails.
 In this case, the top-level loop restarts (line 2) and waits for the next 
 request to start the protocol (line 3), ignoring all other requests (as the 
 protocol specifies).
-
+%
 The example shows how parallel compositions can describe complex state machines 
 in a structured way, eliminating the use of global state variables for this 
 purpose~\cite{ceu.sensys13}.
@@ -843,7 +842,7 @@ end
 \end{figure*}
 
 Consider the code in the left of Figure~\ref{lst.fin}, which expands the 
-sending trail of Figure~\ref{lst.ctp} (line 15).
+sending trail of Figure~\ref{lst.ctp} (line 14).
 %
 The \code{buffer} packet is a local variable whose address is passed to 
 function \code{\_send\_enqueue}.
@@ -925,7 +924,8 @@ parallel in the background, i.e., both instances are already running before the
 \emph{CODE-3} is semantically equivalent to \emph{CODE-2}, but with the 
 organism constructors and bodies expanded (lines 10-17 and 19-26).
 The generated \code{par/or} (lines 9-29) makes the instances concurrent with 
-the rest of the application (i.e., the \code{await 1min}, in line 28).
+the rest of the application (in this example, the \code{await 1min} in line 
+28).
 Note the generated \code{await FOREVER} statements (lines 17 and 26) to avoid 
 the organisms bodies to terminate the \code{par/or}.
 The \code{\_Blink} type (lines 1-4) corresponds to a simple datatype without an
@@ -933,7 +933,7 @@ execution body.
 %
 The actual implementation of \CEU does not expand the organisms bodies like in 
 \emph{CODE-3}; instead, a class generates a single code for its body, which is 
-shared by all instances (in the same way as objects share class methods).
+shared by all instances (just like objects share class methods).
 
 The main distinction from organisms to standard objects is how organisms can 
 react independently and directly to the environment.
@@ -959,7 +959,7 @@ on lexical scheduling described in Section~\ref{sec.ceu.sync}).
 %Section~\ref{sec.orgs.refs}.
 
 The memory model for organisms is similar to stack-living local variables of 
-procedures in SP with lexical scope and automatic management.
+procedures in SP, featuring lexical scope and automatic management.
 Note that \emph{CODE-2} uses a \code{do-end} block (lines 11-23) that limits 
 the scope of the organisms for 1 minute (line 22).
 %
@@ -987,18 +987,18 @@ In addition to properties and methods, organisms also expose internal events
 which support \code{await} and \code{emit} operations.
 %
 In the example in Figure~\ref{lst.unit}, the class \code{Unit} (lines 1-16) 
-defines the position and destination properties \code{pos} and \code{dst} with 
-default values \code{0} (lines 2-3), and the event \code{move} to listen for
-requests to move the unit position (line 4).
+defines the position and destination properties \code{pos} and \code{dst} 
+(lines 2-3), and the event \code{move} to listen for requests to move the unit 
+position (line 4).
 %
-The main program (lines 18-24) creates two units, requests the first to move 
-immediately to \code{dst=300} (line 19), and the second to move after 1 second 
-to position \code{500} (lines 23-24).
+The main program (lines 18-24) creates two units, requesting the first to move 
+immediately to \code{dst=300}, and the second to move after 1 second to 
+position \code{500}.
 %
 On instantiation, the organism body enters a continuous loop (lines 6-15) to 
 handle \code{move} requests (line 8) while performing the ongoing moving 
 operation (lines 10-13) in parallel.
-The \code{par/or} (lines 7-14) restarts the loop for every \code{move} request,
+The \code{par/or} (lines 7-14) restarts the loop for every \code{move} request
 which updates the \code{dst} position.
 %
 The moving operation (collapsed in line 11) can be as complex as needed, for 
@@ -1061,8 +1061,9 @@ resources in reactive applications.
 
 \CEU supports dynamic instantiation of organisms through the \code{spawn} 
 primitive.
-The example that follows spawns a new instance of \code{Unit} (defined in 
-Figure~\ref{lst.unit}) on every second and moves it to a random position:
+The example that follows spawns a new instance of \code{Unit} (previously 
+defined in Figure~\ref{lst.unit}) on every second and moves it to a random 
+position:
 
 \begin{lstlisting}
 loop do
@@ -1086,8 +1087,8 @@ but have different lifetime and scoping rules then static ones:
 %
 A static instance has an identifier and a well-defined scope that holds its 
 memory resources;
-A dynamic instance is anonymous and outlives the scope that spawns it:
-in the example, the spawned units outlive the enclosing loop iterations.
+A dynamic instance is anonymous and outlives the scope that spawns it.
+In the example, the spawned units outlive the enclosing loop iterations.
 %
 Due to the lack of an explicit identifier or reference, a dynamic instance can 
 control its own lifetime:
@@ -1260,8 +1261,8 @@ expansion (in the right).
 }
 \end{figure}
 
-A more typical use of pointers is inside a \emph{pool iterator} which acquire 
-temporary pointers to all of its alive instances.
+A more typical use of pointers to organisms is inside a \emph{pool iterator} 
+which acquire temporary pointers to all of its alive instances.
 To preserve pointer accesses safe, iterators cannot await.
 The example that follows iterates over the \code{units} pool to check for 
 collision among units:
@@ -1428,13 +1429,13 @@ complementary programming style for reactive applications.
 We believe that FRP is more suitable for data-intensive applications, while 
 SSRP, for control-intensive applications.
 %
-On the one hand, describing a sequence of steps in FRP requires to encode 
+On the one hand, FRP uses declarative formulas to specify continuous functions 
+over time, such as for physics or data constraints among entities, while SSRP 
+requires explicit loops to update data dependencies continuously.
+%
+On the other hand, describing a sequence of steps in FRP requires to encode 
 explicit state machines so that functions can switch behavior depending on the 
 current state.
-%
-On the other hand, FRP uses declarative formulas to specify continuous 
-functions over time, such as for physics or data constraints among entities, 
-while SSRP requires explicit loops to update data dependencies continuously.
 
 In the asynchronous spectrum of concurrency, a number of actor-based languages 
 extend objects with independent execution contexts that communicate exclusively 
@@ -1446,9 +1447,9 @@ On the one hand, the inherent nondeterministic execution of actors demands full
 state isolation which makes distribution and many-core parallelism more 
 straightforward.
 %
-On the other hand, implicit synchronization provides safe data sharing and 
-global consensus about the overall state of the system, enabling abortion and 
-lexical scopes for compositions.
+On the other hand, the implicit synchronization in \CEU provides safe data 
+sharing and global consensus about the overall state of the system, enabling 
+abortion and lexical scopes for compositions.
 
 \begin{comment}
 - asynchronous langs
