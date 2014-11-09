@@ -1,0 +1,64 @@
+input void    START,   STOP;
+input _pkt_t* RECEIVE, SENDACK;
+
+native @nohold _memcpy(), _send_dequeue(), _pkt_setRoute(), _pkt_setContents(), 
+_receive();
+
+class Forwarder with
+   var _pkt_t pkt;
+   event void ok;
+do
+   loop do
+      var bool enq;
+      enq = _send_enqueue(&pkt)
+            finalize with
+               _send_dequeue(&pkt);
+            end;
+      if not enq then
+         await (_rand()%100)ms;
+         continue;
+      end
+      var _pkt_t* done;
+      done = await SENDACK
+             until (done == &pkt);
+      break;
+   end
+   emit this.ok;
+end
+
+class Client with
+do
+   loop seq do
+      par/and do
+         await 1min;
+      with
+         do Forwarder with
+            _pkt_setRoute(&this.pkt, seq);
+            _pkt_setContents(&this.pkt, seq);
+         end;
+      end
+   end
+end
+
+loop do
+   await START;
+   par/or do
+      await STOP;
+   with
+      pool Forwarder[10] forwarders;
+      var  Client   [10] clients;
+
+      var _pkt_t* pkt;
+      every pkt in RECEIVE do
+         if pkt:left == 0 then
+            _receive(pkt);
+         else
+            pkt:left = pkt:left - 1;
+            spawn Forwarder with
+               _memcpy(&this.pkt, pkt, pkt:len);
+            end;
+         end
+      end
+   end
+end
+

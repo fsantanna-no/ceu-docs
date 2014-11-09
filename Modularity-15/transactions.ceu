@@ -1,0 +1,132 @@
+//   text	   data	    bss	    dec	    hex	filename
+//  47284	   1140	   5470	  53894	   d286	ceu.sky
+//  46106	    256	   6302	  52664	   cdb8	c.sky
+
+native constant _LEDS_GREEN;
+
+native pure
+    _coap_get_transaction_by_mid(),     // TODO
+    _IS_OPTION(),
+    _MIN(),
+    _strlen(),
+    _uip_ntohs();
+
+native nohold
+    _coap_clear_transaction(),
+    _coap_init_message(),
+    _coap_parse_message(),
+    _coap_new_transaction(),    // TODO
+    _coap_get_header_block2(),
+    _coap_send_message(),   // TODO
+    _coap_send_transaction(),   // TODO
+    _coap_serialize_message(),
+    _coap_set_header_block2(),
+    _coap_set_header_token(),
+    _coap_set_payload(),
+    _PRINTF(), _PRINT6ADDR(), _PRINTBITS(),
+    _service_cbk(),
+    _uip_ipaddr_copy();
+
+
+native do
+    ##include "dev/leds.h"
+    ##define COAP_RESPONSE_TIMEOUT_TICKS         (CLOCK_SECOND * COAP_RESPONSE_TIMEOUT)
+    ##define COAP_RESPONSE_TIMEOUT_BACKOFF_MASK  ((CLOCK_SECOND * COAP_RESPONSE_TIMEOUT * (COAP_RESPONSE_RANDOM_FACTOR - 1)) + 1.5)
+end
+
+input (int*,void*) COAP_REQUEST;
+
+input _coap_packet_t* COAP_RESPONSE;
+
+class Transaction with
+    var u16            mid;
+    var _uip_ipaddr_t* addr;
+    var u16            port;
+
+    var _request_t     request_cb  = null;
+    var void*          request_dt  = null;
+    var _response_t    response_cb = null;
+    var void*          response_dt = null;
+
+    var u16            packet_len;
+    var u8 [_COAP_MAX_PACKET_SIZE+1]
+                       packet;
+do
+    var _uip_ipaddr_t addr_;
+        _uip_ipaddr_copy(&addr_, this.addr);
+
+    var int err = _NO_ERROR;
+    if this.request_cb != null then
+        err = this.request_cb(&this, this.request_dt)
+            finalize with
+                nothing;    // nohold
+            end;
+    end
+
+    if err == _NO_ERROR then
+
+        var int con? = _COAP_TYPE_CON ==
+          ((_COAP_HEADER_TYPE_MASK & this.packet[0]) >> _COAP_HEADER_TYPE_POSITION);
+
+        var int interval =
+            _COAP_RESPONSE_TIMEOUT_TICKS +
+                (_random_rand() % (_clock_time_t) _COAP_RESPONSE_TIMEOUT_BACKOFF_MASK);
+        _PRINTF("Initial interval %f\n", (_float)interval/_CLOCK_SECOND);
+
+        var _coap_packet_t* response = null;
+
+        loop i, _COAP_MAX_RETRANSMIT do
+
+            _PRINTF("Sending transaction %u %d %d\n", this.mid, this.port, this.packet_len);
+            _coap_send_message(&addr_, this.port, this.packet, this.packet_len);
+            if not con? then
+                break;
+            end
+
+            par/or do
+                await (interval)ms;
+                interval = interval << 1; /* double */
+                _PRINTF("Doubled (%u) interval %f\n", i,
+                        (_float)interval/_CLOCK_SECOND);
+            with
+                var _coap_packet_t* msg;
+                msg = await COAP_RESPONSE
+                        until msg:mid == this.mid;
+                response := msg;
+                            // i'm not holding it below
+                break;
+            end
+        end
+
+        // TODO
+        /* handle observers */
+        //coap_remove_observer_by_client(&addr_, this.port);
+
+        if con? and (this.response_cb != null) then
+            this.response_cb(this.response_dt, response)
+                finalize with
+                    nothing;    // nohold
+                end;
+        end
+    end
+end
+
+do // Transactions scope
+
+    var int* p_ret;
+    var void* t_;
+    var _TCEU_Transaction* t;
+    every (p_ret,t_) = COAP_REQUEST do
+        t = (_TCEU_Transaction*) t_;
+        *p_ret = spawn [4] Transaction with
+            this.mid         = t:mid;
+            this.addr        = t:addr;
+            this.port        = t:port;
+            this.request_cb  = t:request_cb;
+            this.request_dt  = t:request_dt;
+            this.response_cb = t:response_cb;
+            this.response_dt = t:response_dt;
+        end;
+    end
+
+end // Transactions scope
