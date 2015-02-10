@@ -3,7 +3,8 @@
     %- there is no other evaluation (experimental or otherwise) provided.
 
 %\documentclass[preprint]{sigproc}
-\documentclass[preprint]{sigplanconf}
+\documentclass{sigplanconf}
+\pagenumbering{gobble}
 
 % The following \documentclass options may be useful:
 %
@@ -12,6 +13,7 @@
 % authoryear    To obtain author/year citation style instead of numeric.
 
 \setlength{\textfloatsep}{5pt}
+%\usepackage[bottom]{footmisc}
 
 \usepackage{flushend}
 \usepackage{graphicx}
@@ -107,14 +109,17 @@ mathescape=true,
 \begin{document}
 \sloppy
 
-\special{papersize=8.5in,11in}
-\setlength{\pdfpageheight}{\paperheight}
-\setlength{\pdfpagewidth}{\paperwidth}
+%\special{papersize=8.5in,11in}
+%\setlength{\pdfpageheight}{\paperheight}
+%\setlength{\pdfpagewidth}{\paperwidth}
 
-\conferenceinfo{CONF 'yy}{Month d--d, 20yy, City, ST, Country} 
-\copyrightyear{20yy} 
-\copyrightdata{978-1-nnnn-nnnn-n/yy/mm} 
-\doi{nnnnnnn.nnnnnnn}
+\conferenceinfo{MODULARITY'15}{March 16--19, 2015, Fort Collins, CO, USA}
+\CopyrightYear{2015}
+\crdata{978-1-4503-3249-1/15/03}
+%\conferenceinfo{CONF 'yy}{Month d--d, 20yy, City, ST, Country} 
+%\copyrightyear{20yy}
+%\copyrightdata{978-1-nnnn-nnnn-n/yy/mm}
+\doi{2724525.2724571}
 
 \title {
     %Imperative and Synchronous Abstractions for Reactive Applications
@@ -123,17 +128,11 @@ mathescape=true,
 }
 %\subtitle{Accepted paper in REM'13 (preprint version)}
 
-%\authorinfo{Francisco Sant'Anna}
-           %{Departamento de Inform\'atica --- PUC-Rio, Brazil}
-           %{fsantanna@inf.puc-rio.br}
-%\authorinfo{Roberto Ierusalimschy}
-           %{Departamento de Inform\'atica --- PUC-Rio, Brazil}
-           %{roberto@inf.puc-rio.br}
-%\authorinfo{Noemi Rodriguez}
-           %{Departamento de Inform\'atica --- PUC-Rio, Brazil}
-           %{noemi@inf.puc-rio.br}
+\authorinfo{Francisco Sant'Anna \and Roberto Ierusalimschy \and Noemi Rodriguez}
+           {Departamento de Inform\'atica, PUC-Rio, Brazil}
+           {(fsantanna,noemi,roberto)@inf.puc-rio.br}
 
-\authorinfo{}{}{}
+%\authorinfo{}{}{}
 
 \maketitle
 
@@ -153,7 +152,7 @@ state machines typical of reactive applications.
 Organisms are subject to lexical scope and automatic memory management similar 
 to stack-based allocation for local variables in SP.
 We show that this model does not require garbage collection or a \code{free} 
-primitive in the language, eliminating memory leaks by design.
+primitive in the language, eliminating memory leaks for organisms by design.
 \end{abstract}
 
 %\category{CR-number}{subcategory}{third-level}
@@ -187,7 +186,7 @@ The dataflow style of Lustre~\cite{lustre.ieee91} represents programs as graphs
 of values, in which a change to a node updates its dependencies automatically.
 %
 Both styles rely on the \emph{synchronous execution hypothesis} which states 
-that the input and corresponded output in reactions to the environment are 
+that the input and corresponding output in reactions to the environment are 
 simultaneous because, in this context, internal computations should run 
 infinitely faster than the rate of events~\cite{rp.hypothesis}.
 
@@ -275,10 +274,12 @@ Unlike Simula objects~\cite{simula}, organisms react independently to the
 environment and do not depend on cooperation, i.e., once instantiated they 
 become alive and reactive (hence the name organisms).
 %
+Furthermore, organisms have lexical scope and automatic memory management for 
+both static and dynamic instances, not relying on explicit reclamation or 
+garbage collection.
 %
-Furthermore, organisms are subject to lexical scope and automatic memory 
-management for both static and dynamic instances, not relying on heap 
-allocation at all.
+%With deterministic behavior, memory sharing, lexical nesting, no stack or 
+%heap.
 %(behaving much like local variables in SP).
 %
 %Organisms retain control and can describe, in a self-contained and structured 
@@ -492,7 +493,7 @@ concurrent activities, i.e., in between every reaction, the whole system is
 idle and consistent~\cite{esterel.preemption}.
 %
 \CEU extends orthogonal abortion to also work with activities that use stateful 
-resources from the environment (such as file and network handlers), as we 
+resources from the environment (such as files and network handlers), as we 
 discuss in Section~\ref{sec.ceu.par}.
 
 %\begin{figure}%[t]
@@ -532,8 +533,9 @@ when \textbf{all} of the combined processes terminate''}~\cite{async.csp}.
 %
 As an alternative, asynchronous activities typically agree on a common protocol 
 to abort each other (e.g., through shared state variables or message passing), 
-which increases coupling among them with implementation details that are not 
-directly related to the problem specification.
+which increases coupling among them (breaking orthogonal abortion) with 
+implementation details that are not directly related to the problem 
+specification.
 
 %TODO: talvez falar em termos de controle e dados
 
@@ -683,6 +685,7 @@ The example shows how parallel compositions can describe complex state machines
 in a structured way, eliminating the use of global state variables for this 
 purpose~\cite{ceu.sensys13}.
 
+%\newpage
 \subsection{Finalization}
 \label{sec.ceu.fin}
 
@@ -719,7 +722,32 @@ to preserve safe orthogonal abortion of trails.
 %Finalization clauses are fundamental to preserve the orthogonality of 
 %\code{par/or} compositions in SSRP.
 
-\begin{figure}%[t]
+Consider the code in the left of Figure~\ref{lst.fin}, which expands the 
+sending trail of Figure~\ref{lst.ctp} (line 14).
+%
+The \code{buffer} packet is a local variable whose address is passed to 
+function \code{\_send\_enqueue}.
+The call enqueues the pointer in the radio driver, which holds it up to the 
+emission of \code{SENDACK} acknowledging the packet transmission.
+%
+In the meantime, the sending trail might be aborted by \code{STOP} or 
+\code{RETRANSMIT} requests (lines 5 and 9 in Figure~\ref{lst.ctp}), making the 
+packet buffer go out of scope, and leaving behind a \emph{dangling pointer} in 
+the radio driver.
+%
+\CEU refuses to compile programs like this and requires \emph{finalization} 
+clauses to accompany stateful \emph{C} calls~\cite{ceu.sensys13}.
+The code in the right of Figure~\ref{lst.fin} properly dequeues the packet when
+the block of \code{buffer} goes out of scope, i.e., the finalization clause 
+(after the \code{with}) executes automatically on external abortion.
+
+Note that the compiler only enforces the programmer to write the finalization 
+clause, but cannot check if it actually handles the resource properly.
+%
+Note also that \CEU environments rely on \emph{C} libraries that only provide 
+asynchronous I/O and non-blocking functions~\cite{ceu.sensys13}.
+
+\begin{figure}[t]
 \begin{minipage}[t]{0.45\linewidth}
 \begin{lstlisting}
 var _pkt_t buffer;
@@ -734,7 +762,7 @@ await SENDACK;
 var _pkt_t buffer;
 <fill-buffer-info>
 finalize
-    _send_enqueue(&buffer)
+    _send_enqueue(&buffer);
 with
     _send_dequeue(&buffer);
 end
@@ -859,25 +887,6 @@ end
 }
 \end{figure*}
 
-Consider the code in the left of Figure~\ref{lst.fin}, which expands the 
-sending trail of Figure~\ref{lst.ctp} (line 14).
-%
-The \code{buffer} packet is a local variable whose address is passed to 
-function \code{\_send\_enqueue}.
-The call enqueues the pointer in the radio driver, which holds it up to the 
-emission of \code{SENDACK} acknowledging the packet transmission.
-%
-In the meantime, the sending trail might be aborted by \code{STOP} or 
-\code{RETRANSMIT} requests (lines 5 and 9 in Figure~\ref{lst.ctp}), making the 
-packet buffer go out of scope, and leaving behind a \emph{dangling pointer} in 
-the radio driver.
-%
-\CEU refuses to compile programs like this and requires \emph{finalization} 
-clauses to accompany stateful \emph{C} calls~\cite{ceu.sensys13}.
-The code in the right of Figure~\ref{lst.fin} properly dequeues the packet when
-the block of \code{buffer} goes out of scope, i.e., the finalization clause 
-(after the \code{with}) executes automatically on external abortion.
-
 \section{Organisms: SSRP abstractions}
 \label{sec.orgs}
 
@@ -919,11 +928,12 @@ The example in Figure~\ref{lst.orgs} introduces static organisms with three
 code chunks:
 %
 \begin{description}
-\item[\emph{CODE-1}] blinks two LEDs with different frequencies in parallel and 
-terminates after 1 minute.
+\item[\emph{CODE-1}], which does not use organisms, blinks two LEDs with 
+different frequencies in parallel and terminates after 1 minute.
 %
 \item[\emph{CODE-2}] abstracts the blinking LEDs in an organism class and uses 
-two instances of it to reproduce the same behavior of \emph{CODE-1}.
+two \code{Blink} instances of it to reproduce the same behavior of 
+\emph{CODE-1}.
 %
 \item[\emph{CODE-3}] is the semantically equivalent expansion of the organisms 
 bodies, which resembles the original \emph{CODE-1}.
@@ -931,7 +941,8 @@ bodies, which resembles the original \emph{CODE-1}.
 %
 In \emph{CODE-2}, the Blink class (lines 1-9) exposes the \code{pin} and 
 \code{dt} properties, corresponding to the LED I/O pin and the blinking period, 
-respectively.
+respectively (lines 2-3 in the interface).
+%The \code{Blink} body (lines 4-9) continuously blinks the LED specified.
 The application then creates two instances, specifying those properties in the 
 constructors (lines 12-15 and 17-20).
 Inside constructors, the identifier \code{this} refers to the organism under 
@@ -943,8 +954,7 @@ parallel in the background, i.e., both instances are already running before the
 \emph{CODE-3} is semantically equivalent to \emph{CODE-2}, but with the 
 organism constructors and bodies expanded (lines 10-17 and 19-26).
 The generated \code{par/or} (lines 9-29) makes the instances concurrent with 
-the rest of the application (in this example, the \code{await 1min} in line 
-28).
+the rest of the application (\code{await 1min} in line 28, in this example).
 Note the generated \code{await FOREVER} statements (lines 17 and 26) to avoid 
 the organisms bodies to terminate the \code{par/or}.
 The \code{\_Blink} type (lines 1-4) corresponds to a simple datatype without an
@@ -955,17 +965,17 @@ The actual implementation of \CEU does not expand the organisms bodies like in
 shared by all instances (in the same way as objects share class methods).
 
 The main distinction from organisms to standard objects is how organisms can 
-react independently and directly to the environment.
+react independently from the main program and directly to the environment.
 %, i.e., once instantiated they become alive and reactive (hence the name 
 %\emph{organisms}).
 %
 For instance, organisms need not be included in observer lists for events, or 
 rely on the main program to feed their methods with input from the environment.
 %
-Although the organisms run independently from the main program, they are still 
-subject to the disciplined synchronous model, which keeps the whole system 
-deterministic, as the equivalent expansion of \emph{CODE-3} suggests (and based 
-on lexical scheduling described in Section~\ref{sec.ceu.sync}).
+Nonetheless, organisms are still subject to the disciplined synchronous model, 
+which keeps the whole system deterministic, as the equivalent expansion of 
+\emph{CODE-3} suggests (and based on lexical scheduling described in 
+Section~\ref{sec.ceu.sync}).
 %
 %\emph{CODE-3} shows that the equivalent expansion results in plain \CEU.
 
@@ -977,8 +987,8 @@ on lexical scheduling described in Section~\ref{sec.ceu.sync}).
 %unsafe access after they go out of scope, as we discuss in 
 %Section~\ref{sec.orgs.refs}.
 
-The memory model for organisms is similar to stack-living local variables of 
-procedures in SP, featuring lexical scope and automatic management.
+The memory model for organisms is similar to stack-living local variables in 
+procedures of SP, featuring lexical scope and automatic management.
 Note that \emph{CODE-2} uses a \code{do-end} block (lines 11-23) that limits 
 the scope of the organisms for 1 minute (line 22).
 %
@@ -999,7 +1009,7 @@ Lexical scope extends the idea of orthogonal abortion to organisms, as they are
 automatically aborted when going out of scope.
 %
 In this sense, organisms are more than a cosmetic convenience for programmers 
-because they tie together data and associated execution into the same scope.
+because they tie together execution and associated data into the same scope.
 %, avoiding XXX mismatch between them.
 
 In addition to properties and methods, organisms also expose internal events 
@@ -1102,7 +1112,7 @@ end
 %\end{figure}
 
 Dynamic instances also execute in parallel with the rest of the application, 
-but have different lifetime and scoping rules then static ones:
+but have different lifetime and scoping rules than static ones:
 %
 A static instance has an identifier and a well-defined scope that holds its 
 memory resources;
@@ -1148,7 +1158,7 @@ that there is no way to externally abort the execution of a dynamic instance.
 To address orthogonal abortion, \CEU provides lexically scoped \emph{pools} as 
 containers that hold dynamic instances of organisms.
 %
-The example that follows declares the \code{units} pool to hold a maximum of 10 
+The example that follows declares the pool \code{units} to hold a maximum of 10 
 instances (line 3):
 
 %\newpage
@@ -1192,11 +1202,16 @@ If a pool does not specify a dimension (e.g., \code{pool Unit[] units;}), the
 instances go to the heap but are still subject to the pool scope.
 %
 If a \code{spawn} does not specify a pool (e.g., \code{spawn Unit;}), the 
-instances go to a predefined dimension-less pool in the top of the current 
-class (and are still subject to that pool scope).
+instances go to a predefined dimension-less pool in the top scope of the 
+current class (and are still subject to that scope).
 
 Support for lexical scope for both static and dynamic organisms eliminate 
-garbage collection, \code{free} primitives, and memory leaks altogether.
+garbage collection, \code{free} primitives, and memory leaks altogether:
+A static instance has the exact lifetime of the block/scope in which it is 
+defined.
+A dynamic instance survives \emph{at most} the block/scope of the pool in which 
+it is instantiated, but can be automatically reclaimed as soon as its body 
+terminates (as it becomes neither reachable nor executable again).
 
 % TODO: for control purposes
 
@@ -1206,9 +1221,9 @@ garbage collection, \code{free} primitives, and memory leaks altogether.
 As organisms react independently to the environment, it is often not necessary 
 to manipulate pointers to them.
 %
-Nonetheless, a \code{spawn} allocation returns a pointer to the new organism, 
-which can be later dereferenced with the operator \code{`:'} (analogous to 
-\code{`->'} of \emph{C/C++}):
+Nonetheless, a \code{spawn} instantiation returns a pointer to the new 
+organism, which can be later dereferenced with the operator \code{`:'} 
+(analogous to \code{`->'} of \emph{C/C++}):
 
 \begin{lstlisting}
 var Unit* ptr = spawn Unit;
@@ -1251,13 +1266,13 @@ ptr:pos = 0;    // unsafe access ("u" went out of scope)
 \end{lstlisting}
 
 \begin{figure}%[t]
-\begin{minipage}[t]{0.48\linewidth}
+\begin{minipage}[t]{0.51\linewidth}
 \begin{lstlisting}
 var Unit* ptr = spawn Unit;
 ptr:pos = 0;
 watching ptr do
-    await 2h;
-    emit ptr:move => 100;
+   await 2h;
+   emit ptr:move => 100;
 end
 \end{lstlisting}
 \end{minipage}
@@ -1267,10 +1282,10 @@ end
 var Unit* ptr = spawn Unit;
 ptr:pos = 0;
 par/or do
-    await ptr:__killed;
+   await ptr:__killed;
 with
-    await 2h
-    emit ptr:move => 100;
+   await 2h
+   emit ptr:move => 100;
 end
 \end{lstlisting}
 \end{minipage}
@@ -1286,7 +1301,7 @@ To preserve pointer accesses safe, iterators cannot await.
 The example that follows iterates over the \code{units} pool to check for 
 collision among units:
 
-%\newpage
+\newpage
 
 %\begin{figure}%[t]
 \begin{lstlisting}
@@ -1395,7 +1410,7 @@ behavior, etc.
 The main program defines an unbounded pool of \code{IUnit} instances (line 21), 
 which is further populated with archers and knights (lines 23-24).
 At some point, the pool is traversed and moves all units to random positions 
-(lines 26-28), each respecting its actual implementation.
+(lines 26-28), each with dynamic dispatch to the concrete implementation.
 
 Interfaces are always manipulated through pointers and are also subjected to 
 the pointer analysis described in Section~\ref{sec.orgs.refs}.
@@ -1688,10 +1703,10 @@ pointer).
 The core of the protocol (lines 12-25) first declares a pool of forwarders and 
 a vector of clients (line 12-13).
 %
-The identifier `\code{\_}' for static instances makes them anonymous, which is 
-recommended for organisms that the application does not manipulate directly:
-each client in the vector executes independently in parallel, frequently 
-sending packets to other nodes in the network.
+As the main program does not manipulate the vector of clients directly, we make 
+it anonymous with the `\code{\_}' identifier:
+each client executes independently in parallel, sending packets to other nodes 
+in the network periodically.
 %
 The protocol then enters the \code{every} construct (described in 
 Figure~\ref{fig.sugars}.2) to receive incoming packets continuously and take 
@@ -1709,7 +1724,7 @@ The file \emph{forwarder.ceu} in Figure~\ref{lst.apps.srp} defines the
 \code{Forwarder} class which exposes the packet \code{out} to transmit, and the 
 event \code{ok} to signal its completion (lines 2-3).
 %
-The class body is a loop that lasts until the packet is successfully 
+The body of the class is a loop that lasts until the packet is successfully 
 transmitted (lines 5-20):
 the enqueue operation is properly finalized with a corresponding dequeue (lines 
 7-11, as described in Section~\ref{sec.ceu.fin});
@@ -1771,13 +1786,13 @@ To forward a packet, the \code{Client} class ``calls'' a \code{Forwarder}
 organism (lines 9-11 of \emph{client.ceu}) that behaves like a ``reactive 
 subroutine''.
 
-In the protocol, the radio driver is subjected to a high degree of concurrency, 
-with incoming packets to the node, requests from local clients, and forwarders 
-routing data through the network.
-However, the execution model of \CEU synchronizes all reactions to radio events 
-and eliminates race conditions by design, such as on calls to side-effect 
-functions \code{\_receive} and \code{\_send\_enqueue} (line 18 of 
-\emph{main.ceu} and line 8 of \emph{forwarder.ceu}, respectively).
+%In the protocol, the radio driver is subjected to a high degree of 
+%concurrency, with incoming packets to the node, requests from local clients, 
+%and forwarders routing data through the network.
+%However, the execution model of \CEU synchronizes all reactions to radio 
+%events and eliminates race conditions by design, such as on calls to 
+%side-effect functions \code{\_receive} and \code{\_send\_enqueue} (line 18 of 
+%\emph{main.ceu} and line 8 of \emph{forwarder.ceu}, respectively).
 % TODO
 %rule 1 for external events on receive
 %rule 2 for trails on send_enqueue
@@ -2018,10 +2033,10 @@ with
     end
 with
     await ship1.ok_destroyed;
-    emit points2.go_inc;
+    emit points2.go_increment;
 with
     await ship2.ok_destroyed;
-    emit points1.go_inc;
+    emit points1.go_increment;
 end
 \end{lstlisting}
 %\rule{8.5cm}{0.37pt}
@@ -2069,7 +2084,7 @@ The gameplay terminates when either of the ships signal its destruction (line
 In this case, the program increments the enemy points (line 41 or 44) and 
 aborts the whole \code{par/or}, switching back to the starting tap behavior.
 
-Remind that a \code{do-end} encloses the gameplay behavior and isolates its 
+Recall that a \code{do-end} encloses the gameplay behavior and isolates its 
 state from the starting tap behavior (lines 52-54 of 
 Figure~\ref{lst.apps.rocks.1}), making the controllers, ships, shots, and all 
 meteors to go out of scope.
@@ -2194,7 +2209,7 @@ reactions.
 The presented applications express all control patterns exclusively with 
 hierarchical compositions of activities and organisms, corroborating our 
 previous experiments towards the eradication of state 
-variables~\cite{ceu.sensys13},
+variables~\cite{ceu.sensys13}.
 %
 In addition, control compositions enable the conception of new higher-level 
 self-contained constructs, such as the syntactic sugars of 
@@ -2203,8 +2218,8 @@ Figure~\ref{fig.sugars} used in the applications.
 Organisms are fundamental to expand SSRP to the development of more complex 
 systems.
 %
-Organisms tie data and control together to form abstractions that can be 
-deployed deliberately to a limited scope in applications.
+Organisms tie control and associated data together to form abstractions that 
+can be deployed deliberately to a limited scope in applications.
 %
 In the protocol, the \code{Forwarder} and \code{Client} classes are defined in 
 separate and applied to a restricted scope that does not mingle with the rest 
@@ -2231,11 +2246,11 @@ condition.
 Nonetheless dynamic instances must still reside in static pools, also 
 restricting them to a maximum lexical scope.
 %
-Even though this distinction exists in O.O. languages like C++, it does not 
-apply effectively because the dependency in short-lived callbacks for reactive 
-applications require all allocations to be dynamic in practice.
+Even though this distinction exists in object-oriented languages like C++, it 
+does not apply effectively because the restriction of short-lived callbacks for 
+reactive applications make all allocations to be dynamic in practice.
 
-Static scopes helps developers to better understand the overall state of memory 
+Static scopes help developers to better understand the overall state of memory 
 in applications: blocks in parallel coexist in memory; blocks in sequence do 
 not; static organisms and pools coexist with their enclosing block.
 %
@@ -2250,17 +2265,28 @@ because they are enclosed by blocks in sequence.
 
 Explicit reference manipulation may introduce memory leaks even in garbage 
 collected languages~\cite{dobbs.loiterers}.
-For instance, a \emph{lapsed listener}~\cite{gamepatterns} is a pointer to an 
-object---supposedly unreferred---that is not explicitly unregistered as a
-listener from an event, preventing the garbage collector to release the object 
-from memory.
+For instance, a \emph{lapsed listener}~\cite{gamepatterns} is a---supposedly 
+unreferred---object that is still registered as listener for an event, 
+preventing the garbage collector to release it from memory.
+In this context, \emph{register/unregister} operations expose garbage-collected 
+languages to the same issue of \emph{malloc/free} operations in 
+non-garbage-collected languages.
 %
-When absolutely necessary, explicit manipulation in \CEU must be protected with 
-the \code{watching} construct, which ensures that pointers to organisms do not 
-hold them in memory.
+When absolutely necessary, explicit reference manipulation in \CEU must be 
+protected with the \code{watching} construct, which ensures that pointers to 
+organisms do not retain them in memory.
 %
 In the game, the code for the guided missile that manipulates a reference to 
 the closest meteor is automatically aborted when the latter goes out of scope.
+
+\CEU relies on a source-to-source compiler that generates single-threaded code 
+in \emph{C}.
+The generated code has a negligible overhead in terms of memory and CPU usage 
+in comparison to handcrafted event-driven code written directly in 
+\emph{C}~\cite{ceu.sensys13}.
+The static part of \CEU has a formal operational semantics to describe the 
+control aspects of the language~\cite{ceu.rem13}: the synchronous model, 
+\code{emit}/\code{await} constructs, and trail creation/abortion.
 
 % TODO:
 %- points
@@ -2276,6 +2302,7 @@ also bottom up because each organism is independent
 det scheduling -> reasoning -> also semantic tricks
 \end{comment}
 
+%\newpage
 \section{Related work}
 \label{sec.related}
 
@@ -2373,7 +2400,7 @@ requires explicit loops to update data dependencies continuously.
 %
 On the other hand, describing a sequence of steps in FRP requires to encode 
 explicit state machines so that functions can switch behavior depending on the 
-current state.
+current state, while SSRP uses the exact sequence with \code{await} statements.
 
 In the asynchronous spectrum of concurrency, a number of actor-based languages 
 extend objects with independent execution contexts that communicate exclusively 
@@ -2411,7 +2438,7 @@ exemplo data melhor vs control melhor
 
 The synchronous concurrency model...
 
-We show composability, sequential, imperative
+We show composibility, sequential, imperative
 safety
 Then, we extend synchronous reactive programming with dynamic
 
@@ -2442,8 +2469,8 @@ We believe that programming reactive systems can benefit from SSRP in \CEU:
 programming, extending classical structure programming with continuous 
 interaction with the environment.
 
-\CEU introduces organisms which reconcile data and control state in a single 
-abstraction.
+\CEU introduces organisms which reconcile control and associated data state in 
+a single abstraction.
 %
 In contrast with objects, organisms have an execution body that can react 
 independently to stimuli from the environment.
@@ -2460,7 +2487,8 @@ for a garbage collector.
 We have been experimenting with it in constrained platforms for sensor networks 
 as well as in full-fledged computers and tablets for games and graphical 
 applications%
-\footnote{Uses of \CEU: \URL{http://www.ceu-lang.org/wiki/index.php?title=Uses}}.
+\footnote{Uses of \CEU: 
+\URL{http://www.ceu-lang.org/wiki/index.php?title=Uses}}.
 %
 %\CEU successfully participated in the \emph{Google Summer of Code}%
 %\footnote{LabLua GSoC'14: 
@@ -2586,7 +2614,7 @@ implies the use of different underlying concurrency models.
 The synchronous execution model is based on the hypothesis that internal 
 computations (\emph{reactions}, in this context) run infinitely faster than the 
 rate of events that trigger them~\cite{rp.hypothesis}.
-In other words, the input and corresponded output are simultaneous, because 
+In other words, the input and corresponding output are simultaneous, because 
 reactions takes no time.
 A reaction represents a logical instant in which the system as a whole reacts 
 synchronously before going to the next instant.
@@ -2820,7 +2848,7 @@ that explore the advantages of synchronous:
 reasoning in concurrency
 seamless composition
 
-communitacions is directed and takes time (because the receiver may not be 
+communications is directed and takes time (because the receiver may not be 
 waiting)
 
 The synchronous model
@@ -2859,7 +2887,7 @@ This increases the coupling degree among activities with concerns that are not
 directly related to the problem specification.
 
 The two models suggest a tradeoff between unrestricted execution with real 
-parallelism versus structural composability with deterministic behavior.
+parallelism versus structural composibility with deterministic behavior.
 %
 For reactive applications with continuous and real-time concurrency, we believe 
 that the synchronous execution model is more appropriate.
