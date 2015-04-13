@@ -1,0 +1,83 @@
+TODO: single big functional data structure (what if you dont have a DOM?)
+      single big organism with data+control state (not in the heap)
+TODO: linear types
+
+Debugging requer hot-swap
+https://www.youtube.com/watch?v=RUeLd7T7Xi4#t=61
+
+hot-swapping
+Se a recompilacao nao mexe nas variaveis (nao criar novas vars),
+eh possivel fazer isso tudo
+
+melt inventing.mp4 in=19254 out=25948
+
+The Céu Time Machine
+====================
+
+"Time traveling" allows programs to go back and forth in time during execution.
+
+There are at least three interesting use cases for time traveling in 
+applications:
+
+* *Debug & Analysis:*
+By replaying execution, it is easier to reproduce bugs and misbehavior in 
+programs.
+It is also possible to control speed down to frame-by-frame execution, 
+providing precise analysis
+better XXX and resume execution from the exact desired point.
+Examples the use it are Bret Victor's "Inventing by Principle" video and Elm's 
+time travel debugger.
+
+* *Test & Simulation:*
+Debugging is about going back in time
+testing is about going to the future by XXX possible input and simulating the 
+future
+(TODO: existing examples)
+
+* *Application mechanism:*
+Many GUIs provide an "undo" mechanism to recover from users' mistakes.
+A more intrinsicate example is Jonathan Blow's game "Braid" in which the player 
+manipulates time as part of the game mechanics.
+
+TODO: Swift playground
+
+The demo that follows introduces the Céu "time machine" as a general 
+functionality provided by the language that allows programs to travel in time 
+in the presented ways...
+
+TODO: SDL & Arduino
+- "the replay UI is an example implemented in the language"
+- "for instance, different environments may take advantage of the time machine 
+  primitives to build completely different UIs to manipulate time"
+  In this other example, we have an arduino...
+
+It is tempting to build a time machine in a synchronous languages because of 
+the determinitic concurrency model.
+It is so easy...
+
+(A side effect Another (consequent) reason is that once you build it, people 
+believe that the language is deterministic indeed.)
+
+no hot swapping
+    - feasible if just changing initial parameters
+
+Immutability and Purity
+    - no heap, no state leaking the org abstraction, no stateful calls
+
+-------------------------------------------------------------------------------
+
+I suspect that this kind of hyper-advanced debugging will serve as a key selling point for Elm. There are many arguments one can make for the language, relating to general virtues of FRP, but nothing quite as strong as:
+
+    If you have a non-trivial bug that is triggered by a very specific sequence of events, you only need to perform that sequence of events once. You get feedback immediately as you change your code rather than changing code, performing the sequence, changing code, performing the sequence, changing code, performing the sequence, ...
+
+This is so incredibly powerful, people won't be able to resist.
+
+-------------------------------------------------------------------------------
+
+t is possible to change a program so much that it is no longer compatible with previous versions. If we try to hot-swap with incompatible code, it will lead to runtime errors. The programmer will be left wondering if their new code introduced a bug or if it was just a case of bad hot-swapping. Perhaps they start hunting for a bug that does not exist. Perhaps they ignore a bug that does exist. This is not Interactive Programming, this is a buggy IDE.
+To make hot-swapping reliable, we must know when programs are incompatible. The more precise we can be, the more reliable hot-swapping can be. There are two major categories of incompatibilies:
+
+    The API has changed. If the types of the arguments to a function change, it is no longer compatible with the rest of the program.
+    It is not possible to copy the old state into the new program. Perhaps there are now many more values and it is unclear how they relate to our new program. Perhaps functions are tightly coupled with state, making it hard to change either independently.
+
+-------------------------------------------------------------------------------
