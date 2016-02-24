@@ -1,11 +1,8 @@
 @book{gamepatterns,
     author = "Robert Nystrom",
     title  = "Game Programming Patterns",
-    note   = {
-              ISBN: 978-0-9905829-0-8
-              \url{http://gameprogrammingpatterns.com/}
-              (to appear)
-             }
+    year   = {2014},
+    publisher={Genever Benning}
 }
 
 @inproceedings{cyclone,
@@ -311,7 +308,7 @@
 
 @misc{sync_async.whynotthreads,
 	key = "Ousterhout",
-	author = {Ousterhout, John  },
+    author = {Ousterhout, John K.},
 	booktitle = {USENIX Technical Conference},
 	citeulike-article-id = {1221799},
 	keywords = {events, threads},
@@ -820,6 +817,24 @@ number = {13-01},
   organization={Springer}
 }
 
+@inproceedings{rp.pretc,
+  title={Predictable multithreading of embedded applications using {PRET-C}},
+  author={Sidharta Andalam and others},
+  booktitle={Proceeding of MEMOCODE'10},
+  pages={159--168},
+  year={2010},
+  organization={IEEE}
+}
+
+@inproceedings{rp.synchc,
+  title={SyncCharts in C: a proposal for light-weight, deterministic concurrency},
+  author={Von Hanxleden, Reinhard},
+  booktitle={Proceedings of the seventh ACM international conference on Embedded software},
+  pages={225--234},
+  year={2009},
+  organization={ACM}
+}
+
 @inproceedings{rp.fairthreads,
  author = {Serrano, Manuel and Boussinot, Fr\'{e}d\'{e}ric and Serpette, Bernard},
  title = {Scheme fair threads},
@@ -830,6 +845,15 @@ number = {13-01},
  publisher = {ACM},
  address = {New York, NY, USA},
  }
+
+@inproceedings{rp.urbi,
+  title={Urbi: Towards a universal robotic low-level programming language},
+  author={Baillie, Jean-Christophe},
+  booktitle={International Conference on Intelligent Robots and Systems},
+  pages={820--825},
+  year={2005},
+  organization={IEEE}
+}
 
 @inproceedings{frp.fran,
  key = "Elliot",
@@ -925,7 +949,7 @@ number = {13-01},
 @Manual{esterel.primer,
   key =          {Berry-Primer},
   title = 	 {The {E}sterel-{V}5 Language Primer},
-  author =	 {G. Berry},
+  author =	 {G\'{e}rard Berry},
   organization = {CMA and Inria},
   address =	 {Sophia-Antipolis, France},
   note =	 {Version 5.10, Release 2.0},
@@ -945,6 +969,180 @@ number = {13-01},
   year = 1993
 }
   %editor = {Shyamasundar, R. K.},
+
+@MISC{esterel.constructive,
+    author = {G\'{e}rard Berry},
+    title = {The Constructive Semantics of Pure Esterel},
+    year = {1996}
+}
+
+% ESTEREL RELATED
+
+@inproceedings{esterel.emperor,
+    author = "Sajeewa Dayaratne and others",
+    title  = "Direct Execution of Esterel Using Reactive Microprocessors",
+    booktitle = "Proceedings of SLAP'05",
+    month = "April",
+    year = "2005",
+}
+
+@inproceedings{esterel.efficient,
+ author = {Weil, Daniel and others},
+ title = {Efficient Compilation of ESTEREL for Real-time Embedded Systems},
+ booktitle = {CASES'00},
+ year = {2000},
+ pages = {2--8},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+}
+
+@article{esterel.saxort,
+  title={Saxo--{RT}: Interpreting esterel semantic on a sequential execution 
+  structure},
+  author={Closse, Etienne and others},
+  journal={Electronic Notes in Theoretical Computer Science},
+  volume={65},
+  number={5},
+  pages={80--94},
+  year={2002},
+  publisher={Elsevier}
+}
+
+@article{esterel.tutorial,
+  title={Tutorial: Compiling concurrent languages for sequential processors},
+  author={Edwards, Stephen A.},
+  journal={ACM Transactions on Design Automation of Electronic Systems},
+  volume={8},
+  number={2},
+  pages={141--187},
+  year={2003},
+  publisher={ACM}
+}
+
+@inproceedings{esterel.compiling,
+  title={Compiling Esterel into sequential code},
+  author={Edwards, Stephen A.},
+  booktitle={7th International Workshop on Hardware/Software Codesign},
+  pages={147--151},
+  year={1999},
+  organization={ACM}
+}
+
+@incollection{esterel.schizo,
+  title={Instantaneous termination in pure Esterel},
+  author={Tardieu, Olivier and De Simone, Robert},
+  booktitle={Static Analysis},
+  pages={91--108},
+  year={2003},
+  publisher={Springer}
+}
+
+@article{esterel.schizo2,
+  title={Detection of harmful schizophrenic statements in esterel},
+  author={Yun, Jeong-Han and Kim, Chul-Joo and Kim, Seonggun and Choe, Kwang-Moo and Han, Taisook},
+  journal={ACM Transactions on Embedded Computing Systems (TECS)},
+  volume={12},
+  number={3},
+  pages={80},
+  year={2013},
+  publisher={ACM}
+}
+
+@INPROCEEDINGS{esterel.vm,
+  author = {Plummer, Becky and Khajanchi, Mukul and Edwards, Stephen A.},
+  title = {An Esterel virtual machine for embedded systems},
+  booktitle = {International Workshop on Synchronous Languages, Applications, and
+    Programming (SLAP'06)},
+  year = {2006},
+  address = {Vienna, Austria},
+  organization = {Citeseer},
+}
+
+% ESTEREL DIFFICULT
+
+@misc{esterel.d1,
+    title = {Using and Compiling Esterel},
+    author = "Stephen A. Edwards",
+    howpublished = "MEMOCODE'05 Tutorial",
+    year = "2005",
+    month = "July",
+}
+
+@inproceedings{esterel.d2,
+  title={Causality analysis of synchronous programs with delayed actions},
+  author={Schneider, Klaus and Brandt, Jens and Schuele, Tobias},
+  booktitle={Proceedings of the 2004 international conference on Compilers, architecture, and synthesis for embedded systems},
+  pages={179--189},
+  year={2004},
+  organization={ACM}
+}
+
+@article{esterel.d3,
+  title={SugarCubes implementation of causality},
+  author={Boussinot, Fr{\'e}d{\'e}ric},
+  year={1998}
+}
+
+@article{esterel.d4,
+  title={A verified compiler for synchronous programs with local declarations},
+  author={Schneider, Klaus and Brandt, Jens and Schuele, Tobias},
+  journal={Electronic Notes in Theoretical Computer Science},
+  volume={153},
+  number={4},
+  pages={71--97},
+  year={2006},
+  publisher={Elsevier}
+}
+
+@inproceedings{esterel.d5,
+  title={A new method for compiling schizophrenic synchronous programs},
+  author={Schneider, Klaus and Wenz, Michael},
+  booktitle={Proceedings of the 2001 international conference on Compilers, architecture, and synthesis for embedded systems},
+  pages={49--58},
+  year={2001},
+  organization={ACM}
+}
+
+@inproceedings{esterel.d6,
+  title={Quick conservative causality analysis},
+  author={Sentovich, Ellen M},
+  booktitle={System Synthesis, 1997. Proceedings., Tenth International Symposium on},
+  pages={2--8},
+  year={1997},
+  organization={IEEE}
+}
+
+@inproceedings{esterel.d7,
+  title={Constructive analysis of cyclic circuits},
+  author={Shiple, Thomas R and Berry, Gerard and Touati, Hem{\'e}},
+  booktitle={European Design and Test Conference, 1996. ED\&TC 96. Proceedings},
+  pages={328--333},
+  year={1996},
+  organization={IEEE}
+}
+
+@inproceedings{esterel.d8,
+  title={Curing schizophrenia by program rewriting in Esterel},
+  author={Tardieu, Olivier and De Simone, Robert},
+  booktitle={Formal Methods and Models for Co-Design, 2004. MEMOCODE'04. Proceedings. Second ACM and IEEE International Conference on},
+  pages={39--48},
+  year={2004},
+  organization={IEEE}
+}
+
+
+% PRET
+
+@article{pret.building,
+  title={Building timing predictable embedded systems},
+  author={Axer, Philip and others},
+  journal={ACM Transactions on Embedded Computing Systems},
+  volume={13},
+  number={4},
+  pages={82},
+  year={2014},
+  publisher={ACM}
+}
 
 % SIGNAL
 
@@ -1193,6 +1391,34 @@ pages={1321-1336},
   organization={ACM}
 }
 
+@inproceedings{wsn.sunspot,
+  title={Java on the bare metal of wireless sensor devices: the Squawk Java Virtual Machine},
+  author={Simon, Doug and Cifuentes, Cristina and Cleal, Dave and Daniels, John and White, Derek},
+  booktitle={Proceedings of the 2nd international conference on Virtual execution environments},
+  pages={78--88},
+  year={2006},
+  organization={ACM}
+}
+
+@inproceedings{wsn.darjeeling,
+  title={Darjeeling, a Java compatible virtual machine for microcontrollers},
+  author={Brouwers, Niels and Corke, Peter and Langendoen, Koen},
+  booktitle={Proceedings of the ACM/IFIP/USENIX Middleware'08 Conference Companion},
+  pages={18--23},
+  year={2008},
+  organization={ACM}
+}
+
+@incollection{wsn.takatuka,
+  title={Optimized java binary and virtual machine for tiny motes},
+  author={Aslam, Faisal and others},
+  booktitle={Distributed Computing in Sensor Systems},
+  pages={15--30},
+  year={2010},
+  publisher={Springer}
+}
+
+
 %, Alexandre and Harrison, William and Cahill, Vinny and Clarke, Siobh{\'a}n},
 @article{wsn.flowtalk,
   key="Bergel11",
@@ -1401,15 +1627,6 @@ pages={1321-1336},
  pages = {29--42},
  publisher = {ACM},
  keywords = {embedded systems, threads, wireless sensor networks},
-}
-
-@inproceedings{pret,
-  title={Predictable multithreading of embedded applications using {PRET-C}},
-  author={Sidharta Andalam and others},
-  booktitle={Proceeding of MEMOCODE'10},
-  pages={159--168},
-  year={2010},
-  organization={IEEE}
 }
 
  %series = {SenSys'06},
@@ -1901,3 +2118,45 @@ networks},
                  Additional resources include jqa220.txt (listings).",
   acknowledgement = ack-nhfb,
 }
+
+@article{js.node,
+  title={Node.js: Using JavaScript to build high-performance network programs},
+  author={Tilkov, Stefan and Vinoski, Steve},
+  journal={IEEE Internet Computing},
+  number={6},
+  pages={80--83},
+  year={2010},
+  publisher={IEEE}
+}
+
+@book{js.jquery,
+  title={Learning JQuery 1.3: Better Interaction and Web Development with Simple JavaScript Techniques},
+  author={Chaffer, Jonathan},
+  year={2009},
+  publisher={Packt Publishing Ltd}
+}
+
+@incollection{js.rx,
+  title={Reactive extensions for javascript},
+  author={Liberty, Jesse and Betts, Paul},
+  booktitle={Programming Reactive Extensions and LINQ},
+  pages={111--124},
+  year={2011},
+  publisher={Springer}
+}
+
+@book{java.swing,
+  title={Java swing},
+  author={Eckstein, Robert and Loy, Marc and Wood, Dave},
+  year={1998},
+  publisher={O'Reilly \& Associates, Inc.}
+}
+
+@inproceedings{tcl.tk,
+  title={An X11 Toolkit Based on the Tcl Language.},
+  author={Ousterhout, John K.},
+  booktitle={USENIX Winter},
+  pages={105--116},
+  year={1991}
+}
+
