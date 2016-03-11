@@ -18,7 +18,7 @@ Rewriting the Video Game Pingus.
 # Abstract
 (Public abstract, displayed on the website, max 512 characters)
 
-In this talk, we explore the synergy between C/C++ with Céu in the context of
+In this talk, we explore the synergy between C/C++ and Céu in the context of
 rewriting the video game "Pingus" (from C++ to Céu).
 We discuss how we made an incremental rewriting without ever breaking the game 
 for long.
@@ -27,10 +27,12 @@ for long.
 -->
 
 Céu extends classical structured programming with deterministic and composable 
-lines of execution that can await and hold state across reactions to 
+lines of execution that can await and hold state across reactions to the
 environment.
+<!--
 With Céu, we can write code in a direct/sequential style to avoid the "callback 
 hell".
+-->
 Céu is ideal for systems with complex control-flow patterns, such as embedded 
 systems and video games.
 
