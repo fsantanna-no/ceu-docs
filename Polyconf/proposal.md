@@ -13,7 +13,7 @@ which event.
 # Title
 
 Embedding C/C++ in the Control Language Céu, a Case Study:
-Rewriting the Computer Game Pingus.
+Rewriting the Video Game Pingus.
 
 # Abstract
 (Public abstract, displayed on the website, max 512 characters)
@@ -65,11 +65,11 @@ The outline of the talk is as follows:
     * Inlining C
     * Safe resource management
         * Local vs External resource
-        * Céu `finalize` vs C++ `RAII` and Java `finalize`
-            1. determinitic
-            2. first class
+        * Céu `finalize` vs C++ `RAII` vs Java `finalize`
+            1. special syntax
+            2. determinitic
             3. compile-time safe
-        * Aliases vs Pointers
+        * Pointers vs Aliases
 * Conclusion
 
 # Talk History
@@ -84,7 +84,7 @@ However, there are some talks about Céu:
     * Site: http://curry-on.org/2015/sessions/structured-synchronous-programming.html
 * 2014: Strange Loop / Future of Programming Workshop --- *"Dynamic Organisms in Céu"*
     * Video: https://vimeo.com/110512582
-    * Site:  http://www.future-programming.org/program.html
+    * Site:  http://www.future-programming.org/2014/program.html
 
 <!--
 Also, some academic talks:
