@@ -29,24 +29,28 @@ for long.
 Céu extends classical structured programming with deterministic and composable 
 lines of execution that can await and hold state across reactions to the
 environment.
+Céu is ideal for systems with complex control-flow patterns, such as embedded 
+systems and video games.
+
 <!--
 With Céu, we can write code in a direct/sequential style to avoid the "callback 
 hell".
 -->
-Céu is ideal for systems with complex control-flow patterns, such as embedded 
-systems and video games.
 
 # Private Abstract
 (Top-level talk outline, main idea/topics your talk will cover. Only available 
 for organizers and reviewers.)
 
-This talk is based on the (still unpublished) report "On Rewriting Pingus from 
+This talk is based on the (still under review) report "On Rewriting Pingus from 
 C++ to Céu" which promotes the synchronous programming model of Céu in the 
 context of video games:
 
 http://htmlpreview.github.io/?https://github.com/fsantanna/pingus/blob/ceu/ceu/README.html
 
 The outline of the talk is as follows:
+
+Given the "polyglot" mindset of the conference, for this talk we will focus on 
+the interaction between C/C++ and Céu.
 
 * Introduction: On rewriting Pingus
     * Warm up: Detecting "Double Clicks" is the new "Hello World"
@@ -59,20 +63,19 @@ The outline of the talk is as follows:
             * inter-frame functionality
         * No: data and pure functions
             * intra-frame functionality
-    * Common control-flow patterns in Pingus
-        * Single-page with a glimpse of the patterns
-            * `Finite State Machines`, `Continuation Passing`, `Dispatching Hierarchies`,
-              `Containers and Lifespan`, `Signaling Mechanisms`, `Wall-Clock Timers`,
-              `Pausing`, `Resource Acquisition and Release`
+    * Common control-flow patterns in Pingus (a glimpse)
+        * `Finite State Machines`, `Continuation Passing`, `Dispatching Hierarchies`,
+          `Containers and Lifespan`, `Signaling Mechanisms`, `Wall-Clock Timers`,
+          `Pausing`, `Resource Acquisition and Release`
 * Core: Céu and C/C++ integration in Pingus
     * Embedding (C => Céu) vs Extending (Céu call C)
-        * `ceu_sys_go` vs `_call`
+        * `ceu_sys_go()` vs `_f()`
     * Inlining C
     * Safe resource management
         * Local vs External resource
         * Céu `finalize` vs C++ `RAII` vs Java `finalize`
             1. special syntax
-            2. determinitic
+            2. deterministic
             3. compile-time safe
         * Pointers vs Aliases
 * Conclusion
