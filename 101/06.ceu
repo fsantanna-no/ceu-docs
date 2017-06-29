@@ -1,0 +1,13 @@
+par do 
+    var integer p1;
+    loop p1 in [-25 -> 25] do
+        emit GRAPHICS_DRAW_PIXEL(p1,p1);
+        await 100ms;
+    end
+with
+    var integer p2;
+    loop p2 in [-25 -> 25] do
+        emit GRAPHICS_DRAW_PIXEL(p2,-p2);
+        await 100ms;
+    end
+end

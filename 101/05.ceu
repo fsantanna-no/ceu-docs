@@ -1,0 +1,6 @@
+var integer p;
+loop p in [-25 -> 25] do
+    emit GRAPHICS_DRAW_PIXEL(p,p);
+    emit GRAPHICS_DRAW_PIXEL(p,-p);
+    await 100ms;
+end
